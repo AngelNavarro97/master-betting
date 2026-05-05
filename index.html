@@ -203,7 +203,7 @@
             <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Basic</h3></div>
             <p class="mt-2 text-sm text-ink-200/70">Empieza con la disciplina correcta.</p>
             <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">9,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <a href="#" data-action="open-signup" data-plan="Basic" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</a>
+            <button type="button" data-action="signup-closed" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white/70 backdrop-blur transition hover:border-white/30 hover:bg-white/10">Próximamente</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>8 pronósticos mensuales</span></li>
@@ -229,7 +229,7 @@
             </div>
             <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
             <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">19,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <a href="#" data-action="open-signup" data-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Suscribirme</a>
+            <button type="button" data-action="signup-closed" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white/90 px-5 py-3 text-sm font-semibold text-black/80 transition hover:bg-white">Próximamente</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>16 pronósticos mensuales</span></li>
@@ -254,7 +254,7 @@
             <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Exclusive</h3></div>
             <p class="mt-2 text-sm text-ink-200/70">El círculo cerrado. Reembolso garantizado.</p>
             <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">34,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <a href="#" data-action="open-signup" data-plan="Exclusive" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</a>
+            <button type="button" data-action="signup-closed" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white/70 backdrop-blur transition hover:border-white/30 hover:bg-white/10">Próximamente</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>25 pronósticos mensuales</span></li>
@@ -893,7 +893,7 @@
         <button type="button" data-action="close-login" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">Cancelar</button>
         <button type="submit" class="flex-1 rounded-full bg-white py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Acceder</button>
       </div>
-      <p class="pt-2 text-center text-xs text-ink-200/70">¿No tienes cuenta? <a href="#" data-action="open-signup" class="font-semibold text-white hover:underline">Crear cuenta</a></p>
+      <p class="pt-2 text-center text-xs text-ink-200/70">¿No tienes cuenta? Las suscripciones se activarán muy pronto.</p>
     </form>
   </div>
 </div>
@@ -1021,7 +1021,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-05-chat-attachments';
+const APP_VERSION = '2026-05-05-locked-exclusive';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1457,6 +1457,16 @@ function pickWhen(p) { return `${p.date} ${p.time}`; }
 function availablePicksFor(client) {
   return monthlyPicksPool.filter(p => p.plans.includes(client.plan) && p.result === 'pending');
 }
+// Picks Exclusive a los que el cliente NO tiene acceso por su plan, pero puede ver
+// con el pronóstico bloqueado y comprar uno suelto por 2,99€.
+function lockedExclusivePicksFor(client) {
+  if (!client || client.plan === 'Exclusive') return [];
+  return monthlyPicksPool.filter(p =>
+    p.result === 'pending' &&
+    p.tier === 'exclusive' &&
+    !p.plans.includes(client.plan)
+  );
+}
 // Helpers para picks combinados (funbet) y simples
 function pickFirstEvent(p) {
   return (Array.isArray(p.events) && p.events.length > 0)
@@ -1877,6 +1887,57 @@ function availablePickCard(p, c, forAdmin) {
   </article>`;
 }
 
+// Tarjeta de un pick Exclusive bloqueado (para clientes Basic / Pro).
+// Muestra partido + cuota + candado amarillo + pronóstico difuminado.
+function lockedPickCard(p) {
+  const fe = pickFirstEvent(p);
+  const isCombined = pickIsCombined(p);
+  const totalOdds = pickTotalOdds(p);
+  const headerLabel = isCombined ? `Combinada (${p.events.length} eventos)` : fe.sport;
+  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
+          <span class="inline-flex items-center gap-1.5">${sportIcon(fe.sport,16)}<span>${headerLabel}</span></span>
+          <span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
+          <span class="rounded-full border border-amber-400/60 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Exclusive</span>
+        </div>
+        ${eventBlock(p, true) ? `<div class="mt-3">${eventBlock(p, true)}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
+        <div class="mt-3 relative inline-block">
+          <p class="text-sm text-ink-200/80 select-none" style="filter: blur(6px); letter-spacing: 0.04em;">█████ ███████ ██ ████ ██████</p>
+          <span class="absolute -top-2 -right-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-black shadow-lg">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+    ${isCombined ? `<div class="mt-3 flex items-center justify-between rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Cuota total combinada</span><span class="font-display text-lg font-bold text-amber-200">${totalOdds.toFixed(2)}</span></div>` : ''}
+    <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+      <div><span class="text-ink-500">Cuota${isCombined ? ' total' : ''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
+      <div><span class="text-ink-500">Pronóstico</span> <span class="ml-1 font-semibold text-amber-300">Premium · bloqueado</span></div>
+    </div>
+    <div class="mt-5 flex items-center justify-end">
+      <button data-locked-buy="${p.id}" class="inline-flex items-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-[12px] font-semibold text-black transition hover:bg-amber-300">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Comprar apuesta · 2,99€
+      </button>
+    </div>
+  </article>`;
+}
+
+function lockedPicksHTML(c) {
+  const locked = lockedExclusivePicksFor(c);
+  if (locked.length === 0) return '';
+  return `<div class="mt-12">
+    <div class="flex items-baseline justify-between gap-3">
+      <h3 class="font-display text-xl font-semibold tracking-tight text-white">Apuestas Exclusive disponibles</h3>
+      <span class="text-[10px] uppercase tracking-[0.18em] text-amber-300">${locked.length} premium</span>
+    </div>
+    <p class="mt-1 text-sm text-ink-500">Apuestas del plan <span class="text-amber-300">Exclusive</span>. Puedes comprar el pronóstico de cualquiera de ellas por <span class="text-white">2,99€</span> sin necesidad de cambiar de plan.</p>
+    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">${locked.map(p => lockedPickCard(p)).join('')}</div>
+  </div>`;
+}
+
 function availablePicksHTML(c, forAdmin) {
   const picks = availablePicksFor(c);
   const intro = forAdmin
@@ -1892,9 +1953,12 @@ function availablePicksHTML(c, forAdmin) {
       <div class="group-body grid gap-4 md:grid-cols-2 xl:grid-cols-3">${g.items.map(p => availablePickCard(p, c, forAdmin)).join('')}</div>
     </details>`).join('')}</div>`;
   }
+  // Solo mostramos los Exclusive bloqueados a clientes (no en vista admin)
+  const lockedSection = forAdmin ? '' : lockedPicksHTML(c);
   return `<div id="availableSection" class="mt-10" data-client-id="${c.id}" data-for-admin="${forAdmin?'1':'0'}">
     <div class="flex items-baseline justify-between gap-3"><h3 class="font-display text-xl font-semibold tracking-tight text-white">Apuestas disponibles</h3><span class="text-[10px] uppercase tracking-[0.18em] text-ink-500">${picks.length} disponibles</span></div>
     ${intro}${body}
+    ${lockedSection}
   </div>`;
 }
 
@@ -2454,6 +2518,12 @@ async function onFollowAction(e) {
 }
 document.addEventListener('click', onFollowAction);
 
+// Botón "Comprar apuesta · 2,99€" en las tarjetas locked (Exclusive bloqueado para Basic/Pro)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-locked-buy]'); if (!btn) return;
+  alert('Compra individual de pronóstico Exclusive: 2,99€.\n\nEsta opción se activará cuando habilitemos la pasarela de pago. Mientras tanto, si quieres acceder al pronóstico, contacta con el equipo.');
+});
+
 function rerenderCurrentClientPanel() {
   if (activeClientId) {
     const c = clients.find(x => String(x.id) === String(activeClientId));
@@ -2497,8 +2567,16 @@ document.querySelectorAll('[data-action="open-signup"]').forEach(el => {
     openSignup(el.dataset.plan);
   });
 });
+// Botón "Próximamente" en los planes (mientras Stripe no está activo)
+document.querySelectorAll('[data-action="signup-closed"]').forEach(el => {
+  el.addEventListener('click', (e) => {
+    e.preventDefault();
+    alert('Las suscripciones todavía no están abiertas al público. Estamos terminando de configurar la pasarela de pago. Si quieres acceso anticipado, contacta con nosotros.');
+  });
+});
 document.querySelectorAll('[data-action="close-signup"]').forEach(el => el.addEventListener('click', closeSignup));
-document.querySelector('[data-action="open-login-from-signup"]').addEventListener('click', (e) => {
+const _toLoginFromSignup = document.querySelector('[data-action="open-login-from-signup"]');
+if (_toLoginFromSignup) _toLoginFromSignup.addEventListener('click', (e) => {
   e.preventDefault();
   closeSignup();
   openLogin();
@@ -2515,6 +2593,10 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
   const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
   errEl.classList.add('hidden');
 
+  // Registro público cerrado hasta que Stripe esté activo
+  return showErr('El registro está temporalmente cerrado. Las suscripciones se abrirán cuando activemos la pasarela de pago.');
+
+  // eslint-disable-next-line no-unreachable
   const name = document.getElementById('signupName').value.trim();
   const email = document.getElementById('signupEmail').value.trim().toLowerCase();
   const pw1 = document.getElementById('signupPassword').value;
