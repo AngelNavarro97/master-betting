@@ -985,8 +985,46 @@ mobileMenu.querySelectorAll('a:not([data-action])').forEach(a => a.addEventListe
 /* ============================================================
    ⚠️ PROTOTIPO — credenciales en cliente, NO usar en producción
 ============================================================ */
+// La contraseña ya NO vive aquí. Se autentica contra Supabase Auth.
 const ADMIN_EMAIL = "angelnavarroceldran@hotmail.com";
-const ADMIN_PASSWORD = "Reymisterio1.";
+
+/* ============================================================
+   HELPERS de Supabase para perfiles de cliente
+============================================================ */
+// Crea la fila en `clients` si todavía no existe (idempotente, seguro de llamar siempre)
+async function ensureClientRow(user) {
+  const meta = user.user_metadata || {};
+  const { data: existing } = await sb.from('clients').select('id').eq('id', user.id).maybeSingle();
+  if (existing) return;
+  const planFromMeta = meta.plan && PLAN_PRICES[meta.plan] ? meta.plan : 'Basic';
+  const { error } = await sb.from('clients').insert({
+    id: user.id,
+    name: meta.name || user.email.split('@')[0],
+    email: user.email,
+    plan: planFromMeta,
+    price: meta.price || PLAN_PRICES[planFromMeta],
+  });
+  if (error) console.error('No se pudo crear el perfil en clients:', error);
+}
+
+// Carga TODOS los clientes desde Supabase (solo lo verá el admin gracias a las RLS)
+async function loadClientsFromSupabase() {
+  const { data, error } = await sb.from('clients').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('Error cargando clientes:', error); return; }
+  // Filtramos al admin (no debe aparecer en la lista de clientes)
+  clients = data
+    .filter(row => row.email !== ADMIN_EMAIL)
+    .map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      plan: row.plan,
+      price: parseFloat(row.price),
+      status: row.status,
+      joinedAt: row.joined_at,
+    }));
+  saveClients();
+}
 
 /* ============================================================
    CLIENTES (mock)
@@ -1388,13 +1426,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
   errEl.classList.add('hidden');
 
-  // Admin (sigue usando credenciales fijas, no toca Supabase)
-  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-    sessionStorage.setItem('tipster-admin', 'true'); sessionStorage.removeItem('tipster-client');
-    closeLogin(); showAdmin(); return;
-  }
-
-  // Cliente: login con Supabase Auth
+  // Login unificado: tanto admin como cliente se autentican vía Supabase
   const submitBtn = e.target.querySelector('button[type="submit"]');
   const oldText = submitBtn.textContent;
   submitBtn.disabled = true; submitBtn.textContent = 'Comprobando...';
@@ -1414,8 +1446,20 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     return showErr('Error: ' + error.message);
   }
 
+  // Asegurar fila en clients (por si es un usuario antiguo sin perfil aún)
+  await ensureClientRow(data.user);
+
   closeLogin();
-  showClientFromSupabaseUser(data.user);
+
+  // Si es el admin, abrir panel admin; si no, panel cliente
+  if (data.user.email === ADMIN_EMAIL) {
+    sessionStorage.setItem('tipster-admin', 'true');
+    sessionStorage.removeItem('tipster-client');
+    await loadClientsFromSupabase();
+    showAdmin();
+  } else {
+    showClientFromSupabaseUser(data.user);
+  }
 });
 
 // Convierte un usuario de Supabase a un objeto cliente y muestra el panel
@@ -1438,19 +1482,26 @@ function showClientFromSupabaseUser(user) {
   showClientView(client.id);
 }
 
-// Auto-login al cargar la página: si admin lo es, entra al admin; si hay sesión Supabase, entra al panel cliente
+// Auto-login al cargar la página: comprueba si hay sesión Supabase activa
 (async () => {
-  if (sessionStorage.getItem('tipster-admin') === 'true') {
-    showAdmin();
-    return;
-  }
   const { data: { session } } = await sb.auth.getSession();
-  if (session && session.user) {
+  if (!session || !session.user) return;
+  await ensureClientRow(session.user);
+  if (session.user.email === ADMIN_EMAIL) {
+    sessionStorage.setItem('tipster-admin', 'true');
+    sessionStorage.removeItem('tipster-client');
+    await loadClientsFromSupabase();
+    showAdmin();
+  } else {
     showClientFromSupabaseUser(session.user);
   }
 })();
 
-document.getElementById('logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('tipster-admin'); hideAdmin(); });
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  sessionStorage.removeItem('tipster-admin');
+  hideAdmin();
+});
 document.getElementById('clientLogoutBtn').addEventListener('click', async () => {
   await sb.auth.signOut();
   sessionStorage.removeItem('tipster-client');
@@ -1547,17 +1598,36 @@ function renderAdmin() {
 ['searchInput','planFilter','statusFilter'].forEach(id => { document.getElementById(id).addEventListener('input', renderAdmin); document.getElementById(id).addEventListener('change', renderAdmin); });
 
 /* Acciones cliente (delegación) */
-function onTableAction(e) {
+async function onTableAction(e) {
   const btn = e.target.closest('[data-action][data-id]'); if (!btn) return;
-  const id = parseInt(btn.dataset.id), action = btn.dataset.action;
-  const c = clients.find(x => x.id === id); if (!c) return;
+  const id = btn.dataset.id, action = btn.dataset.action;        // id es UUID (string)
+  const c = clients.find(x => String(x.id) === String(id)); if (!c) return;
+
+  // Helper para empujar cambios de estado a Supabase
+  async function updateStatus(newStatus) {
+    c.status = newStatus;
+    saveClients(); renderAdmin();
+    const { error } = await sb.from('clients').update({ status: newStatus }).eq('id', c.id);
+    if (error) alert('Error guardando en Supabase: ' + error.message);
+  }
+
   if (action === 'stats') openStatsDetail(c);
   else if (action === 'edit') openEdit(c);
   else if (action === 'password') openPw(c);
-  else if (action === 'pause') { c.status = c.status==='paused'?'active':'paused'; saveClients(); renderAdmin(); }
-  else if (action === 'reactivate') { c.status = 'active'; saveClients(); renderAdmin(); }
-  else if (action === 'revoke') { if (confirm(`¿Revocar a ${c.name}?`)) { c.status = 'revoked'; saveClients(); renderAdmin(); } }
-  else if (action === 'delete') { if (confirm(`¿Eliminar a ${c.name}? Esta acción no se puede deshacer.`)) { clients = clients.filter(x => x.id !== c.id); saveClients(); renderAdmin(); } }
+  else if (action === 'pause') updateStatus(c.status === 'paused' ? 'active' : 'paused');
+  else if (action === 'reactivate') updateStatus('active');
+  else if (action === 'revoke') {
+    if (confirm(`¿Revocar a ${c.name}?`)) updateStatus('revoked');
+  }
+  else if (action === 'delete') {
+    if (confirm(`¿Eliminar a ${c.name}? Esta acción no se puede deshacer.`)) {
+      // Solo borra la fila de clients (el usuario en Auth permanece — solo se puede borrar desde el panel Auth de Supabase)
+      const { error } = await sb.from('clients').delete().eq('id', c.id);
+      if (error) { alert('Error: ' + error.message); return; }
+      clients = clients.filter(x => x.id !== c.id);
+      saveClients(); renderAdmin();
+    }
+  }
 }
 document.getElementById('tableBody').addEventListener('click', onTableAction);
 document.getElementById('mobileList').addEventListener('click', onTableAction);
@@ -2102,16 +2172,20 @@ function openEdit(c) {
 }
 function closeEdit() { editModal.classList.add('hidden'); }
 document.querySelectorAll('[data-action="close-edit"]').forEach(el => el.addEventListener('click', closeEdit));
-document.getElementById('editForm').addEventListener('submit', (e) => {
+document.getElementById('editForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const id = parseInt(document.getElementById('editId').value);
-  const c = clients.find(x => x.id === id); if (!c) return closeEdit();
+  const id = document.getElementById('editId').value;
+  const c = clients.find(x => String(x.id) === String(id)); if (!c) return closeEdit();
   c.name = document.getElementById('editName').value.trim();
   c.email = document.getElementById('editEmail').value.trim();
   c.plan = document.getElementById('editPlan').value;
   c.price = PLAN_PRICES[c.plan];
   saveClients();
   closeEdit(); renderAdmin();
+  const { error } = await sb.from('clients').update({
+    name: c.name, email: c.email, plan: c.plan, price: c.price,
+  }).eq('id', c.id);
+  if (error) alert('Error guardando en Supabase: ' + error.message);
 });
 
 /* ============================================================
@@ -2172,7 +2246,7 @@ document.getElementById('followForm').addEventListener('submit', (e) => {
   const err = document.getElementById('followError');
   if (!amt || amt <= 0) { err.textContent = 'Introduce un importe mayor que cero.'; err.classList.remove('hidden'); return; }
   if (amt > 10000) { err.textContent = 'Importe demasiado alto. Revisa la cifra.'; err.classList.remove('hidden'); return; }
-  const clientId = activeClientId || parseInt(document.getElementById('availableSection')?.dataset.clientId);
+  const clientId = activeClientId || document.getElementById('availableSection')?.dataset.clientId;
   if (!clientId) return;
   followBet(clientId, pickId, amt);
   closeFollow(); rerenderCurrentClientPanel();
@@ -2181,7 +2255,7 @@ document.getElementById('followForm').addEventListener('submit', (e) => {
 function onFollowAction(e) {
   const btn = e.target.closest('[data-follow-action]'); if (!btn) return;
   const section = btn.closest('#availableSection'); if (!section) return;
-  const clientId = parseInt(section.dataset.clientId);
+  const clientId = section.dataset.clientId;
   if (section.dataset.forAdmin === '1') return;
   const pickId = btn.dataset.pickId, action = btn.dataset.followAction;
   const pick = monthlyPicksPool.find(x => x.id === pickId); if (!pick) return;
@@ -2194,7 +2268,7 @@ document.addEventListener('click', onFollowAction);
 
 function rerenderCurrentClientPanel() {
   if (activeClientId) {
-    const c = clients.find(x => x.id === activeClientId);
+    const c = clients.find(x => String(x.id) === String(activeClientId));
     if (c) document.getElementById('clientStatsContent').innerHTML = statsPanelHTML(c, false);
     return;
   }
@@ -2202,7 +2276,7 @@ function rerenderCurrentClientPanel() {
   if (!detail.classList.contains('hidden')) {
     const section = document.getElementById('availableSection');
     if (section) {
-      const c = clients.find(x => x.id === parseInt(section.dataset.clientId));
+      const c = clients.find(x => String(x.id) === String(section.dataset.clientId));
       if (c) document.getElementById('statsDetailContent').innerHTML = statsPanelHTML(c, true);
     }
   }
