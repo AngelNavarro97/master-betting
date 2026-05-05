@@ -83,8 +83,8 @@
   /* Filtros pestaña Pronósticos */
   .pf-tab.pf-active { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.25); }
 
-  /* Selector deporte y plan en signup */
-  .np-sport.active, .ev-sport.active, .signup-plan.active { border-color: rgba(0,230,150,0.45); background: rgba(0,230,150,0.10); }
+  /* Selector deporte y plan en signup / añadir cliente */
+  .np-sport.active, .ev-sport.active, .signup-plan.active, .ac-plan.active { border-color: rgba(0,230,150,0.45); background: rgba(0,230,150,0.10); }
 
   /* Mes desplegable */
   details.month-group { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; }
@@ -636,14 +636,19 @@
     </div>
 
     <div class="mx-auto mt-8 max-w-[1600px] px-5 sm:px-8">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input id="searchInput" type="text" placeholder="Buscar por nombre o email..." class="flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30"/>
-        <select id="planFilter" class="rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none">
-          <option value="all">Todos los planes</option><option value="Basic">Basic</option><option value="Pro">Pro</option><option value="Exclusive">Exclusive</option>
-        </select>
-        <select id="statusFilter" class="rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none">
-          <option value="all">Todos los estados</option><option value="active">Activos</option><option value="paused">Pausados</option><option value="revoked">Revocados</option>
-        </select>
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-1">
+          <input id="searchInput" type="text" placeholder="Buscar por nombre o email..." class="flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30"/>
+          <select id="planFilter" class="rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none">
+            <option value="all">Todos los planes</option><option value="Basic">Basic</option><option value="Pro">Pro</option><option value="Exclusive">Exclusive</option>
+          </select>
+          <select id="statusFilter" class="rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none">
+            <option value="all">Todos los estados</option><option value="active">Activos</option><option value="paused">Pausados</option><option value="revoked">Revocados</option>
+          </select>
+        </div>
+        <button id="addClientBtn" class="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-ink-200">
+          <span class="text-lg leading-none">+</span> Añadir cliente
+        </button>
       </div>
     </div>
 
@@ -732,6 +737,44 @@
 <!-- ================================================================
      MODALES
      ================================================================ -->
+<!-- ADD CLIENT (admin) -->
+<div id="addClientModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-add-client"></div>
+  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
+    <div class="flex items-start justify-between gap-4">
+      <h2 class="font-display text-xl font-semibold text-white">Añadir cliente</h2>
+      <button data-action="close-add-client" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button>
+    </div>
+    <p class="mt-2 text-sm text-ink-200/70">Crea la cuenta. El cliente recibirá un email de verificación de Supabase para activarla. Compártele las credenciales (email + contraseña) por privado.</p>
+    <form id="addClientForm" class="mt-6 space-y-4">
+      <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Nombre completo</label><input id="acName" type="text" required placeholder="Nombre Apellido" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/></div>
+      <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Email</label><input id="acEmail" type="email" required placeholder="cliente@email.com" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/></div>
+      <div>
+        <label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Contraseña inicial</label>
+        <div class="mt-2 flex gap-2">
+          <input id="acPassword" type="text" required placeholder="Mínimo 6 caracteres" class="flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/>
+          <button type="button" id="acGenPwBtn" class="rounded-2xl border border-white/15 bg-white/5 px-3 text-xs font-medium text-white hover:bg-white/10">Generar</button>
+        </div>
+        <p class="mt-1 text-xs text-ink-500">El cliente podrá cambiarla luego desde su perfil.</p>
+      </div>
+      <fieldset>
+        <legend class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Plan</legend>
+        <div class="mt-2 grid grid-cols-3 gap-2">
+          <label class="ac-plan flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-white/5 px-2 py-2.5 text-sm text-white cursor-pointer transition" data-plan="Basic"><input type="radio" name="ac-plan" value="Basic" class="hidden"/><span class="font-semibold">Basic</span><span class="text-[10px] text-ink-500">9,99€</span></label>
+          <label class="ac-plan flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-white/5 px-2 py-2.5 text-sm text-white cursor-pointer transition" data-plan="Pro"><input type="radio" name="ac-plan" value="Pro" class="hidden" checked/><span class="font-semibold">Pro</span><span class="text-[10px] text-ink-500">19,99€</span></label>
+          <label class="ac-plan flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-white/5 px-2 py-2.5 text-sm text-white cursor-pointer transition" data-plan="Exclusive"><input type="radio" name="ac-plan" value="Exclusive" class="hidden"/><span class="font-semibold">Exclusive</span><span class="text-[10px] text-ink-500">34,99€</span></label>
+        </div>
+      </fieldset>
+      <p id="acError" class="hidden rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"></p>
+      <p id="acSuccess" class="hidden rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"></p>
+      <div class="flex gap-2 pt-2">
+        <button type="button" data-action="close-add-client" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white hover:bg-white/10">Cancelar</button>
+        <button type="submit" class="flex-1 rounded-full bg-white py-3 text-sm font-semibold text-black hover:bg-ink-200">Crear cuenta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- SIGNUP -->
 <div id="signupModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-signup"></div>
@@ -987,7 +1030,15 @@ mobileMenu.querySelectorAll('a:not([data-action])').forEach(a => a.addEventListe
    ⚠️ PROTOTIPO — credenciales en cliente, NO usar en producción
 ============================================================ */
 // La contraseña ya NO vive aquí. Se autentica contra Supabase Auth.
-const ADMIN_EMAIL = "angelnavarroceldran@hotmail.com";
+// Los emails admin sí: aquí decidimos quién ve el panel admin.
+const ADMIN_EMAILS = [
+  "angelnavarroceldran@hotmail.com",
+  "juancruz.jcgm96@gmail.com",
+  // Cuando tengas el email de Javi, lo añadimos aquí también
+];
+function isAdmin(email) { return !!email && ADMIN_EMAILS.includes(email.toLowerCase()); }
+// Compat: variable antigua para retrocompatibilidad mínima en caso de uso despistado
+const ADMIN_EMAIL = ADMIN_EMAILS[0];
 
 /* ============================================================
    HELPERS de Supabase para perfiles de cliente
@@ -1012,9 +1063,9 @@ async function ensureClientRow(user) {
 async function loadClientsFromSupabase() {
   const { data, error } = await sb.from('clients').select('*').order('created_at', { ascending: false });
   if (error) { console.error('Error cargando clientes:', error); return; }
-  // Filtramos al admin (no debe aparecer en la lista de clientes)
+  // Filtramos a los admins (no deben aparecer en la lista de clientes)
   clients = data
-    .filter(row => row.email !== ADMIN_EMAIL)
+    .filter(row => !isAdmin(row.email))
     .map(row => ({
       id: row.id,
       name: row.name,
@@ -1518,7 +1569,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   closeLogin();
 
   // Si es el admin, abrir panel admin; si no, panel cliente
-  if (data.user.email === ADMIN_EMAIL) {
+  if (isAdmin(data.user.email)) {
     sessionStorage.setItem('tipster-admin', 'true');
     sessionStorage.removeItem('tipster-client');
     await Promise.all([loadClientsFromSupabase(), loadPicksFromSupabase(), loadAllFollowedBets()]);
@@ -1561,7 +1612,7 @@ async function showClientFromSupabaseUser(user) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session || !session.user) return;
   await ensureClientRow(session.user);
-  if (session.user.email === ADMIN_EMAIL) {
+  if (isAdmin(session.user.email)) {
     sessionStorage.setItem('tipster-admin', 'true');
     sessionStorage.removeItem('tipster-client');
     await Promise.all([loadClientsFromSupabase(), loadPicksFromSupabase(), loadAllFollowedBets()]);
@@ -2429,7 +2480,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
 
   if (!name) return showErr('Introduce tu nombre.');
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Email no válido.');
-  if (email === ADMIN_EMAIL) return showErr('Ese email no está disponible.');
+  if (isAdmin(email)) return showErr('Ese email no está disponible.');
   if (pw1.length < 6) return showErr('La contraseña debe tener al menos 6 caracteres.');
   if (pw1 !== pw2) return showErr('Las contraseñas no coinciden.');
   if (!plan) return showErr('Selecciona un plan.');
@@ -2495,8 +2546,91 @@ function showCheckEmailMessage(email, name) {
   });
 }
 
+/* ============================================================
+   ADMIN — añadir cliente desde el panel
+============================================================ */
+const addClientModal = document.getElementById('addClientModal');
+
+function openAddClient() {
+  document.getElementById('addClientForm').reset();
+  document.getElementById('acError').classList.add('hidden');
+  document.getElementById('acSuccess').classList.add('hidden');
+  // Plan por defecto: Pro
+  document.querySelectorAll('input[name="ac-plan"]').forEach(r => r.checked = (r.value === 'Pro'));
+  document.querySelectorAll('.ac-plan').forEach(el => el.classList.toggle('active', el.dataset.plan === 'Pro'));
+  addClientModal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('acName').focus(), 50);
+}
+function closeAddClient() { addClientModal.classList.add('hidden'); }
+
+document.getElementById('addClientBtn').addEventListener('click', openAddClient);
+document.querySelectorAll('[data-action="close-add-client"]').forEach(el => el.addEventListener('click', closeAddClient));
+
+// Resaltar el plan al cambiar el radio
+document.querySelectorAll('input[name="ac-plan"]').forEach(r => r.addEventListener('change', () => {
+  document.querySelectorAll('.ac-plan').forEach(el => el.classList.toggle('active', el.dataset.plan === r.value));
+}));
+
+// Botón "Generar" contraseña aleatoria
+document.getElementById('acGenPwBtn').addEventListener('click', () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let pw = '';
+  for (let i = 0; i < 10; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('acPassword').value = pw;
+});
+
+document.getElementById('addClientForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('acError');
+  const okEl = document.getElementById('acSuccess');
+  const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); okEl.classList.add('hidden'); };
+  errEl.classList.add('hidden'); okEl.classList.add('hidden');
+
+  const name = document.getElementById('acName').value.trim();
+  const email = document.getElementById('acEmail').value.trim().toLowerCase();
+  const password = document.getElementById('acPassword').value;
+  const planRadio = document.querySelector('input[name="ac-plan"]:checked');
+  const plan = planRadio ? planRadio.value : 'Basic';
+
+  if (!name) return showErr('Introduce el nombre del cliente.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Email no válido.');
+  if (isAdmin(email)) return showErr('Ese email pertenece a un admin.');
+  if (password.length < 6) return showErr('La contraseña debe tener al menos 6 caracteres.');
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const oldText = submitBtn.textContent;
+  submitBtn.disabled = true; submitBtn.textContent = 'Creando...';
+
+  // Importante: signUp con email_confirmation activado NO inicia sesión del nuevo usuario,
+  // así que el admin sigue logueado en su sesión.
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: {
+      data: { name, plan, price: PLAN_PRICES[plan] },
+      emailRedirectTo: window.location.origin + window.location.pathname,
+    }
+  });
+
+  submitBtn.disabled = false; submitBtn.textContent = oldText;
+
+  if (error) {
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('already') || msg.includes('exists') || msg.includes('registered')) return showErr('Ya existe una cuenta con ese email.');
+    if (msg.includes('rate')) return showErr('Demasiadas creaciones seguidas. Espera un momento.');
+    return showErr('Error: ' + error.message);
+  }
+
+  // Éxito: muestra recordatorio con credenciales para que el admin las copie y comparta
+  okEl.innerHTML = `<strong>Cuenta creada.</strong> Comparte estas credenciales con el cliente:<br><br><span class="font-mono text-xs">📧 ${email}</span><br><span class="font-mono text-xs">🔑 ${password}</span><br><br>Le ha llegado un email para verificarla.`;
+  okEl.classList.remove('hidden');
+
+  // Recargar lista de clientes (la nueva fila aparece cuando el cliente verifique y haga login)
+  await loadClientsFromSupabase();
+  renderAdmin();
+});
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeLogin(); closeSignup(); closeEdit(); closePw(); closeFollow(); closeNewPick(); }
+  if (e.key === 'Escape') { closeLogin(); closeSignup(); closeAddClient(); closeEdit(); closePw(); closeFollow(); closeNewPick(); }
 });
 </script>
 </body>
