@@ -714,7 +714,24 @@
       <div id="chatMessages" class="h-[58vh] overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
         <p class="text-sm text-ink-500 text-center py-8">Cargando mensajes...</p>
       </div>
-      <form id="chatForm" class="mt-4 flex gap-2">
+      <div id="chatRecordingBar" class="hidden mt-3 flex items-center gap-3 rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-white">
+        <span class="relative flex h-3 w-3">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-red-400"></span>
+        </span>
+        <span>Grabando audio…</span>
+        <span id="chatRecordingTime" class="ml-auto font-mono text-xs text-ink-300">0:00</span>
+        <button type="button" id="chatRecordCancel" class="rounded-full border border-white/15 px-3 py-1 text-xs hover:bg-white/10">Cancelar</button>
+        <button type="button" id="chatRecordStop" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black hover:bg-ink-200">Enviar</button>
+      </div>
+      <form id="chatForm" class="mt-4 flex items-center gap-2">
+        <button type="button" id="chatImageBtn" title="Adjuntar imagen" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </button>
+        <button type="button" id="chatAudioBtn" title="Grabar audio" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <input id="chatImageInput" type="file" accept="image/*" class="hidden"/>
         <input id="chatInput" type="text" placeholder="Escribe un mensaje..." autocomplete="off" maxlength="500" class="flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30"/>
         <button type="submit" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-ink-200">Enviar</button>
       </form>
@@ -1004,7 +1021,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-05-supabase-data';
+const APP_VERSION = '2026-05-05-chat-attachments';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2764,11 +2781,26 @@ function chatMessageHTML(m, currentUserId) {
     ? 'bg-accent-neon/20 border border-accent-neon/30 text-white'
     : 'bg-white/[0.04] border border-white/10 text-white';
   const align = isMine ? 'flex-row-reverse' : 'flex-row';
+
+  // Construir contenido del bubble (texto + adjunto)
+  let bubbleContent = '';
+  if (m.attachment_type === 'image' && m.attachment_url) {
+    bubbleContent += `<a href="${escapeHTML(m.attachment_url)}" target="_blank" rel="noopener"><img src="${escapeHTML(m.attachment_url)}" alt="imagen" class="max-w-full max-h-72 rounded-xl block"/></a>`;
+  } else if (m.attachment_type === 'audio' && m.attachment_url) {
+    bubbleContent += `<audio controls preload="metadata" src="${escapeHTML(m.attachment_url)}" class="max-w-full"></audio>`;
+  }
+  if (m.content) {
+    bubbleContent += `<div class="text-sm break-words ${bubbleContent ? 'mt-2' : ''}">${escapeHTML(m.content)}</div>`;
+  }
+
+  // Si solo hay imagen/audio (sin texto), reducimos padding
+  const padClass = m.attachment_type ? 'p-1.5' : 'px-4 py-2';
+
   return `<div class="flex ${align} items-end gap-2">
     ${avatar}
     <div class="max-w-[75%] flex flex-col ${isMine ? 'items-end' : 'items-start'}">
       <div class="text-[10px] uppercase tracking-[0.16em] text-ink-500 mb-1">${name} · ${fmtChatTime(m.created_at)}</div>
-      <div class="rounded-2xl px-4 py-2 text-sm break-words ${bubbleClass}">${escapeHTML(m.content)}</div>
+      <div class="rounded-2xl ${padClass} ${bubbleClass}">${bubbleContent}</div>
     </div>
   </div>`;
 }
@@ -2839,6 +2871,116 @@ document.getElementById('chatForm').addEventListener('submit', async (e) => {
   if (error) {
     alert('Error enviando mensaje: ' + error.message);
     input.value = content; // recuperar el texto
+  }
+});
+
+// === Adjuntos: imagen + audio ===
+async function uploadChatFile(blob, ext, mime) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) return null;
+  const userId = session.user.id;
+  const filename = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const { error: upErr } = await sb.storage.from('chat-attachments').upload(filename, blob, {
+    contentType: mime,
+    upsert: false,
+  });
+  if (upErr) {
+    alert('Error subiendo archivo: ' + upErr.message);
+    return null;
+  }
+  // Bucket privado → URL firmada (válida 1 año)
+  const { data, error: signErr } = await sb.storage.from('chat-attachments').createSignedUrl(filename, 60 * 60 * 24 * 365);
+  if (signErr) {
+    alert('Error generando URL: ' + signErr.message);
+    return null;
+  }
+  return data.signedUrl;
+}
+
+async function sendChatAttachment(url, type) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) return;
+  const { error } = await sb.from('admin_messages').insert({
+    sender_id: session.user.id,
+    sender_email: session.user.email,
+    sender_name: adminNameFromEmail(session.user.email),
+    content: null,
+    attachment_url: url,
+    attachment_type: type,
+  });
+  if (error) alert('Error enviando adjunto: ' + error.message);
+}
+
+// --- IMAGEN ---
+document.getElementById('chatImageBtn').addEventListener('click', () => {
+  document.getElementById('chatImageInput').click();
+});
+document.getElementById('chatImageInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { alert('La imagen no puede superar 10 MB.'); e.target.value = ''; return; }
+  const btn = document.getElementById('chatImageBtn');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const url = await uploadChatFile(file, ext, file.type || 'image/jpeg');
+  if (url) await sendChatAttachment(url, 'image');
+  btn.disabled = false; btn.style.opacity = '1';
+  e.target.value = '';
+});
+
+// --- AUDIO ---
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordStartTime = 0;
+let recordTimer = null;
+
+document.getElementById('chatAudioBtn').addEventListener('click', async () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('Tu navegador no permite grabar audio.');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+    mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
+    recordedChunks = [];
+    mediaRecorder.ondataavailable = (ev) => { if (ev.data.size > 0) recordedChunks.push(ev.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      clearInterval(recordTimer);
+      document.getElementById('chatRecordingBar').classList.add('hidden');
+      if (mediaRecorder._cancelled) { mediaRecorder = null; return; }
+      const ext = mime.includes('webm') ? 'webm' : 'm4a';
+      const blob = new Blob(recordedChunks, { type: mime });
+      if (blob.size > 0) {
+        const url = await uploadChatFile(blob, ext, mime);
+        if (url) await sendChatAttachment(url, 'audio');
+      }
+      mediaRecorder = null;
+    };
+    mediaRecorder.start();
+    recordStartTime = Date.now();
+    document.getElementById('chatRecordingBar').classList.remove('hidden');
+    recordTimer = setInterval(() => {
+      const s = Math.floor((Date.now() - recordStartTime) / 1000);
+      document.getElementById('chatRecordingTime').textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+    }, 250);
+  } catch (err) {
+    alert('No se pudo acceder al micrófono: ' + err.message);
+  }
+});
+
+document.getElementById('chatRecordStop').addEventListener('click', () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder._cancelled = false;
+    mediaRecorder.stop();
+  }
+});
+document.getElementById('chatRecordCancel').addEventListener('click', () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder._cancelled = true;
+    mediaRecorder.stop();
   }
 });
 
