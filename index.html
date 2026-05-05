@@ -8,6 +8,7 @@
 <link rel="icon" type="image/png" href="RECURSOS/Recurso%201.png" />
 
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   tailwind.config = {
     theme: {
@@ -953,6 +954,15 @@ if (localStorage.getItem('tipster-version') !== APP_VERSION) {
 }
 
 /* ============================================================
+   SUPABASE — cliente inicializado con URL + anon key (públicas)
+============================================================ */
+const SUPABASE_URL = 'https://emjloyidfwxbyrsdwgah.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtamxveWlkZnd4Ynlyc2R3Z2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MzY0OTQsImV4cCI6MjA5MzUxMjQ5NH0.vOVHzJVos_QDpxXHO92bCz6gd9T2ZASs4pZ9c1TmGOA';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
+});
+
+/* ============================================================
    AÑO + MENÚ MÓVIL
 ============================================================ */
 document.getElementById('year').textContent = new Date().getFullYear();
@@ -1370,7 +1380,7 @@ function hideClientView() { activeClientId = null; clientPanel.classList.add('hi
 document.querySelectorAll('[data-action="open-login"]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }));
 document.querySelectorAll('[data-action="close-login"]').forEach(el => el.addEventListener('click', closeLogin));
 
-document.getElementById('loginForm').addEventListener('submit', (e) => {
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
   const password = document.getElementById('loginPassword').value;
@@ -1378,27 +1388,74 @@ document.getElementById('loginForm').addEventListener('submit', (e) => {
   const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
   errEl.classList.add('hidden');
 
-  // Admin
+  // Admin (sigue usando credenciales fijas, no toca Supabase)
   if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
     sessionStorage.setItem('tipster-admin', 'true'); sessionStorage.removeItem('tipster-client');
     closeLogin(); showAdmin(); return;
   }
-  // Cliente: comprobar email + contraseña propia
-  const c = clients.find(x => x.email.toLowerCase() === email);
-  if (!c) return showErr('No existe ninguna cuenta con ese email.');
-  if (c.password !== password) return showErr('Contraseña incorrecta.');
-  if (!c.verified) return showErr('Tu cuenta aún no está verificada. Revisa tu email.');
-  if (c.status === 'revoked') return showErr('Tu acceso ha sido revocado. Contacta con soporte.');
-  sessionStorage.setItem('tipster-client', String(c.id)); sessionStorage.removeItem('tipster-admin');
-  closeLogin(); showClientView(c.id);
+
+  // Cliente: login con Supabase Auth
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const oldText = submitBtn.textContent;
+  submitBtn.disabled = true; submitBtn.textContent = 'Comprobando...';
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+  submitBtn.disabled = false; submitBtn.textContent = oldText;
+
+  if (error) {
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
+      return showErr('Tu cuenta aún no está verificada. Revisa tu email.');
+    }
+    if (msg.includes('invalid login') || msg.includes('invalid credentials')) {
+      return showErr('Email o contraseña incorrectos.');
+    }
+    return showErr('Error: ' + error.message);
+  }
+
+  closeLogin();
+  showClientFromSupabaseUser(data.user);
 });
 
-const storedClientId = sessionStorage.getItem('tipster-client');
-if (sessionStorage.getItem('tipster-admin') === 'true') showAdmin();
-else if (storedClientId) showClientView(parseInt(storedClientId));
+// Convierte un usuario de Supabase a un objeto cliente y muestra el panel
+function showClientFromSupabaseUser(user) {
+  const meta = user.user_metadata || {};
+  const client = {
+    id: user.id,
+    name: meta.name || user.email.split('@')[0],
+    email: user.email,
+    plan: meta.plan || 'Basic',
+    price: meta.price || PLAN_PRICES[meta.plan || 'Basic'],
+    status: 'active',
+    joinedAt: (user.created_at || new Date().toISOString()).slice(0, 10),
+    verified: !!user.email_confirmed_at,
+  };
+  // Inserta en la lista local solo para esta sesión (para que el panel cliente lo encuentre)
+  if (!clients.find(c => c.id === client.id)) clients.push(client);
+  sessionStorage.setItem('tipster-client', client.id);
+  sessionStorage.removeItem('tipster-admin');
+  showClientView(client.id);
+}
+
+// Auto-login al cargar la página: si admin lo es, entra al admin; si hay sesión Supabase, entra al panel cliente
+(async () => {
+  if (sessionStorage.getItem('tipster-admin') === 'true') {
+    showAdmin();
+    return;
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session && session.user) {
+    showClientFromSupabaseUser(session.user);
+  }
+})();
 
 document.getElementById('logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('tipster-admin'); hideAdmin(); });
-document.getElementById('clientLogoutBtn').addEventListener('click', () => { sessionStorage.removeItem('tipster-client'); hideClientView(); });
+document.getElementById('clientLogoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  sessionStorage.removeItem('tipster-client');
+  hideClientView();
+});
 
 /* ============================================================
    TABLA DE CLIENTES (admin)
@@ -2190,7 +2247,7 @@ document.querySelectorAll('input[name="signup-plan"]').forEach(r => r.addEventLi
   document.querySelectorAll('.signup-plan').forEach(el => el.classList.toggle('active', el.dataset.plan === r.value));
 }));
 
-document.getElementById('signupForm').addEventListener('submit', (e) => {
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const errEl = document.getElementById('signupError');
   const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
@@ -2206,41 +2263,70 @@ document.getElementById('signupForm').addEventListener('submit', (e) => {
   if (!name) return showErr('Introduce tu nombre.');
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Email no válido.');
   if (email === ADMIN_EMAIL) return showErr('Ese email no está disponible.');
-  if (clients.some(c => c.email.toLowerCase() === email)) return showErr('Ya existe una cuenta con este email.');
   if (pw1.length < 6) return showErr('La contraseña debe tener al menos 6 caracteres.');
   if (pw1 !== pw2) return showErr('Las contraseñas no coinciden.');
   if (!plan) return showErr('Selecciona un plan.');
 
-  // Crear cliente sin verificar
-  const newId = (clients.reduce((m, c) => Math.max(m, c.id), 0) || 0) + 1;
-  const newClient = {
-    id: newId, name, email, password: pw1, plan, price: PLAN_PRICES[plan],
-    status: 'active', verified: false,
-    joinedAt: new Date().toISOString().slice(0, 10),
-  };
-  clients.push(newClient);
-  saveClients();
-  pendingClientId = newId;
+  // Llamada real a Supabase Auth: crea el usuario y envía email de verificación
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const oldText = submitBtn.textContent;
+  submitBtn.disabled = true; submitBtn.textContent = 'Creando cuenta...';
+
+  const { data, error } = await sb.auth.signUp({
+    email, password: pw1,
+    options: {
+      data: { name, plan, price: PLAN_PRICES[plan] },
+      emailRedirectTo: window.location.origin + window.location.pathname
+    }
+  });
+
+  submitBtn.disabled = false; submitBtn.textContent = oldText;
+
+  if (error) {
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('already') || msg.includes('exists') || msg.includes('registered')) {
+      return showErr('Ya existe una cuenta con este email.');
+    }
+    if (msg.includes('rate')) return showErr('Demasiados intentos. Espera un momento e inténtalo de nuevo.');
+    return showErr('Error al crear cuenta: ' + error.message);
+  }
 
   closeSignup();
-  // Abrir el "email" simulado
-  document.getElementById('emailVerifyTo').textContent = email;
-  document.getElementById('emailVerifyName').textContent = name.split(' ')[0] || name;
-  emailVerifyModal.classList.remove('hidden');
+  // Mostrar mensaje "revisa tu email" (reutilizamos el modal pero con contenido informativo)
+  showCheckEmailMessage(email, name);
 });
 
-// Botón "Verificar mi cuenta" dentro del email simulado
-document.getElementById('emailVerifyBtn').addEventListener('click', () => {
-  if (!pendingClientId) { emailVerifyModal.classList.add('hidden'); return; }
-  const c = clients.find(x => x.id === pendingClientId);
-  if (c) { c.verified = true; saveClients(); }
-  emailVerifyModal.classList.add('hidden');
-  // Auto-login del usuario recién verificado
-  sessionStorage.setItem('tipster-client', String(pendingClientId));
-  sessionStorage.removeItem('tipster-admin');
-  showClientView(pendingClientId);
-  pendingClientId = null;
-});
+// Modal de "revisa tu email" — sustituye al email simulado anterior
+function showCheckEmailMessage(email, name) {
+  const m = document.getElementById('emailVerifyModal');
+  m.querySelector('.relative.my-auto').innerHTML = `
+    <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-full" style="background:#00e696;color:#000;font-weight:700;font-family:sans-serif;font-size:18px;">✓</div>
+        <div class="min-w-0 flex-1">
+          <div class="text-sm font-semibold text-gray-900">¡Cuenta creada con éxito!</div>
+          <div class="text-[12px] text-gray-500">Solo falta un paso más</div>
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-7 text-gray-900">
+      <p class="text-sm leading-relaxed">Hola <strong>${(name||'').split(' ')[0] || name || 'cliente'}</strong>,</p>
+      <p class="mt-3 text-sm text-gray-700 leading-relaxed">Hemos enviado un email de verificación a:</p>
+      <div class="mt-2 rounded-xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-900 break-all">${email}</div>
+      <p class="mt-4 text-sm text-gray-700 leading-relaxed">Abre tu correo, busca el mensaje de <strong>Master Betting</strong> y pulsa en <strong>"Confirm your mail"</strong> (o similar). Cuando lo hagas, vuelve aquí e inicia sesión con normalidad.</p>
+      <div class="mt-5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-900">
+        <strong>¿No te llega?</strong> Revisa la carpeta de Spam o Promociones. Si en 5 minutos no aparece, prueba a registrarte de nuevo.
+      </div>
+      <div class="mt-6 text-center">
+        <button id="checkEmailCloseBtn" class="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white" style="background:#00b878;">Entendido</button>
+      </div>
+    </div>
+  `;
+  m.classList.remove('hidden');
+  document.getElementById('checkEmailCloseBtn').addEventListener('click', () => {
+    m.classList.add('hidden');
+  });
+}
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeLogin(); closeSignup(); closeEdit(); closePw(); closeFollow(); closeNewPick(); }
