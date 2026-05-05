@@ -2594,7 +2594,8 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
 
   if (!name) return showErr('Introduce el nombre del cliente.');
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Email no válido.');
-  if (isAdmin(email)) return showErr('Ese email pertenece a un admin.');
+  // En el panel admin SÍ permitimos crear cuentas con email de admin (para añadir más admins).
+  // El bloqueo solo aplica al signup público.
   if (password.length < 6) return showErr('La contraseña debe tener al menos 6 caracteres.');
 
   const submitBtn = e.target.querySelector('button[type="submit"]');
