@@ -943,11 +943,12 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-05-signup-flow';
+const APP_VERSION = '2026-05-05-supabase-data';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
-  // Limpieza por cambio de versión: borra los clientes de prueba y apuestas seguidas.
+  // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
   localStorage.removeItem(STORAGE.followed);
+  localStorage.removeItem(STORAGE.pool);
   sessionStorage.removeItem('tipster-admin');
   sessionStorage.removeItem('tipster-client');
   localStorage.setItem('tipster-version', APP_VERSION);
@@ -1318,14 +1319,44 @@ function eventBlock(p, showNames = false) {
 /* ============================================================
    POOL DE PRONÓSTICOS (vacío — el admin los crea)
 ============================================================ */
-// Migra picks viejos (un solo evento) al formato events[]
-function migratePick(p) {
-  if (Array.isArray(p.events)) return p;
-  const ev = { sport: p.sport, competition: p.competition || null, team1: p.team1 || null, team2: p.team2 || null, pickType: p.pickType, odds: p.odds };
-  return { ...p, events: [ev], totalOdds: p.odds };
+// El pool de pronósticos ahora vive en Supabase (tabla `picks`). Se carga tras login.
+let monthlyPicksPool = [];
+
+// Convierte una fila de Supabase al objeto pick que usa el resto del código
+function pickFromDb(row) {
+  const events = row.events || [];
+  const first = events[0] || {};
+  const matchStr = events
+    .map(e => (e.team1 && e.team2) ? `${e.team1} - ${e.team2}` : (e.team1 || e.team2 || ''))
+    .filter(Boolean).join(' · ');
+  return {
+    id: row.id,
+    date: row.date,
+    time: row.time,
+    plans: row.plans,
+    tier: row.tier,
+    recommendedStake: parseFloat(row.recommended_stake),
+    totalOdds: parseFloat(row.total_odds),
+    result: row.result,
+    events,
+    // Compat con código que mira al primer evento
+    sport: first.sport,
+    match: matchStr,
+    competition: first.competition,
+    team1: first.team1,
+    team2: first.team2,
+    pickType: first.pickType,
+    odds: parseFloat(row.total_odds),
+  };
 }
-let monthlyPicksPool = loadJSON(STORAGE.pool, []).map(migratePick);
-function savePool() { saveJSON(STORAGE.pool, monthlyPicksPool); }
+
+// Carga los picks visibles para el usuario actual (admin: todos; cliente: solo los de su plan via RLS)
+async function loadPicksFromSupabase() {
+  const { data, error } = await sb.from('picks').select('*').order('date', { ascending: false });
+  if (error) { console.error('Error cargando picks:', error); return; }
+  monthlyPicksPool = (data || []).map(pickFromDb);
+}
+
 function pickWhen(p) { return `${p.date} ${p.time}`; }
 function availablePicksFor(client) {
   return monthlyPicksPool.filter(p => p.plans.includes(client.plan) && p.result === 'pending');
@@ -1346,21 +1377,53 @@ function pickTotalOdds(p) {
 /* ============================================================
    APUESTAS SEGUIDAS
 ============================================================ */
-let followedBets = loadJSON(STORAGE.followed, {});
-function saveFollowed() { saveJSON(STORAGE.followed, followedBets); }
+// Las apuestas seguidas ahora viven en Supabase (tabla `followed_bets`).
+// Estructura local (en memoria, para no cambiar todo el render): { clientId: [{pickId, amount, followedAt}, ...] }
+let followedBets = {};
+
 function getFollowed(clientId) { return followedBets[clientId] || []; }
 function findFollowed(clientId, pickId) { return getFollowed(clientId).find(b => b.pickId === pickId); }
-function followBet(clientId, pickId, amount) {
+
+// Carga TODAS las apuestas seguidas de un cliente concreto (cliente solo ve las suyas vía RLS)
+async function loadFollowedBetsForUser(userId) {
+  const { data, error } = await sb.from('followed_bets').select('*').eq('client_id', userId);
+  if (error) { console.error('Error cargando apuestas seguidas:', error); return; }
+  followedBets[userId] = (data || []).map(b => ({
+    pickId: b.pick_id, amount: parseFloat(b.amount), followedAt: b.followed_at,
+  }));
+}
+
+// Carga TODAS las apuestas seguidas de TODOS los clientes (solo el admin tiene permisos)
+async function loadAllFollowedBets() {
+  const { data, error } = await sb.from('followed_bets').select('*');
+  if (error) { console.error('Error cargando apuestas:', error); return; }
+  followedBets = {};
+  (data || []).forEach(b => {
+    if (!followedBets[b.client_id]) followedBets[b.client_id] = [];
+    followedBets[b.client_id].push({
+      pickId: b.pick_id, amount: parseFloat(b.amount), followedAt: b.followed_at,
+    });
+  });
+}
+
+async function followBet(clientId, pickId, amount) {
   if (!followedBets[clientId]) followedBets[clientId] = [];
   if (followedBets[clientId].some(b => b.pickId === pickId)) return false;
-  followedBets[clientId].push({ pickId, amount, followedAt: new Date().toISOString() });
-  saveFollowed();
+  const { data, error } = await sb.from('followed_bets').insert({
+    client_id: clientId, pick_id: pickId, amount,
+  }).select().single();
+  if (error) { alert('Error guardando apuesta: ' + error.message); return false; }
+  followedBets[clientId].push({
+    pickId: data.pick_id, amount: parseFloat(data.amount), followedAt: data.followed_at,
+  });
   return true;
 }
-function unfollowBet(clientId, pickId) {
+
+async function unfollowBet(clientId, pickId) {
   if (!followedBets[clientId]) return;
+  const { error } = await sb.from('followed_bets').delete().match({ client_id: clientId, pick_id: pickId });
+  if (error) { alert('Error: ' + error.message); return; }
   followedBets[clientId] = followedBets[clientId].filter(b => b.pickId !== pickId);
-  saveFollowed();
 }
 
 /* ============================================================
@@ -1455,17 +1518,22 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   if (data.user.email === ADMIN_EMAIL) {
     sessionStorage.setItem('tipster-admin', 'true');
     sessionStorage.removeItem('tipster-client');
-    await loadClientsFromSupabase();
+    await Promise.all([loadClientsFromSupabase(), loadPicksFromSupabase(), loadAllFollowedBets()]);
     showAdmin();
   } else {
-    showClientFromSupabaseUser(data.user);
+    await showClientFromSupabaseUser(data.user);
   }
 });
 
-// Convierte un usuario de Supabase a un objeto cliente y muestra el panel
-function showClientFromSupabaseUser(user) {
+// Convierte un usuario de Supabase a un objeto cliente, carga sus datos y muestra el panel
+async function showClientFromSupabaseUser(user) {
   const meta = user.user_metadata || {};
-  const client = {
+  // Lee la fila de clients (puede tener plan/status actualizados por el admin)
+  const { data: row } = await sb.from('clients').select('*').eq('id', user.id).maybeSingle();
+  const client = row ? {
+    id: row.id, name: row.name, email: row.email, plan: row.plan,
+    price: parseFloat(row.price), status: row.status, joinedAt: row.joined_at, verified: true,
+  } : {
     id: user.id,
     name: meta.name || user.email.split('@')[0],
     email: user.email,
@@ -1479,6 +1547,9 @@ function showClientFromSupabaseUser(user) {
   if (!clients.find(c => c.id === client.id)) clients.push(client);
   sessionStorage.setItem('tipster-client', client.id);
   sessionStorage.removeItem('tipster-admin');
+  // Carga picks visibles (RLS filtra por plan) y apuestas seguidas del cliente
+  await loadPicksFromSupabase();
+  await loadFollowedBetsForUser(user.id);
   showClientView(client.id);
 }
 
@@ -1490,10 +1561,10 @@ function showClientFromSupabaseUser(user) {
   if (session.user.email === ADMIN_EMAIL) {
     sessionStorage.setItem('tipster-admin', 'true');
     sessionStorage.removeItem('tipster-client');
-    await loadClientsFromSupabase();
+    await Promise.all([loadClientsFromSupabase(), loadPicksFromSupabase(), loadAllFollowedBets()]);
     showAdmin();
   } else {
-    showClientFromSupabaseUser(session.user);
+    await showClientFromSupabaseUser(session.user);
   }
 })();
 
@@ -1926,18 +1997,28 @@ function renderPicksAdmin() {
 }
 document.querySelectorAll('[data-pickfilter]').forEach(b => b.addEventListener('click', () => { pickFilter = b.dataset.pickfilter; renderPicksAdmin(); }));
 
-document.getElementById('picksList').addEventListener('click', (e) => {
+document.getElementById('picksList').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-pick-action][data-pick-id]'); if (!btn) return;
   const id = btn.dataset.pickId, action = btn.dataset.pickAction;
   const p = monthlyPicksPool.find(x => x.id === id); if (!p) return;
-  if (action==='won'||action==='lost'||action==='void') { p.result = action; savePool(); renderPicksAdmin(); }
-  else if (action === 'reset') { p.result = 'pending'; savePool(); renderPicksAdmin(); }
-  else if (action === 'delete') {
+
+  if (action==='won' || action==='lost' || action==='void' || action==='reset') {
+    const newResult = action === 'reset' ? 'pending' : action;
+    p.result = newResult;
+    renderPicksAdmin();
+    const { error } = await sb.from('picks').update({ result: newResult }).eq('id', id);
+    if (error) alert('Error guardando resultado: ' + error.message);
+  } else if (action === 'delete') {
     if (confirm(`¿Eliminar el pronóstico "${p.match}"?\n\nSi algún cliente lo había seguido, se eliminará también de su historial.`)) {
+      const { error } = await sb.from('picks').delete().eq('id', id);
+      if (error) { alert('Error eliminando: ' + error.message); return; }
       monthlyPicksPool = monthlyPicksPool.filter(x => x.id !== id);
-      savePool();
-      Object.keys(followedBets).forEach(cid => { followedBets[cid] = followedBets[cid].filter(b => b.pickId !== id); });
-      saveFollowed(); renderPicksAdmin();
+      // Las apuestas seguidas se borran automáticamente en la BD por la FK ON DELETE CASCADE.
+      // Aquí solo limpiamos la copia local en memoria:
+      Object.keys(followedBets).forEach(cid => {
+        followedBets[cid] = (followedBets[cid] || []).filter(b => b.pickId !== id);
+      });
+      renderPicksAdmin();
     }
   }
 });
@@ -2104,7 +2185,7 @@ function closeNewPick() { newPickModal.classList.add('hidden'); }
 document.getElementById('newPickBtn').addEventListener('click', openNewPick);
 document.querySelectorAll('[data-action="close-newpick"]').forEach(el => el.addEventListener('click', closeNewPick));
 
-document.getElementById('newPickForm').addEventListener('submit', (e) => {
+document.getElementById('newPickForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = document.getElementById('npError');
   const fail = (m) => { err.textContent = m; err.classList.remove('hidden'); };
@@ -2140,21 +2221,26 @@ document.getElementById('newPickForm').addEventListener('submit', (e) => {
     events.push({ sport, competition: competition || null, team1: team1 || null, team2: team2 || null, pickType, odds: +odds.toFixed(2) });
   }
 
-  const totalOdds = +events.reduce((a, e) => a * e.odds, 1).toFixed(2);
-  // Compat: campos top-level con datos del primer evento
-  const first = events[0];
-  const matchString = events.map(e => (e.team1 && e.team2) ? `${e.team1} - ${e.team2}` : (e.team1 || e.team2 || '')).filter(Boolean).join(' · ');
+  const totalOdds = +events.reduce((a, ev) => a * ev.odds, 1).toFixed(2);
 
-  monthlyPicksPool.push({
-    id: 'p_' + Date.now(),
-    date, time, plans, tier, result: 'pending',
-    recommendedStake: stake,
+  // Insertar en Supabase
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const oldText = submitBtn.textContent;
+  submitBtn.disabled = true; submitBtn.textContent = 'Guardando...';
+
+  const { data, error } = await sb.from('picks').insert({
+    date, time, plans, tier,
+    recommended_stake: stake,
+    total_odds: totalOdds,
     events,
-    totalOdds,
-    // Compat (para tablas y código antiguo)
-    sport: first.sport, competition: first.competition, team1: first.team1, team2: first.team2, pickType: first.pickType, odds: totalOdds, match: matchString,
-  });
-  savePool();
+  }).select().single();
+
+  submitBtn.disabled = false; submitBtn.textContent = oldText;
+
+  if (error) return fail('Error guardando en Supabase: ' + error.message);
+
+  // Añadirlo al pool local (al principio para que aparezca primero)
+  monthlyPicksPool.unshift(pickFromDb(data));
   closeNewPick();
   renderPicksAdmin();
 });
@@ -2239,7 +2325,7 @@ function openFollow(pick, recommendedAmount) {
 function closeFollow() { followModal.classList.add('hidden'); }
 document.querySelectorAll('[data-action="close-follow"]').forEach(el => el.addEventListener('click', closeFollow));
 
-document.getElementById('followForm').addEventListener('submit', (e) => {
+document.getElementById('followForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const pickId = document.getElementById('followPickId').value;
   const amt = parseFloat(document.getElementById('followAmount').value.replace(',', '.'));
@@ -2248,11 +2334,11 @@ document.getElementById('followForm').addEventListener('submit', (e) => {
   if (amt > 10000) { err.textContent = 'Importe demasiado alto. Revisa la cifra.'; err.classList.remove('hidden'); return; }
   const clientId = activeClientId || document.getElementById('availableSection')?.dataset.clientId;
   if (!clientId) return;
-  followBet(clientId, pickId, amt);
+  await followBet(clientId, pickId, amt);
   closeFollow(); rerenderCurrentClientPanel();
 });
 
-function onFollowAction(e) {
+async function onFollowAction(e) {
   const btn = e.target.closest('[data-follow-action]'); if (!btn) return;
   const section = btn.closest('#availableSection'); if (!section) return;
   const clientId = section.dataset.clientId;
@@ -2261,7 +2347,10 @@ function onFollowAction(e) {
   const pick = monthlyPicksPool.find(x => x.id === pickId); if (!pick) return;
   if (action === 'follow') openFollow(pick, parseFloat(btn.dataset.recommended||'0'));
   else if (action === 'unfollow') {
-    if (confirm(`¿Deshacer la apuesta seguida de "${pick.match}"?`)) { unfollowBet(clientId, pickId); rerenderCurrentClientPanel(); }
+    if (confirm(`¿Deshacer la apuesta seguida de "${pick.match}"?`)) {
+      await unfollowBet(clientId, pickId);
+      rerenderCurrentClientPanel();
+    }
   }
 }
 document.addEventListener('click', onFollowAction);
