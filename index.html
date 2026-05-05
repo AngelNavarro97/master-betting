@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#000000" />
 <title>Tipster — Vista previa</title>
-<link rel="icon" type="image/png" href="RECURSOS/Recurso%201.png" />
+<link rel="icon" type="image/png" href="recurso%201.png" />
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -122,7 +122,7 @@
 <header class="fixed top-0 left-0 right-0 z-50 px-3 sm:px-0">
   <div class="glass mx-auto mt-3 flex max-w-6xl items-center justify-between rounded-full px-4 py-2.5 sm:px-7 sm:py-3">
     <a href="#top" class="flex items-center" aria-label="Master Betting">
-      <img src="RECURSOS/Recurso%201.png" alt="Master Betting" class="h-7 w-auto sm:h-8"/>
+      <img src="recurso%201.png" alt="Master Betting" class="h-7 w-auto sm:h-8"/>
     </a>
     <nav class="hidden items-center gap-7 text-sm text-ink-200/70 md:flex">
       <a href="#planes" class="transition hover:text-white">Planes</a>
@@ -570,7 +570,7 @@
   <div class="mx-auto max-w-6xl px-5 py-12 sm:px-6 sm:py-14">
     <div class="flex flex-col items-start justify-between gap-10 md:flex-row md:items-center">
       <div>
-        <img src="RECURSOS/Recurso%201.png" alt="Master Betting" class="h-9 w-auto"/>
+        <img src="recurso%201.png" alt="Master Betting" class="h-9 w-auto"/>
         <p class="mt-3 max-w-sm text-sm text-ink-500">Pronósticos deportivos premium. Disciplina, gestión y resultados a largo plazo.</p>
       </div>
       <div class="grid grid-cols-2 gap-x-12 gap-y-3 text-sm text-ink-500 sm:grid-cols-3">
@@ -737,7 +737,7 @@
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-signup"></div>
   <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
     <div class="text-center">
-      <img src="RECURSOS/Recurso%201.png" alt="Master Betting" class="mx-auto mb-4 h-10 w-auto"/>
+      <img src="recurso%201.png" alt="Master Betting" class="mx-auto mb-4 h-10 w-auto"/>
       <h2 class="font-display text-2xl font-semibold tracking-tight text-white">Crear cuenta</h2>
       <p class="mt-2 text-sm text-ink-200/70">Empieza tu suscripción en Master Betting.</p>
     </div>
@@ -805,7 +805,7 @@
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-login"></div>
   <div class="gradient-border relative w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
     <div class="text-center">
-      <img src="RECURSOS/Recurso%201.png" alt="Master Betting" class="mx-auto mb-4 h-10 w-auto"/>
+      <img src="recurso%201.png" alt="Master Betting" class="mx-auto mb-4 h-10 w-auto"/>
     </div>
     <form id="loginForm" class="mt-2 space-y-4">
       <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="tu@email.com" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/></div>
@@ -1127,7 +1127,7 @@ function competitionBadge(name) {
   if (!c) return '';
   // Renderiza pill con texto, e intenta cargar el logo. Si carga, oculta el texto.
   return `<span class="comp-badge rounded-md" style="background:${c.color};color:${c.text};padding:2px 6px;">
-    <img class="comp-logo" src="RECURSOS/${c.slug}.png" alt="${name}" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'"/>
+    <img class="comp-logo" src="${c.slug}.png" alt="${name}" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'"/>
     <span class="comp-text text-[10px] font-bold tracking-wider">${c.short}</span>
   </span>`;
 }
@@ -1279,7 +1279,7 @@ function teamBadge(name, size = 28) {
   }
   return `<span title="${name}" style="background:${t.color};color:${t.text};width:${size}px;height:${size}px" class="badge-img">
     <span class="badge-fallback text-[10px]">${t.short}</span>
-    <img class="badge-logo" src="RECURSOS/${t.slug}.png" alt="${name}" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'"/>
+    <img class="badge-logo" src="${t.slug}.png" alt="${name}" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'"/>
   </span>`;
 }
 
