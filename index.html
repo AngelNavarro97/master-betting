@@ -609,6 +609,7 @@
       <button data-tab="clients" class="adm-tab active">Clientes</button>
       <button data-tab="picks" class="adm-tab">Pronósticos</button>
       <button data-tab="rankings" class="adm-tab">Rankings</button>
+      <button data-tab="chat" class="adm-tab">Chat</button>
     </div>
   </div>
 
@@ -701,6 +702,23 @@
   <!-- TAB: RANKINGS -->
   <div id="rankingsTab" class="hidden">
     <div id="rankingsContent" class="mx-auto mt-8 max-w-[1600px] space-y-5 px-5 pb-12 sm:px-8"></div>
+  </div>
+
+  <!-- TAB: CHAT (admins) -->
+  <div id="chatTab" class="hidden">
+    <div class="mx-auto mt-8 max-w-4xl px-5 pb-12 sm:px-8">
+      <div class="mb-4">
+        <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Chat de admins</h2>
+        <p class="mt-1 text-sm text-ink-500">Conversación privada entre Angel, Juan y Javi. Solo vosotros podéis leer y escribir aquí.</p>
+      </div>
+      <div id="chatMessages" class="h-[58vh] overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+        <p class="text-sm text-ink-500 text-center py-8">Cargando mensajes...</p>
+      </div>
+      <form id="chatForm" class="mt-4 flex gap-2">
+        <input id="chatInput" type="text" placeholder="Escribe un mensaje..." autocomplete="off" maxlength="500" class="flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30"/>
+        <button type="submit" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-ink-200">Enviar</button>
+      </form>
+    </div>
   </div>
 
   <!-- STATS DETAIL VIEW -->
@@ -1034,8 +1052,15 @@ mobileMenu.querySelectorAll('a:not([data-action])').forEach(a => a.addEventListe
 const ADMIN_EMAILS = [
   "angelnavarroceldran@hotmail.com",
   "juancruz.jcgm96@gmail.com",
-  // Cuando tengas el email de Javi, lo añadimos aquí también
+  "javierdiaz10.r@gmail.com",
 ];
+
+// Identidad de cada admin (nombre y avatar) — se usa en el chat
+const ADMIN_INFO = {
+  "angelnavarroceldran@hotmail.com": { name: "Angel N.", portrait: "angel" },
+  "juancruz.jcgm96@gmail.com":       { name: "Juan C.",  portrait: "juan"  },
+  "javierdiaz10.r@gmail.com":        { name: "Javi D.",  portrait: "javi"  },
+};
 function isAdmin(email) { return !!email && ADMIN_EMAILS.includes(email.toLowerCase()); }
 // Compat: variable antigua para retrocompatibilidad mínima en caso de uso despistado
 const ADMIN_EMAIL = ADMIN_EMAILS[0];
@@ -1962,9 +1987,11 @@ function switchTab(tab) {
   document.getElementById('clientsTab').classList.add('hidden');
   document.getElementById('picksTab').classList.add('hidden');
   document.getElementById('rankingsTab').classList.add('hidden');
+  document.getElementById('chatTab').classList.add('hidden');
   if (tab === 'clients') document.getElementById('clientsTab').classList.remove('hidden');
   else if (tab === 'picks') { document.getElementById('picksTab').classList.remove('hidden'); renderPicksAdmin(); }
   else if (tab === 'rankings') { document.getElementById('rankingsTab').classList.remove('hidden'); renderRankings(); }
+  else if (tab === 'chat') { document.getElementById('chatTab').classList.remove('hidden'); openChat(); }
 }
 document.querySelectorAll('.adm-tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -2628,6 +2655,191 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
   // Recargar lista de clientes (la nueva fila aparece cuando el cliente verifique y haga login)
   await loadClientsFromSupabase();
   renderAdmin();
+});
+
+/* ============================================================
+   CHAT DE ADMINS — avatares + carga + envío + tiempo real
+============================================================ */
+function angelHeadSVG() {
+  return `<svg viewBox="60 45 80 90" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;">
+    <ellipse cx="100" cy="98" rx="33" ry="38" fill="#d4a17a"/>
+    <path d="M 100 98 Q 130 100 132 110 Q 128 130 110 134 L 100 134 Z" fill="#b8855e" opacity="0.25"/>
+    <path d="M 67 92 Q 65 50 100 46 Q 138 48 134 92 Q 132 75 122 70 Q 110 76 95 73 Q 82 68 70 80 Z" fill="#1c1108"/>
+    <path d="M 78 60 Q 96 55 116 60" stroke="#3a2820" stroke-width="0.8" fill="none" opacity="0.55"/>
+    <path d="M 76 70 Q 96 64 118 68" stroke="#3a2820" stroke-width="0.6" fill="none" opacity="0.45"/>
+    <path d="M 67 95 Q 65 105 70 112" stroke="#1c1108" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M 133 95 Q 135 105 130 112" stroke="#1c1108" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M 82 88 Q 88 85 94 88" stroke="#1c1108" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M 106 88 Q 112 85 118 88" stroke="#1c1108" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="88" cy="95" rx="2.5" ry="3" fill="#1a1208"/>
+    <ellipse cx="112" cy="95" rx="2.5" ry="3" fill="#1a1208"/>
+    <circle cx="88.6" cy="93.8" r="0.9" fill="#fff"/>
+    <circle cx="112.6" cy="93.8" r="0.9" fill="#fff"/>
+    <path d="M 100 103 Q 96 114 98 118 Q 100 120 102 118 Q 104 114 100 103" fill="#b8855e" opacity="0.55"/>
+    <path d="M 90 123 Q 100 125 110 123" stroke="#5a2c18" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M 78 117 Q 100 130 122 117 Q 118 128 100 132 Q 82 128 78 117 Z" fill="#1c1108" opacity="0.20"/>
+  </svg>`;
+}
+function juanHeadSVG() {
+  return `<svg viewBox="60 45 80 90" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;">
+    <ellipse cx="100" cy="92" rx="33" ry="42" fill="#d4a17a"/>
+    <ellipse cx="100" cy="68" rx="30" ry="14" fill="#b8855e" opacity="0.25"/>
+    <ellipse cx="93" cy="62" rx="9" ry="3" fill="#fff" opacity="0.18"/>
+    <path d="M 100 92 Q 130 96 132 110 Q 128 130 110 134 L 100 134 Z" fill="#b8855e" opacity="0.25"/>
+    <path d="M 80 87 Q 88 83 95 87" stroke="#1a1208" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M 105 87 Q 112 83 120 87" stroke="#1a1208" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="88" cy="95" rx="2.5" ry="3" fill="#1a1208"/>
+    <ellipse cx="112" cy="95" rx="2.5" ry="3" fill="#1a1208"/>
+    <circle cx="88.6" cy="93.8" r="0.9" fill="#fff"/>
+    <circle cx="112.6" cy="93.8" r="0.9" fill="#fff"/>
+    <path d="M 100 103 Q 96 114 98 118 Q 100 120 102 118 Q 104 114 100 103" fill="#b8855e" opacity="0.55"/>
+    <path d="M 86 121 Q 93 119 100 121 Q 107 119 114 121 Q 108 125 100 124 Q 92 125 86 121 Z" fill="#1a1208"/>
+    <path d="M 92 126 Q 100 128 108 126" stroke="#5a2c18" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    <path d="M 70 110 Q 73 132 88 142 L 90 144 Q 100 148 110 144 L 112 142 Q 127 132 130 110 Q 122 130 100 132 Q 78 130 70 110 Z" fill="#1a1208" opacity="0.92"/>
+    <path d="M 86 138 Q 100 142 114 138" stroke="#2a1d12" stroke-width="0.5" fill="none" opacity="0.6"/>
+  </svg>`;
+}
+function javiHeadSVG() {
+  return `<svg viewBox="60 45 80 90" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;">
+    <defs>
+      <linearGradient id="fadeJDChat${Math.random().toString(36).slice(2,7)}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1a1208"/>
+        <stop offset="65%" stop-color="#3a2a1c"/>
+        <stop offset="100%" stop-color="#8e6a4a"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="100" cy="98" rx="33" ry="38" fill="#d4a17a"/>
+    <path d="M 100 98 Q 130 100 132 110 Q 128 130 110 134 L 100 134 Z" fill="#b8855e" opacity="0.25"/>
+    <path d="M 70 88 Q 68 56 100 52 Q 132 56 130 88 Q 128 70 100 68 Q 72 70 70 88 Z" fill="#3a2a1c"/>
+    <path d="M 73 78 Q 100 72 127 78" stroke="#0a0807" stroke-width="0.8" fill="none" opacity="0.4"/>
+    <path d="M 70 90 Q 70 100 76 110" stroke="#5a4030" stroke-width="2" fill="none" opacity="0.55"/>
+    <path d="M 130 90 Q 130 100 124 110" stroke="#5a4030" stroke-width="2" fill="none" opacity="0.55"/>
+    <path d="M 82 88 Q 88 86 94 88" stroke="#1c1108" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M 106 88 Q 112 86 118 88" stroke="#1c1108" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <ellipse cx="88" cy="95" rx="2.2" ry="2.6" fill="#1a1208"/>
+    <ellipse cx="112" cy="95" rx="2.2" ry="2.6" fill="#1a1208"/>
+    <circle cx="88.5" cy="93.9" r="0.8" fill="#fff"/>
+    <circle cx="112.5" cy="93.9" r="0.8" fill="#fff"/>
+    <rect x="76" y="86" width="20" height="14" rx="3" ry="3" fill="rgba(255,255,255,0.04)" stroke="#0a0a0a" stroke-width="2"/>
+    <rect x="104" y="86" width="20" height="14" rx="3" ry="3" fill="rgba(255,255,255,0.04)" stroke="#0a0a0a" stroke-width="2"/>
+    <line x1="96" y1="92" x2="104" y2="92" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round"/>
+    <line x1="76" y1="91" x2="68" y2="93" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="124" y1="91" x2="132" y2="93" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M 100 105 Q 96 114 98 118 Q 100 120 102 118 Q 104 114 100 105" fill="#b8855e" opacity="0.55"/>
+    <path d="M 89 122 Q 100 127 111 122" stroke="#5a2c18" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+function adminAvatarHTML(email, size = 40) {
+  const e = (email || '').toLowerCase();
+  const info = ADMIN_INFO[e];
+  const portrait = info?.portrait;
+  let inner;
+  if (portrait === 'angel') inner = angelHeadSVG();
+  else if (portrait === 'juan') inner = juanHeadSVG();
+  else if (portrait === 'javi') inner = javiHeadSVG();
+  else inner = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;background:#1a3a25;font-size:${size*0.4}px;">${(e || '?').charAt(0).toUpperCase()}</div>`;
+  return `<div class="rounded-full overflow-hidden flex-shrink-0" style="width:${size}px;height:${size}px;background:#072919;">${inner}</div>`;
+}
+function adminNameFromEmail(email) {
+  const info = ADMIN_INFO[(email || '').toLowerCase()];
+  return info?.name || email || 'Admin';
+}
+
+let chatSubscription = null;
+let chatLoadedOnce = false;
+
+function fmtChatTime(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+
+function chatMessageHTML(m, currentUserId) {
+  const isMine = m.sender_id === currentUserId;
+  const name = adminNameFromEmail(m.sender_email);
+  const avatar = adminAvatarHTML(m.sender_email, 36);
+  const bubbleClass = isMine
+    ? 'bg-accent-neon/20 border border-accent-neon/30 text-white'
+    : 'bg-white/[0.04] border border-white/10 text-white';
+  const align = isMine ? 'flex-row-reverse' : 'flex-row';
+  return `<div class="flex ${align} items-end gap-2">
+    ${avatar}
+    <div class="max-w-[75%] flex flex-col ${isMine ? 'items-end' : 'items-start'}">
+      <div class="text-[10px] uppercase tracking-[0.16em] text-ink-500 mb-1">${name} · ${fmtChatTime(m.created_at)}</div>
+      <div class="rounded-2xl px-4 py-2 text-sm break-words ${bubbleClass}">${escapeHTML(m.content)}</div>
+    </div>
+  </div>`;
+}
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+async function loadChatMessages() {
+  const { data: { session } } = await sb.auth.getSession();
+  const userId = session?.user?.id;
+  const container = document.getElementById('chatMessages');
+  const { data, error } = await sb.from('admin_messages').select('*').order('created_at', { ascending: true }).limit(200);
+  if (error) {
+    container.innerHTML = `<p class="text-sm text-red-300 text-center py-8">Error: ${error.message}</p>`;
+    return;
+  }
+  if (!data.length) {
+    container.innerHTML = `<p class="text-sm text-ink-500 text-center py-8">Aún no hay mensajes. Escribe el primero.</p>`;
+    return;
+  }
+  container.innerHTML = data.map(m => chatMessageHTML(m, userId)).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function appendChatMessage(m, currentUserId) {
+  const container = document.getElementById('chatMessages');
+  // Si era el placeholder, lo quitamos
+  if (container.querySelector('p')) container.innerHTML = '';
+  const wasNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 80;
+  container.insertAdjacentHTML('beforeend', chatMessageHTML(m, currentUserId));
+  if (wasNearBottom) container.scrollTop = container.scrollHeight;
+}
+
+async function openChat() {
+  await loadChatMessages();
+
+  if (!chatSubscription) {
+    const { data: { session } } = await sb.auth.getSession();
+    const userId = session?.user?.id;
+    chatSubscription = sb.channel('admin-chat')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_messages' }, (payload) => {
+        appendChatMessage(payload.new, userId);
+      })
+      .subscribe();
+  }
+}
+
+document.getElementById('chatForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if (!content) return;
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) return;
+  input.value = '';
+  input.disabled = true;
+  const { error } = await sb.from('admin_messages').insert({
+    sender_id: session.user.id,
+    sender_email: session.user.email,
+    sender_name: adminNameFromEmail(session.user.email),
+    content,
+  });
+  input.disabled = false;
+  input.focus();
+  if (error) {
+    alert('Error enviando mensaje: ' + error.message);
+    input.value = content; // recuperar el texto
+  }
 });
 
 document.addEventListener('keydown', (e) => {
