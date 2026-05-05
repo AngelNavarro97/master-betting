@@ -354,7 +354,7 @@
               <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white">España</span>
             </div>
             <div class="absolute bottom-0 left-1/2 z-[1] flex h-[92%] w-[80%] -translate-x-1/2 items-end justify-center">
-              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYEnd meet" class="h-full w-full" aria-hidden="true">
+              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYMax meet" class="h-full w-full" aria-hidden="true">
                 <ellipse cx="100" cy="248" rx="92" ry="14" fill="#000" opacity="0.25"/>
                 <path d="M 32 260 L 32 198 Q 32 162 65 156 L 80 150 L 120 150 L 135 156 Q 168 162 168 198 L 168 260 Z" fill="#0e3f28"/>
                 <path d="M 80 150 Q 90 162 100 178 Q 110 162 120 150 Q 110 156 100 156 Q 90 156 80 150 Z" fill="#051f13"/>
@@ -420,7 +420,7 @@
               <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white">Argentina</span>
             </div>
             <div class="absolute bottom-0 left-1/2 z-[1] flex h-[92%] w-[80%] -translate-x-1/2 items-end justify-center">
-              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYEnd meet" class="h-full w-full" aria-hidden="true">
+              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYMax meet" class="h-full w-full" aria-hidden="true">
                 <ellipse cx="100" cy="248" rx="92" ry="14" fill="#000" opacity="0.25"/>
                 <path d="M 32 260 L 32 198 Q 32 162 65 156 L 80 150 L 120 150 L 135 156 Q 168 162 168 198 L 168 260 Z" fill="#0e3f28"/>
                 <path d="M 80 150 Q 90 162 100 178 Q 110 162 120 150 Q 110 156 100 156 Q 90 156 80 150 Z" fill="#051f13"/>
@@ -489,7 +489,7 @@
               <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white">España</span>
             </div>
             <div class="absolute bottom-0 left-1/2 z-[1] flex h-[92%] w-[80%] -translate-x-1/2 items-end justify-center">
-              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYEnd meet" class="h-full w-full" aria-hidden="true">
+              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYMax meet" class="h-full w-full" aria-hidden="true">
                 <defs>
                   <!-- Degradado del corte (más oscuro arriba, casi piel abajo en los lados) -->
                   <linearGradient id="fadeJD" x1="0" y1="0" x2="0" y2="1">
@@ -1352,7 +1352,10 @@ function pickFromDb(row) {
 
 // Carga los picks visibles para el usuario actual (admin: todos; cliente: solo los de su plan via RLS)
 async function loadPicksFromSupabase() {
-  const { data, error } = await sb.from('picks').select('*').order('date', { ascending: false });
+  // Ordenamos por fecha y luego por hora de creación, ambos descendentes (más recientes primero)
+  const { data, error } = await sb.from('picks').select('*')
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false });
   if (error) { console.error('Error cargando picks:', error); return; }
   monthlyPicksPool = (data || []).map(pickFromDb);
 }
@@ -1987,8 +1990,8 @@ function pickAdminCard(p) {
   </article>`;
 }
 function renderPicksAdmin() {
+  // El array ya viene ordenado desde Supabase (más recientes primero), no hace falta reverse.
   const list = pickFilter==='all' ? [...monthlyPicksPool] : monthlyPicksPool.filter(p => p.result === pickFilter);
-  list.reverse();
   const container = document.getElementById('picksList');
   container.innerHTML = list.length === 0
     ? `<p class="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-ink-500">${monthlyPicksPool.length === 0 ? 'No has creado ningún pronóstico todavía. Pulsa "+ Nuevo pronóstico" para empezar.' : 'No hay pronósticos en este filtro.'}</p>`
@@ -2239,10 +2242,11 @@ document.getElementById('newPickForm').addEventListener('submit', async (e) => {
 
   if (error) return fail('Error guardando en Supabase: ' + error.message);
 
-  // Añadirlo al pool local (al principio para que aparezca primero)
+  // Añadirlo al pool local al principio (más reciente primero)
   monthlyPicksPool.unshift(pickFromDb(data));
   closeNewPick();
   renderPicksAdmin();
+  pickFilter = 'all';  // por si tenías un filtro activo
 });
 
 /* ============================================================
