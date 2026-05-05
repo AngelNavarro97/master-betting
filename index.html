@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<title>Tipster — Vista previa</title>
+<link rel="icon" type="image/png" href="RECURSOS/Recurso%201.png" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif'],
+          sans: ['"SF Pro Text"', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        },
+        colors: {
+          ink: { 950: '#000', 900: '#0a0a0a', 800: '#111113', 700: '#1a1a1d', 500: '#86868b', 200: '#f5f5f7', 100: '#fbfbfd' },
+          accent: { neon: '#00e696', green: '#22c55e', emerald: '#10b981', mint: '#6ee7b7', forest: '#064e3b' },
+        },
+        animation: {
+          'fade-in': 'fadeIn 1.2s ease-out forwards',
+          'fade-up': 'fadeUp 0.9s ease-out forwards',
+          'float':   'float 8s ease-in-out infinite',
+        },
+        keyframes: {
+          fadeIn: { '0%':{opacity:0}, '100%':{opacity:1} },
+          fadeUp: { '0%':{opacity:0,transform:'translateY(24px)'}, '100%':{opacity:1,transform:'translateY(0)'} },
+          float:  { '0%,100%':{transform:'translateY(0)'}, '50%':{transform:'translateY(-12px)'} },
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  :root { color-scheme: dark; }
+  html, body { background: #000; color: #f5f5f7; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+  html { scroll-behavior: smooth; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2d; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a3d; }
+
+  .glass { background: rgba(20,20,22,0.55); backdrop-filter: saturate(160%) blur(20px); -webkit-backdrop-filter: saturate(160%) blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+  .text-gradient { background: linear-gradient(135deg, #fff 0%, #b6f4d4 35%, #00e696 70%, #10b981 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+  .bg-gradient-hero {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(34,197,94,0.30), transparent 60%),
+      radial-gradient(800px 500px at 80% 20%, rgba(16,185,129,0.22), transparent 60%),
+      radial-gradient(700px 500px at 10% 30%, rgba(110,231,183,0.16), transparent 60%);
+  }
+  .bg-plan-basic     { background: linear-gradient(135deg, rgba(110,231,183,0.16), rgba(110,231,183,0.03)); }
+  .bg-plan-pro       { background: linear-gradient(135deg, rgba(34,197,94,0.26),  rgba(16,185,129,0.10)); }
+  .bg-plan-exclusive { background: linear-gradient(135deg, rgba(0,230,150,0.32), rgba(6,78,59,0.20)); }
+
+  .gradient-border { position: relative; border-radius: 24px; isolation: isolate; }
+  .gradient-border::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 40%, rgba(255,255,255,0.08));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; }
+
+  .halo-inner { position:absolute; inset:-30%; z-index:-10; opacity:0.7; filter:blur(40px);
+    background: conic-gradient(from 0deg, rgba(0,230,150,0.7), rgba(16,185,129,0.55), rgba(110,231,183,0.55), rgba(34,197,94,0.7), rgba(0,230,150,0.7));
+    animation: spin 14s linear infinite; pointer-events:none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .section { padding-top: 7rem; padding-bottom: 7rem; }
+  @media (max-width: 768px) { .section { padding-top: 4.5rem; padding-bottom: 4.5rem; } }
+
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+
+  /* Tabs admin */
+  .adm-tab { color: rgba(245,245,247,0.7); padding: 0.375rem 1rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; }
+  .adm-tab:hover { color: #fff; }
+  .adm-tab.active { background: rgba(255,255,255,0.08); color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset; }
+
+  /* Filtros pestaña Pronósticos */
+  .pf-tab.pf-active { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.25); }
+
+  /* Selector deporte y plan en signup */
+  .np-sport.active, .ev-sport.active, .signup-plan.active { border-color: rgba(0,230,150,0.45); background: rgba(0,230,150,0.10); }
+
+  /* Mes desplegable */
+  details.month-group { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; }
+  details.month-group + details.month-group { margin-top: 0.75rem; }
+  details.month-group summary { padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; user-select: none; }
+  details.month-group summary::after { content: "▾"; transition: transform 0.2s ease; color: rgba(245,245,247,0.6); }
+  details.month-group[open] summary::after { transform: rotate(180deg); }
+  details.month-group .group-body { padding: 0 1.25rem 1.25rem; }
+
+  /* Logos */
+  .badge-img { position: relative; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; overflow: hidden; flex-shrink: 0; ring: 1px solid rgba(255,255,255,0.20); }
+  .badge-img .badge-fallback { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700; }
+  .badge-img .badge-logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; padding: 2px; opacity: 0; transition: opacity 0.15s ease; }
+  .badge-img.has-logo .badge-logo { opacity: 1; }
+  .badge-img.has-logo .badge-fallback { display: none; }
+
+  .comp-badge { display: inline-flex; align-items: center; gap: 4px; }
+  .comp-badge .comp-logo { display: none; height: 18px; width: auto; }
+  .comp-badge.has-logo {
+    background: #fff !important;
+    padding: 3px 7px !important;
+  }
+  .comp-badge.has-logo .comp-logo { display: inline; }
+  .comp-badge.has-logo .comp-text { display: none; }
+</style>
+</head>
+<body class="font-sans text-ink-100">
+
+<!-- ================================================================
+     PUBLIC SITE
+     ================================================================ -->
+<div id="publicSite">
+
+<!-- NAVBAR -->
+<header class="fixed top-0 left-0 right-0 z-50 px-3 sm:px-0">
+  <div class="glass mx-auto mt-3 flex max-w-6xl items-center justify-between rounded-full px-4 py-2.5 sm:px-7 sm:py-3">
+    <a href="#top" class="flex items-center" aria-label="Master Betting">
+      <img src="RECURSOS/Recurso%201.png" alt="Master Betting" class="h-7 w-auto sm:h-8"/>
+    </a>
+    <nav class="hidden items-center gap-7 text-sm text-ink-200/70 md:flex">
+      <a href="#planes" class="transition hover:text-white">Planes</a>
+      <a href="#resultados" class="transition hover:text-white">Resultados</a>
+      <a href="#sobre-nosotros" class="transition hover:text-white">Sobre nosotros</a>
+    </nav>
+    <div class="flex items-center gap-2">
+      <a href="#" data-action="open-login" class="hidden rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10 sm:inline-flex">Acceder</a>
+      <button id="menuBtn" type="button" aria-label="Abrir menú" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10 md:hidden">
+        <span class="relative block h-3 w-4">
+          <span id="bar1" class="absolute left-0 top-0 h-px w-full bg-white transition-transform"></span>
+          <span id="bar2" class="absolute left-0 top-1.5 h-px w-full bg-white transition-opacity"></span>
+          <span id="bar3" class="absolute left-0 top-3 h-px w-full bg-white transition-transform"></span>
+        </span>
+      </button>
+    </div>
+  </div>
+  <div id="mobileMenu" class="mx-auto mt-2 max-w-6xl overflow-hidden transition-all duration-300 md:hidden" style="max-height:0; opacity:0;">
+    <div class="glass mx-3 rounded-3xl px-5 py-5">
+      <nav class="flex flex-col divide-y divide-white/5 text-base text-white">
+        <a href="#planes" class="py-3 transition hover:text-accent-neon">Planes</a>
+        <a href="#resultados" class="py-3 transition hover:text-accent-neon">Resultados</a>
+        <a href="#sobre-nosotros" class="py-3 transition hover:text-accent-neon">Sobre nosotros</a>
+        <a href="#" data-action="open-login" class="mt-3 inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium transition hover:bg-white/10">Acceder</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 -z-10 bg-gradient-hero"></div>
+    <div class="pointer-events-none absolute left-1/2 top-40 -z-10 h-[520px] w-[520px] -translate-x-1/2 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(0,230,150,0.25) 0%, rgba(16,185,129,0.15) 50%, transparent 80%);"></div>
+    <div class="relative mx-auto flex max-w-6xl flex-col items-center px-5 pb-20 pt-32 text-center sm:px-6 sm:pb-28 sm:pt-52">
+      <span class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-ink-200/80 backdrop-blur animate-fade-in sm:mb-6 sm:px-4 sm:text-xs">
+        <span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon" style="box-shadow: 0 0 10px rgba(0,230,150,0.9);"></span>
+        Pronósticos verificados · Largo plazo
+      </span>
+      <h1 class="font-display text-[40px] font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl lg:text-[88px] animate-fade-up">
+        <span class="block">Apuesta con</span>
+        <span class="block text-gradient">cabeza, no con suerte.</span>
+      </h1>
+      <p class="mt-5 max-w-2xl text-sm text-ink-200/70 sm:mt-7 sm:text-lg animate-fade-up" style="animation-delay:120ms">
+        Análisis, disciplina y comunidad. Recibe pronósticos cuidadosamente elaborados directamente en tu chat privado de Telegram, con la gestión de stakes que utilizan los profesionales.
+      </p>
+      <div class="mt-8 flex w-full flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:flex-row sm:items-center animate-fade-up" style="animation-delay:240ms">
+        <a href="#planes" class="group inline-flex items-center justify-center rounded-full bg-white px-7 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Ver los planes <span class="ml-2 transition group-hover:translate-x-0.5">→</span></a>
+        <a href="#resultados" class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-7 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Ver resultados</a>
+      </div>
+      <div class="mt-14 grid w-full max-w-3xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] animate-fade-up sm:mt-20" style="animation-delay:360ms">
+        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+1.200</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Suscriptores</div></div>
+        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">68%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Acierto medio</div></div>
+        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+12.4u</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Yield 2025</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANES -->
+  <section id="planes" class="relative section overflow-hidden border-t border-white/5">
+    <div class="pointer-events-none absolute inset-0 -z-10" style="background: radial-gradient(800px 500px at 50% 0%, rgba(34,197,94,0.10), transparent 60%);"></div>
+    <div class="mx-auto max-w-6xl px-5 sm:px-6">
+      <div class="mb-10 text-center sm:mb-16">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">Planes</span>
+        <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl lg:text-6xl">Elige el plan que <span class="text-gradient">se adapta a ti</span></h2>
+        <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Tres niveles pensados para distintos perfiles. Cancela cuando quieras. Sin permanencia.</p>
+      </div>
+
+      <div class="grid gap-5 sm:gap-6 md:grid-cols-3 md:items-stretch">
+        <!-- BASIC -->
+        <div class="relative">
+          <div class="gradient-border bg-plan-basic relative h-full overflow-hidden p-6 transition duration-500 hover:-translate-y-1 sm:p-8">
+            <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#6ee7b7,#10b981);"></div>
+            <svg class="pointer-events-none absolute -bottom-4 -right-4 h-40 w-44 sm:h-44 sm:w-52 opacity-[0.22]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
+              <path d="M 12 110 L 50 80 L 88 92 L 126 60 L 164 70 L 192 38" stroke="#00e696" stroke-width="1.1" opacity="0.7"/>
+              <g fill="#00e696"><circle cx="12" cy="110" r="2.4"/><circle cx="50" cy="80" r="2.4"/><circle cx="88" cy="92" r="2.4"/><circle cx="126" cy="60" r="2.4"/><circle cx="164" cy="70" r="2.4"/><circle cx="192" cy="38" r="3.2"/></g>
+            </svg>
+            <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Basic</h3></div>
+            <p class="mt-2 text-sm text-ink-200/70">Empieza con la disciplina correcta.</p>
+            <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">9,99</span><span class="text-sm text-ink-500">€/mes</span></div>
+            <a href="#" data-action="open-signup" data-plan="Basic" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</a>
+            <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+            <ul class="space-y-3.5 text-sm text-ink-200/85">
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>8 pronósticos mensuales</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Acceso al chat privado de Telegram</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Análisis y razonamiento de cada pick</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Gestión de stake recomendada</span></li>
+            </ul>
+          </div>
+        </div>
+        <!-- PRO -->
+        <div class="relative md:scale-[1.04]">
+          <div class="gradient-border bg-plan-pro relative h-full overflow-hidden p-6 transition duration-500 hover:-translate-y-1 sm:p-8">
+            <div class="halo-inner" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-40 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e,#10b981);"></div>
+            <svg class="pointer-events-none absolute -bottom-4 -right-4 h-40 w-44 sm:h-44 sm:w-52 opacity-[0.22]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
+              <path d="M -10 130 Q 70 10 130 70 T 220 60" stroke="#00e696" stroke-width="1.2" stroke-dasharray="3 5" opacity="0.75"/>
+              <circle cx="160" cy="48" r="14" stroke="#22c55e" stroke-width="1" opacity="0.55"/>
+              <circle cx="160" cy="48" r="7" stroke="#00e696" stroke-width="0.9" opacity="0.45"/>
+            </svg>
+            <div class="flex items-center gap-3">
+              <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Pro</h3>
+              <span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>
+            </div>
+            <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
+            <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">19,99</span><span class="text-sm text-ink-500">€/mes</span></div>
+            <a href="#" data-action="open-signup" data-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Suscribirme</a>
+            <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+            <ul class="space-y-3.5 text-sm text-ink-200/85">
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>16 pronósticos mensuales</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>1 pronóstico del plan EXCLUSIVE incluido</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Acceso al chat privado de Telegram</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Soporte prioritario y comunidad activa</span></li>
+            </ul>
+          </div>
+        </div>
+        <!-- EXCLUSIVE -->
+        <div class="relative">
+          <div class="gradient-border bg-plan-exclusive relative h-full overflow-hidden p-6 transition duration-500 hover:-translate-y-1 sm:p-8">
+            <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-40 blur-3xl" style="background: linear-gradient(135deg,#00e696,#10b981,#064e3b);"></div>
+            <svg class="pointer-events-none absolute -bottom-4 -right-4 h-40 w-44 sm:h-44 sm:w-52 opacity-[0.22]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
+              <g stroke="#00e696" stroke-width="1" opacity="0.6">
+                <polygon points="50,30 78,46 78,78 50,94 22,78 22,46"/>
+                <polygon points="106,62 134,78 134,110 106,126 78,110 78,78"/>
+                <polygon points="106,-2 134,14 134,46 106,62 78,46 78,14"/>
+                <polygon points="162,30 190,46 190,78 162,94 134,78 134,46"/>
+              </g>
+            </svg>
+            <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Exclusive</h3></div>
+            <p class="mt-2 text-sm text-ink-200/70">El círculo cerrado. Reembolso garantizado.</p>
+            <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">34,99</span><span class="text-sm text-ink-500">€/mes</span></div>
+            <a href="#" data-action="open-signup" data-plan="Exclusive" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</a>
+            <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+            <ul class="space-y-3.5 text-sm text-ink-200/85">
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>25 pronósticos mensuales</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>2 funbets exclusivas al mes</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Acceso al chat privado de Telegram</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Reembolso directo si no obtienes ganancias</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="mt-10 text-center text-xs text-ink-500 sm:mt-12">Los precios están en euros, IVA incluido. Renovación mensual automática.</p>
+    </div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section class="relative section border-t border-white/5">
+    <div class="mx-auto max-w-6xl px-5 sm:px-6">
+      <div class="mb-10 text-center sm:mb-16">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">Cómo funciona</span>
+        <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl">Tres pasos. <span class="text-gradient">Cero ruido.</span></h2>
+      </div>
+      <div class="grid gap-5 sm:gap-6 md:grid-cols-3">
+        <div class="gradient-border relative overflow-hidden bg-white/[0.02] p-6 sm:p-8">
+          <svg class="pointer-events-none absolute -bottom-6 -right-6 h-32 w-40 opacity-[0.18]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
+            <path d="M 0 130 Q 80 30 200 80" stroke="#00e696" stroke-width="1.2" stroke-dasharray="3 5"/>
+            <circle cx="170" cy="70" r="3" fill="#00e696" opacity="0.7"/>
+          </svg>
+          <div class="relative font-display text-4xl font-semibold text-gradient sm:text-5xl">01</div>
+          <h3 class="relative mt-3 font-display text-lg font-semibold text-white sm:mt-4 sm:text-xl">Elige tu plan</h3>
+          <p class="relative mt-2 text-sm text-ink-200/70">Suscríbete al plan que mejor se ajuste a tu volumen y objetivos.</p>
+        </div>
+        <div class="gradient-border relative overflow-hidden bg-white/[0.02] p-6 sm:p-8">
+          <svg class="pointer-events-none absolute -bottom-6 -right-6 h-32 w-40 opacity-[0.18]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
+            <path d="M 0 130 Q 80 30 200 80" stroke="#00e696" stroke-width="1.2" stroke-dasharray="3 5"/>
+            <circle cx="170" cy="70" r="3" fill="#00e696" opacity="0.7"/>
+          </svg>
+          <div class="relative font-display text-4xl font-semibold text-gradient sm:text-5xl">02</div>
+          <h3 class="relative mt-3 font-display text-lg font-semibold text-white sm:mt-4 sm:text-xl">Únete al canal privado</h3>
+          <p class="relative mt-2 text-sm text-ink-200/70">Recibe acceso inmediato al canal de Telegram con la comunidad.</p>
+        </div>
+        <div class="gradient-border relative overflow-hidden bg-white/[0.02] p-6 sm:p-8">
+          <svg class="pointer-events-none absolute -bottom-6 -right-6 h-32 w-40 opacity-[0.18]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
+            <path d="M 0 130 Q 80 30 200 80" stroke="#00e696" stroke-width="1.2" stroke-dasharray="3 5"/>
+            <circle cx="170" cy="70" r="3" fill="#00e696" opacity="0.7"/>
+          </svg>
+          <div class="relative font-display text-4xl font-semibold text-gradient sm:text-5xl">03</div>
+          <h3 class="relative mt-3 font-display text-lg font-semibold text-white sm:mt-4 sm:text-xl">Apuesta con disciplina</h3>
+          <p class="relative mt-2 text-sm text-ink-200/70">Sigue los pronósticos con la gestión de stakes recomendada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTADOS -->
+  <section id="resultados" class="relative section border-t border-white/5">
+    <div class="mx-auto max-w-6xl px-5 sm:px-6">
+      <div class="mb-10 text-center sm:mb-12">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">Resultados</span>
+        <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl">Transparencia <span class="text-gradient">total</span>.</h2>
+        <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Histórico mensual y picks recientes. Todo registrado.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] sm:rounded-3xl md:grid-cols-4">
+        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">290</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Picks publicados</div></div>
+        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">68%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Tasa de acierto</div></div>
+        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+41.8u</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Yield acumulado</div></div>
+        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">14%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">ROI medio</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EQUIPO -->
+  <section id="sobre-nosotros" class="relative section border-t border-white/5">
+    <div class="mx-auto max-w-4xl px-5 text-center sm:px-6">
+      <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">El equipo</span>
+      <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl">Tres mentes. <span class="text-gradient">Un mismo método.</span></h2>
+      <p class="mx-auto mt-4 max-w-2xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Detrás de Tipster hay un equipo de tres pronosticadores. Cada uno aporta su especialidad. El resultado: pronósticos más sólidos y una comunidad mejor cuidada.</p>
+    </div>
+    <div class="mx-auto mt-10 max-w-6xl px-5 sm:mt-14 sm:px-6">
+      <div class="grid gap-6 md:grid-cols-3 md:items-stretch">
+        <article class="gradient-border relative overflow-hidden rounded-3xl bg-white/[0.03] transition duration-500 hover:-translate-y-1">
+          <div class="relative overflow-hidden" style="aspect-ratio: 4/5;">
+            <div class="absolute inset-0" style="background: linear-gradient(135deg,#0b3a24 0%, #072919 50%, #031309 100%);"></div>
+            <svg aria-hidden="true" class="pointer-events-none absolute inset-0 h-full w-full opacity-25" viewBox="0 0 300 380" preserveAspectRatio="xMidYMid slice">
+              <g stroke="#00e696" stroke-width="0.7" fill="none" opacity="0.5">
+                <polygon points="40,40 70,57 70,91 40,108 10,91 10,57"/>
+                <polygon points="100,75 130,92 130,126 100,143 70,126 70,92"/>
+                <polygon points="160,40 190,57 190,91 160,108 130,91 130,57"/>
+              </g>
+            </svg>
+            <div class="pointer-events-none absolute left-1/2 top-1/2 h-72 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" style="background: rgba(0,230,150,0.25);"></div>
+            <div class="absolute left-4 top-4 z-10 text-center leading-none">
+              <div class="font-display text-3xl font-semibold text-gradient sm:text-4xl">28</div>
+              <div class="mt-0.5 text-[9px] font-medium uppercase tracking-[0.22em] text-ink-200/70">años</div>
+            </div>
+            <div class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-2.5 py-1.5 backdrop-blur">
+              <span class="block h-3 w-5 overflow-hidden rounded-[3px] ring-1 ring-white/10"><svg viewBox="0 0 30 20" class="h-full w-full"><rect width="30" height="20" fill="#c60b1e"/><rect y="5" width="30" height="10" fill="#ffc400"/></svg></span>
+              <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white">España</span>
+            </div>
+            <div class="absolute bottom-0 left-1/2 z-[1] flex h-[92%] w-[80%] -translate-x-1/2 items-end justify-center">
+              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYEnd meet" class="h-full w-full" aria-hidden="true">
+                <ellipse cx="100" cy="248" rx="92" ry="14" fill="#000" opacity="0.25"/>
+                <path d="M 32 260 L 32 198 Q 32 162 65 156 L 80 150 L 120 150 L 135 156 Q 168 162 168 198 L 168 260 Z" fill="#0e3f28"/>
+                <path d="M 80 150 Q 90 162 100 178 Q 110 162 120 150 Q 110 156 100 156 Q 90 156 80 150 Z" fill="#051f13"/>
+                <path d="M 32 240 Q 28 195 52 182 Q 88 178 118 196 L 134 212 Q 92 240 32 240 Z" fill="#082d1c"/>
+                <path d="M 168 240 Q 172 195 148 182 Q 112 178 82 196 L 66 212 Q 108 240 168 240 Z" fill="#051f13"/>
+                <ellipse cx="50" cy="218" rx="11" ry="8" fill="#d4a17a"/>
+                <ellipse cx="150" cy="218" rx="11" ry="8" fill="#d4a17a"/>
+                <path d="M 90 130 L 90 152 L 110 152 L 110 130 Z" fill="#d4a17a"/>
+                <path d="M 88 138 Q 100 145 112 138" stroke="#b8855e" stroke-width="0.8" fill="none" opacity="0.7"/>
+                <ellipse cx="100" cy="98" rx="33" ry="38" fill="#d4a17a"/>
+                <path d="M 100 98 Q 130 100 132 110 Q 128 130 110 134 L 100 134 Z" fill="#b8855e" opacity="0.25"/>
+                <!-- Pelo engominado con raya al lado izquierdo -->
+                <path d="M 67 92 Q 65 50 100 46 Q 138 48 134 92 Q 132 75 122 70 Q 110 76 95 73 Q 82 68 70 80 Z" fill="#1c1108"/>
+                <!-- Brillo del gel -->
+                <path d="M 78 60 Q 96 55 116 60" stroke="#3a2820" stroke-width="0.8" fill="none" opacity="0.55"/>
+                <path d="M 76 70 Q 96 64 118 68" stroke="#3a2820" stroke-width="0.6" fill="none" opacity="0.45"/>
+                <!-- Patillas -->
+                <path d="M 67 95 Q 65 105 70 112" stroke="#1c1108" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                <path d="M 133 95 Q 135 105 130 112" stroke="#1c1108" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                <!-- Cejas -->
+                <path d="M 82 88 Q 88 85 94 88" stroke="#1c1108" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M 106 88 Q 112 85 118 88" stroke="#1c1108" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <!-- Ojos -->
+                <ellipse cx="88" cy="95" rx="2.5" ry="3" fill="#1a1208"/>
+                <ellipse cx="112" cy="95" rx="2.5" ry="3" fill="#1a1208"/>
+                <circle cx="88.6" cy="93.8" r="0.9" fill="#fff"/>
+                <circle cx="112.6" cy="93.8" r="0.9" fill="#fff"/>
+                <!-- Nariz -->
+                <path d="M 100 103 Q 96 114 98 118 Q 100 120 102 118 Q 104 114 100 103" fill="#b8855e" opacity="0.55"/>
+                <!-- Boca -->
+                <path d="M 90 123 Q 100 125 110 123" stroke="#5a2c18" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <!-- Barba ligera (poca) -->
+                <path d="M 78 117 Q 100 130 122 117 Q 118 128 100 132 Q 82 128 78 117 Z" fill="#1c1108" opacity="0.20"/>
+              </svg>
+            </div>
+            <div class="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] h-24" style="background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);"></div>
+            <div class="absolute bottom-3 left-1/2 z-[3] -translate-x-1/2 text-[9px] font-semibold uppercase tracking-[0.32em] text-accent-neon/80">Tipster</div>
+          </div>
+          <div class="relative p-6 sm:p-7">
+            <h3 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-[26px]">Angel N.</h3>
+            <p class="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-accent-neon/90">Análisis y valor en cuotas</p>
+            <p class="mt-4 text-sm leading-relaxed text-ink-200/80">Especialista en detectar oportunidades antes que el mercado. Valor por encima de cantidad.</p>
+          </div>
+        </article>
+
+        <article class="gradient-border relative overflow-hidden rounded-3xl bg-white/[0.03] transition duration-500 hover:-translate-y-1">
+          <div class="relative overflow-hidden" style="aspect-ratio: 4/5;">
+            <div class="absolute inset-0" style="background: linear-gradient(135deg,#0b3a24 0%, #072919 50%, #031309 100%);"></div>
+            <svg aria-hidden="true" class="pointer-events-none absolute inset-0 h-full w-full opacity-25" viewBox="0 0 300 380" preserveAspectRatio="xMidYMid slice">
+              <g stroke="#00e696" stroke-width="0.7" fill="none" opacity="0.5">
+                <polygon points="40,40 70,57 70,91 40,108 10,91 10,57"/>
+                <polygon points="100,75 130,92 130,126 100,143 70,126 70,92"/>
+                <polygon points="160,40 190,57 190,91 160,108 130,91 130,57"/>
+              </g>
+            </svg>
+            <div class="pointer-events-none absolute left-1/2 top-1/2 h-72 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" style="background: rgba(0,230,150,0.25);"></div>
+            <div class="absolute left-4 top-4 z-10 text-center leading-none">
+              <div class="font-display text-3xl font-semibold text-gradient sm:text-4xl">30</div>
+              <div class="mt-0.5 text-[9px] font-medium uppercase tracking-[0.22em] text-ink-200/70">años</div>
+            </div>
+            <div class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-2.5 py-1.5 backdrop-blur">
+              <span class="block h-3 w-5 overflow-hidden rounded-[3px] ring-1 ring-white/10"><svg viewBox="0 0 30 20" class="h-full w-full"><rect width="30" height="20" fill="#74acdf"/><rect y="6.7" width="30" height="6.6" fill="#fff"/><circle cx="15" cy="10" r="1.6" fill="#f6b40e"/></svg></span>
+              <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white">Argentina</span>
+            </div>
+            <div class="absolute bottom-0 left-1/2 z-[1] flex h-[92%] w-[80%] -translate-x-1/2 items-end justify-center">
+              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYEnd meet" class="h-full w-full" aria-hidden="true">
+                <ellipse cx="100" cy="248" rx="92" ry="14" fill="#000" opacity="0.25"/>
+                <path d="M 32 260 L 32 198 Q 32 162 65 156 L 80 150 L 120 150 L 135 156 Q 168 162 168 198 L 168 260 Z" fill="#0e3f28"/>
+                <path d="M 80 150 Q 90 162 100 178 Q 110 162 120 150 Q 110 156 100 156 Q 90 156 80 150 Z" fill="#051f13"/>
+                <path d="M 32 240 Q 28 195 52 182 Q 88 178 118 196 L 134 212 Q 92 240 32 240 Z" fill="#082d1c"/>
+                <path d="M 168 240 Q 172 195 148 182 Q 112 178 82 196 L 66 212 Q 108 240 168 240 Z" fill="#051f13"/>
+                <ellipse cx="50" cy="218" rx="11" ry="8" fill="#d4a17a"/>
+                <ellipse cx="150" cy="218" rx="11" ry="8" fill="#d4a17a"/>
+                <path d="M 90 130 L 90 152 L 110 152 L 110 130 Z" fill="#d4a17a"/>
+                <path d="M 88 138 Q 100 145 112 138" stroke="#b8855e" stroke-width="0.8" fill="none" opacity="0.7"/>
+                <!-- Cabeza calva (forma redondeada superior) -->
+                <ellipse cx="100" cy="92" rx="33" ry="42" fill="#d4a17a"/>
+                <!-- Sombra sutil del cráneo afeitado -->
+                <ellipse cx="100" cy="68" rx="30" ry="14" fill="#b8855e" opacity="0.25"/>
+                <!-- Brillo en la coronilla (cabeza pulida) -->
+                <ellipse cx="93" cy="62" rx="9" ry="3" fill="#fff" opacity="0.18"/>
+                <!-- Sombra lateral derecha de la cara -->
+                <path d="M 100 92 Q 130 96 132 110 Q 128 130 110 134 L 100 134 Z" fill="#b8855e" opacity="0.25"/>
+                <!-- Cejas (pobladas) -->
+                <path d="M 80 87 Q 88 83 95 87" stroke="#1a1208" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+                <path d="M 105 87 Q 112 83 120 87" stroke="#1a1208" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+                <!-- Ojos -->
+                <ellipse cx="88" cy="95" rx="2.5" ry="3" fill="#1a1208"/>
+                <ellipse cx="112" cy="95" rx="2.5" ry="3" fill="#1a1208"/>
+                <circle cx="88.6" cy="93.8" r="0.9" fill="#fff"/>
+                <circle cx="112.6" cy="93.8" r="0.9" fill="#fff"/>
+                <!-- Nariz -->
+                <path d="M 100 103 Q 96 114 98 118 Q 100 120 102 118 Q 104 114 100 103" fill="#b8855e" opacity="0.55"/>
+                <!-- Bigote -->
+                <path d="M 86 121 Q 93 119 100 121 Q 107 119 114 121 Q 108 125 100 124 Q 92 125 86 121 Z" fill="#1a1208"/>
+                <!-- Boca (apenas visible bajo bigote) -->
+                <path d="M 92 126 Q 100 128 108 126" stroke="#5a2c18" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+                <!-- Barba completa (rodea la mandíbula) -->
+                <path d="M 70 110 Q 73 132 88 142 L 90 144 Q 100 148 110 144 L 112 142 Q 127 132 130 110 Q 122 130 100 132 Q 78 130 70 110 Z" fill="#1a1208" opacity="0.92"/>
+                <!-- Textura de la barba -->
+                <path d="M 86 138 Q 100 142 114 138" stroke="#2a1d12" stroke-width="0.5" fill="none" opacity="0.6"/>
+                <path d="M 82 130 Q 100 134 118 130" stroke="#2a1d12" stroke-width="0.5" fill="none" opacity="0.5"/>
+              </svg>
+            </div>
+            <div class="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] h-24" style="background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);"></div>
+            <div class="absolute bottom-3 left-1/2 z-[3] -translate-x-1/2 text-[9px] font-semibold uppercase tracking-[0.32em] text-accent-neon/80">Tipster</div>
+          </div>
+          <div class="relative p-6 sm:p-7">
+            <h3 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-[26px]">Juan C.</h3>
+            <p class="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-accent-neon/90">Estadística y modelado</p>
+            <p class="mt-4 text-sm leading-relaxed text-ink-200/80">El cerebro detrás de los modelos. Cada pick pasa por sus filtros antes de salir.</p>
+          </div>
+        </article>
+
+        <article class="gradient-border relative overflow-hidden rounded-3xl bg-white/[0.03] transition duration-500 hover:-translate-y-1">
+          <div class="relative overflow-hidden" style="aspect-ratio: 4/5;">
+            <div class="absolute inset-0" style="background: linear-gradient(135deg,#0b3a24 0%, #072919 50%, #031309 100%);"></div>
+            <svg aria-hidden="true" class="pointer-events-none absolute inset-0 h-full w-full opacity-25" viewBox="0 0 300 380" preserveAspectRatio="xMidYMid slice">
+              <g stroke="#00e696" stroke-width="0.7" fill="none" opacity="0.5">
+                <polygon points="40,40 70,57 70,91 40,108 10,91 10,57"/>
+                <polygon points="100,75 130,92 130,126 100,143 70,126 70,92"/>
+                <polygon points="160,40 190,57 190,91 160,108 130,91 130,57"/>
+              </g>
+            </svg>
+            <div class="pointer-events-none absolute left-1/2 top-1/2 h-72 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" style="background: rgba(0,230,150,0.25);"></div>
+            <div class="absolute left-4 top-4 z-10 text-center leading-none">
+              <div class="font-display text-3xl font-semibold text-gradient sm:text-4xl">29</div>
+              <div class="mt-0.5 text-[9px] font-medium uppercase tracking-[0.22em] text-ink-200/70">años</div>
+            </div>
+            <div class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-2.5 py-1.5 backdrop-blur">
+              <span class="block h-3 w-5 overflow-hidden rounded-[3px] ring-1 ring-white/10"><svg viewBox="0 0 30 20" class="h-full w-full"><rect width="30" height="20" fill="#c60b1e"/><rect y="5" width="30" height="10" fill="#ffc400"/></svg></span>
+              <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white">España</span>
+            </div>
+            <div class="absolute bottom-0 left-1/2 z-[1] flex h-[92%] w-[80%] -translate-x-1/2 items-end justify-center">
+              <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYEnd meet" class="h-full w-full" aria-hidden="true">
+                <defs>
+                  <!-- Degradado del corte (más oscuro arriba, casi piel abajo en los lados) -->
+                  <linearGradient id="fadeJD" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#1a1208"/>
+                    <stop offset="65%" stop-color="#3a2a1c"/>
+                    <stop offset="100%" stop-color="#8e6a4a"/>
+                  </linearGradient>
+                </defs>
+                <ellipse cx="100" cy="248" rx="92" ry="14" fill="#000" opacity="0.25"/>
+                <path d="M 32 260 L 32 198 Q 32 162 65 156 L 80 150 L 120 150 L 135 156 Q 168 162 168 198 L 168 260 Z" fill="#0e3f28"/>
+                <path d="M 80 150 Q 90 162 100 178 Q 110 162 120 150 Q 110 156 100 156 Q 90 156 80 150 Z" fill="#051f13"/>
+                <path d="M 32 240 Q 28 195 52 182 Q 88 178 118 196 L 134 212 Q 92 240 32 240 Z" fill="#082d1c"/>
+                <path d="M 168 240 Q 172 195 148 182 Q 112 178 82 196 L 66 212 Q 108 240 168 240 Z" fill="#051f13"/>
+                <ellipse cx="50" cy="218" rx="11" ry="8" fill="#d4a17a"/>
+                <ellipse cx="150" cy="218" rx="11" ry="8" fill="#d4a17a"/>
+                <path d="M 90 130 L 90 152 L 110 152 L 110 130 Z" fill="#d4a17a"/>
+                <path d="M 88 138 Q 100 145 112 138" stroke="#b8855e" stroke-width="0.8" fill="none" opacity="0.7"/>
+                <ellipse cx="100" cy="98" rx="33" ry="38" fill="#d4a17a"/>
+                <path d="M 100 98 Q 130 100 132 110 Q 128 130 110 134 L 100 134 Z" fill="#b8855e" opacity="0.25"/>
+                <!-- Pelo rapado al 3 con degradado (capa superior) -->
+                <path d="M 70 88 Q 68 56 100 52 Q 132 56 130 88 Q 128 70 100 68 Q 72 70 70 88 Z" fill="url(#fadeJD)"/>
+                <!-- Línea fina del corte de pelo (frontal, para definir la entrada) -->
+                <path d="M 73 78 Q 100 72 127 78" stroke="#0a0807" stroke-width="0.8" fill="none" opacity="0.4"/>
+                <!-- Degradado lateral (rapado más corto en sienes) -->
+                <path d="M 70 90 Q 70 100 76 110" stroke="#5a4030" stroke-width="2" fill="none" opacity="0.55"/>
+                <path d="M 130 90 Q 130 100 124 110" stroke="#5a4030" stroke-width="2" fill="none" opacity="0.55"/>
+                <!-- Cejas -->
+                <path d="M 82 88 Q 88 86 94 88" stroke="#1c1108" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <path d="M 106 88 Q 112 86 118 88" stroke="#1c1108" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <!-- Ojos (visibles a través de las gafas) -->
+                <ellipse cx="88" cy="95" rx="2.2" ry="2.6" fill="#1a1208"/>
+                <ellipse cx="112" cy="95" rx="2.2" ry="2.6" fill="#1a1208"/>
+                <circle cx="88.5" cy="93.9" r="0.8" fill="#fff"/>
+                <circle cx="112.5" cy="93.9" r="0.8" fill="#fff"/>
+                <!-- GAFAS DE VER negras (montura cuadrada con cantos redondeados) -->
+                <rect x="76" y="86" width="20" height="14" rx="3" ry="3" fill="rgba(255,255,255,0.04)" stroke="#0a0a0a" stroke-width="2"/>
+                <rect x="104" y="86" width="20" height="14" rx="3" ry="3" fill="rgba(255,255,255,0.04)" stroke="#0a0a0a" stroke-width="2"/>
+                <!-- Puente de las gafas -->
+                <line x1="96" y1="92" x2="104" y2="92" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round"/>
+                <!-- Patillas (donde apoyan en las orejas) -->
+                <line x1="76" y1="91" x2="68" y2="93" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="124" y1="91" x2="132" y2="93" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+                <!-- Reflejo discreto en la lente -->
+                <path d="M 79 88 L 84 88 L 80 95 L 79 95 Z" fill="#fff" opacity="0.18"/>
+                <path d="M 107 88 L 112 88 L 108 95 L 107 95 Z" fill="#fff" opacity="0.18"/>
+                <!-- Nariz -->
+                <path d="M 100 105 Q 96 114 98 118 Q 100 120 102 118 Q 104 114 100 105" fill="#b8855e" opacity="0.55"/>
+                <!-- Boca (ligera sonrisa) -->
+                <path d="M 89 122 Q 100 127 111 122" stroke="#5a2c18" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] h-24" style="background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);"></div>
+            <div class="absolute bottom-3 left-1/2 z-[3] -translate-x-1/2 text-[9px] font-semibold uppercase tracking-[0.32em] text-accent-neon/80">Tipster</div>
+          </div>
+          <div class="relative p-6 sm:p-7">
+            <h3 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-[26px]">Javi D.</h3>
+            <p class="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-accent-neon/90">Live betting y gestión</p>
+            <p class="mt-4 text-sm leading-relaxed text-ink-200/80">Experto en live y en mantener el bankroll bajo control. Disciplina antes que impulso.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="relative section border-t border-white/5">
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-gradient-hero opacity-70"></div>
+    <div class="mx-auto max-w-4xl px-5 text-center sm:px-6">
+      <h2 class="font-display text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">Empieza hoy. <span class="text-gradient">El próximo pronóstico no espera.</span></h2>
+      <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Únete a más de 1.200 suscriptores que ya forman parte de la comunidad.</p>
+      <a href="#planes" class="mt-7 inline-flex items-center justify-center rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-black transition hover:bg-ink-200 sm:mt-9">Ver planes <span class="ml-2">→</span></a>
+    </div>
+  </section>
+</main>
+
+<!-- FOOTER -->
+<footer class="relative border-t border-white/5" style="background: rgba(2,9,7,0.8); backdrop-filter: blur(8px);">
+  <div class="mx-auto max-w-6xl px-5 py-12 sm:px-6 sm:py-14">
+    <div class="flex flex-col items-start justify-between gap-10 md:flex-row md:items-center">
+      <div>
+        <img src="RECURSOS/Recurso%201.png" alt="Master Betting" class="h-9 w-auto"/>
+        <p class="mt-3 max-w-sm text-sm text-ink-500">Pronósticos deportivos premium. Disciplina, gestión y resultados a largo plazo.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-x-12 gap-y-3 text-sm text-ink-500 sm:grid-cols-3">
+        <a href="#planes" class="hover:text-white">Planes</a>
+        <a href="#resultados" class="hover:text-white">Resultados</a>
+        <a href="#sobre-nosotros" class="hover:text-white">Sobre nosotros</a>
+        <a href="#" class="hover:text-white">Telegram</a>
+        <a href="#" class="hover:text-white">Contacto</a>
+      </div>
+    </div>
+    <div class="mt-12 flex flex-col items-start justify-between gap-4 border-t border-white/5 pt-6 text-xs text-ink-500 md:flex-row md:items-center">
+      <p>© <span id="year"></span> Tipster. Todos los derechos reservados.</p>
+      <p class="max-w-xl text-ink-500/80">Juega con responsabilidad. Las apuestas conllevan riesgo. +18.</p>
+    </div>
+  </div>
+</footer>
+
+</div><!-- /#publicSite -->
+
+<!-- ================================================================
+     ADMIN PANEL
+     ================================================================ -->
+<div id="adminPanel" class="hidden">
+  <header class="border-b border-white/5 bg-black/30 backdrop-blur-md">
+    <div class="mx-auto flex max-w-[1600px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div>
+        <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Panel admin</span>
+        <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Base de datos de clientes</h1>
+      </div>
+      <button id="logoutBtn" class="inline-flex items-center justify-center self-start rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <div class="mx-auto mt-6 max-w-[1600px] px-5 sm:px-8">
+    <div class="inline-flex flex-wrap rounded-full border border-white/10 bg-white/[0.03] p-1">
+      <button data-tab="clients" class="adm-tab active">Clientes</button>
+      <button data-tab="picks" class="adm-tab">Pronósticos</button>
+      <button data-tab="rankings" class="adm-tab">Rankings</button>
+    </div>
+  </div>
+
+  <!-- TAB: CLIENTES -->
+  <div id="clientsTab">
+    <div class="mx-auto mt-8 max-w-[1600px] px-5 sm:px-8">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+        <div class="gradient-border relative overflow-hidden bg-white/[0.02] p-4 sm:p-5">
+          <div class="pointer-events-none absolute -top-12 -right-8 h-32 w-32 rounded-full opacity-20 blur-3xl" style="background:linear-gradient(135deg,#6ee7b7,#10b981);"></div>
+          <div class="relative"><div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">Total clientes</div><div id="kpiTotal" class="mt-2 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">0</div></div>
+        </div>
+        <div class="gradient-border relative overflow-hidden bg-white/[0.02] p-4 sm:p-5">
+          <div class="pointer-events-none absolute -top-12 -right-8 h-32 w-32 rounded-full opacity-20 blur-3xl" style="background:linear-gradient(135deg,#00e696,#22c55e);"></div>
+          <div class="relative"><div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">Activos</div><div id="kpiActive" class="mt-2 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">0</div></div>
+        </div>
+        <div class="gradient-border relative overflow-hidden bg-white/[0.02] p-4 sm:p-5">
+          <div class="pointer-events-none absolute -top-12 -right-8 h-32 w-32 rounded-full opacity-20 blur-3xl" style="background:linear-gradient(135deg,#10b981,#064e3b);"></div>
+          <div class="relative"><div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">Pausados / Revocados</div><div id="kpiPaused" class="mt-2 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">0</div></div>
+        </div>
+        <div class="gradient-border relative overflow-hidden bg-white/[0.02] p-4 ring-1 ring-accent-neon/30 sm:p-5">
+          <div class="pointer-events-none absolute -top-12 -right-8 h-32 w-32 rounded-full opacity-30 blur-3xl" style="background:linear-gradient(135deg,#00e696,#22c55e,#10b981);"></div>
+          <div class="relative"><div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">MRR del mes</div><div id="kpiMrr" class="mt-2 font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl">0,00&nbsp;€</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mx-auto mt-8 max-w-[1600px] px-5 sm:px-8">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input id="searchInput" type="text" placeholder="Buscar por nombre o email..." class="flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30"/>
+        <select id="planFilter" class="rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none">
+          <option value="all">Todos los planes</option><option value="Basic">Basic</option><option value="Pro">Pro</option><option value="Exclusive">Exclusive</option>
+        </select>
+        <select id="statusFilter" class="rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none">
+          <option value="all">Todos los estados</option><option value="active">Activos</option><option value="paused">Pausados</option><option value="revoked">Revocados</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mx-auto mt-6 hidden max-w-[1600px] px-5 sm:px-8 md:block">
+      <div class="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
+        <table class="w-full min-w-[1280px] text-left text-sm">
+          <thead class="bg-white/[0.03] text-[11px] uppercase tracking-[0.16em] text-ink-500">
+            <tr>
+              <th class="px-5 py-4 font-medium">Cliente</th>
+              <th class="px-5 py-4 font-medium">Plan</th>
+              <th class="px-5 py-4 font-medium">Precio / mes</th>
+              <th class="px-5 py-4 font-medium">Ganancias mes</th>
+              <th class="px-5 py-4 font-medium">Alta</th>
+              <th class="px-5 py-4 font-medium">Estado</th>
+              <th class="px-5 py-4 text-right font-medium whitespace-nowrap">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-white/5"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="mobileList" class="mx-auto mt-6 max-w-[1600px] space-y-4 px-5 md:hidden"></div>
+
+    <p class="mx-auto mt-12 max-w-[1600px] px-5 pb-12 text-center text-xs text-ink-500 sm:px-8">Cualquier cambio que hagas aquí solo vive en tu navegador. Al recargar la página, los datos vuelven al estado inicial.</p>
+  </div>
+
+  <!-- TAB: PRONÓSTICOS -->
+  <div id="picksTab" class="hidden">
+    <div class="mx-auto mt-8 max-w-[1600px] px-5 pb-12 sm:px-8">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Pronósticos del mes</h2>
+          <p class="mt-1 text-sm text-ink-500">Crea, edita el resultado o elimina pronósticos. Los cambios se reflejan en el panel de cada cliente al instante.</p>
+        </div>
+        <button id="newPickBtn" class="inline-flex items-center justify-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-ink-200">
+          <span class="text-lg leading-none">+</span> Nuevo pronóstico
+        </button>
+      </div>
+      <div class="mt-6 flex flex-wrap gap-2 text-xs">
+        <button data-pickfilter="all" class="pf-tab pf-active rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-medium text-white">Todos</button>
+        <button data-pickfilter="pending" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Pendientes</button>
+        <button data-pickfilter="won" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Acertadas</button>
+        <button data-pickfilter="lost" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Falladas</button>
+        <button data-pickfilter="void" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Anuladas</button>
+      </div>
+      <div id="picksList" class="mt-6 space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- TAB: RANKINGS -->
+  <div id="rankingsTab" class="hidden">
+    <div id="rankingsContent" class="mx-auto mt-8 max-w-[1600px] space-y-5 px-5 pb-12 sm:px-8"></div>
+  </div>
+
+  <!-- STATS DETAIL VIEW -->
+  <div id="statsDetailView" class="hidden">
+    <div class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8">
+      <button id="statsBackBtn" class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">← Volver al panel</button>
+      <div id="statsDetailContent"></div>
+    </div>
+  </div>
+</div><!-- /#adminPanel -->
+
+<!-- ================================================================
+     CLIENT PANEL
+     ================================================================ -->
+<div id="clientPanel" class="hidden">
+  <header class="border-b border-white/5 bg-black/30 backdrop-blur-md">
+    <div class="mx-auto flex max-w-[1200px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div>
+        <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
+        <h1 id="clientHeaderName" class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Hola, cliente</h1>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <a id="telegramBtn" href="https://t.me/" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-full bg-[#229ED9] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_24px_rgba(34,158,217,0.35)] transition hover:bg-[#1a8cc1]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.302.952-.14.579.192l-8.533 7.706h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.787l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"/></svg>
+          Unirme al canal de Telegram
+        </a>
+        <button id="clientLogoutBtn" class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+  <div id="clientStatsContent" class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8"></div>
+</div>
+
+<!-- ================================================================
+     MODALES
+     ================================================================ -->
+<!-- SIGNUP -->
+<div id="signupModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-signup"></div>
+  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
+    <div class="text-center">
+      <img src="RECURSOS/Recurso%201.png" alt="Master Betting" class="mx-auto mb-4 h-10 w-auto"/>
+      <h2 class="font-display text-2xl font-semibold tracking-tight text-white">Crear cuenta</h2>
+      <p class="mt-2 text-sm text-ink-200/70">Empieza tu suscripción en Master Betting.</p>
+    </div>
+    <form id="signupForm" class="mt-6 space-y-4">
+      <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Nombre completo</label><input id="signupName" type="text" autocomplete="name" placeholder="Tu nombre" required class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/></div>
+      <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Email</label><input id="signupEmail" type="email" autocomplete="email" placeholder="tu@email.com" required class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Contraseña</label><input id="signupPassword" type="password" autocomplete="new-password" placeholder="••••••••" required class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/></div>
+        <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Repetir</label><input id="signupPassword2" type="password" autocomplete="new-password" placeholder="••••••••" required class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/></div>
+      </div>
+      <fieldset>
+        <legend class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Plan elegido</legend>
+        <div class="mt-2 grid grid-cols-3 gap-2">
+          <label class="signup-plan flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-white/5 px-2 py-2.5 text-sm text-white cursor-pointer transition" data-plan="Basic"><input type="radio" name="signup-plan" value="Basic" class="hidden"/><span class="font-semibold">Basic</span><span class="text-[10px] text-ink-500">9,99€</span></label>
+          <label class="signup-plan flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-white/5 px-2 py-2.5 text-sm text-white cursor-pointer transition" data-plan="Pro"><input type="radio" name="signup-plan" value="Pro" class="hidden"/><span class="font-semibold">Pro</span><span class="text-[10px] text-ink-500">19,99€</span></label>
+          <label class="signup-plan flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-white/5 px-2 py-2.5 text-sm text-white cursor-pointer transition" data-plan="Exclusive"><input type="radio" name="signup-plan" value="Exclusive" class="hidden"/><span class="font-semibold">Exclusive</span><span class="text-[10px] text-ink-500">34,99€</span></label>
+        </div>
+      </fieldset>
+      <p id="signupError" class="hidden rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"></p>
+      <div class="flex gap-2 pt-2">
+        <button type="button" data-action="close-signup" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white hover:bg-white/10">Cancelar</button>
+        <button type="submit" class="flex-1 rounded-full bg-white py-3 text-sm font-semibold text-black hover:bg-ink-200">Crear mi cuenta</button>
+      </div>
+      <p class="pt-2 text-center text-xs text-ink-200/70">¿Ya tienes cuenta? <a href="#" data-action="open-login-from-signup" class="font-semibold text-white hover:underline">Inicia sesión</a></p>
+    </form>
+  </div>
+</div>
+
+<!-- EMAIL VERIFICACIÓN (SIMULADO) -->
+<div id="emailVerifyModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+  <div class="relative my-auto w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <!-- Cabecera del email -->
+    <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
+      <div class="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">Bandeja de entrada · 1 mensaje nuevo</div>
+      <div class="mt-2 flex items-center gap-3">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full" style="background:#00e696;color:#000;font-weight:700;font-family:sans-serif;">M</div>
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-sm font-semibold text-gray-900">Master Betting</div>
+          <div class="truncate text-[11px] text-gray-500">hola@masterbetting.es → <span id="emailVerifyTo" class="font-medium text-gray-700">cliente@email.com</span></div>
+        </div>
+        <div class="text-[10px] text-gray-400">ahora</div>
+      </div>
+      <div class="mt-3 font-semibold text-gray-900">Verifica tu cuenta de Master Betting</div>
+    </div>
+    <!-- Cuerpo del email -->
+    <div class="px-6 py-7 text-gray-900">
+      <p class="text-sm">Hola <strong id="emailVerifyName">[Nombre]</strong>,</p>
+      <p class="mt-3 text-sm text-gray-700 leading-relaxed">¡Bienvenido a <strong>Master Betting</strong>! Estás a un paso de empezar a recibir nuestros pronósticos. Pulsa el botón de abajo para activar tu cuenta:</p>
+      <div class="my-6 text-center">
+        <button id="emailVerifyBtn" class="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3 text-sm font-semibold text-white shadow-lg transition" style="background:#00b878;">Verificar mi cuenta →</button>
+      </div>
+      <p class="text-xs text-gray-500 leading-relaxed">Este enlace caduca en 24 horas. Si no has creado esta cuenta, ignora este mensaje. Si tienes dudas, responde a este correo.</p>
+      <div class="mt-5 border-t border-gray-200 pt-4 text-[10px] text-gray-400">© Master Betting · Pronósticos deportivos premium · +18 · Juega con responsabilidad.</div>
+    </div>
+    <!-- Aviso de simulación -->
+    <div class="border-t border-amber-300 bg-amber-50 px-6 py-3 text-xs text-amber-900">
+      <strong>⚠️ Simulación:</strong> en producción este email se enviaría a tu correo real. Aquí lo mostramos en pantalla para esta vista previa.
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-login"></div>
+  <div class="gradient-border relative w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
+    <div class="text-center">
+      <img src="RECURSOS/Recurso%201.png" alt="Master Betting" class="mx-auto mb-4 h-10 w-auto"/>
+    </div>
+    <form id="loginForm" class="mt-2 space-y-4">
+      <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="tu@email.com" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/></div>
+      <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/></div>
+      <p id="loginError" class="hidden rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">Credenciales incorrectas. Inténtalo de nuevo.</p>
+      <div class="flex gap-2 pt-2">
+        <button type="button" data-action="close-login" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">Cancelar</button>
+        <button type="submit" class="flex-1 rounded-full bg-white py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Acceder</button>
+      </div>
+      <p class="pt-2 text-center text-xs text-ink-200/70">¿No tienes cuenta? <a href="#" data-action="open-signup" class="font-semibold text-white hover:underline">Crear cuenta</a></p>
+    </form>
+  </div>
+</div>
+
+<!-- EDIT CLIENT -->
+<div id="editModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-edit"></div>
+  <div class="gradient-border relative w-full max-w-lg overflow-hidden rounded-3xl bg-[#06120c]/95 p-6 shadow-2xl sm:p-8">
+    <div class="flex items-start justify-between gap-4"><h2 class="font-display text-xl font-semibold text-white">Editar perfil</h2><button data-action="close-edit" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button></div>
+    <form id="editForm" class="mt-5 space-y-4">
+      <input type="hidden" id="editId"/>
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Nombre</span><input id="editName" type="text" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Email</span><input id="editEmail" type="email" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Plan</span><select id="editPlan" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"><option value="Basic">Basic — 9,99 € / mes</option><option value="Pro">Pro — 19,99 € / mes</option><option value="Exclusive">Exclusive — 34,99 € / mes</option></select></label>
+      <div class="flex justify-end gap-2 pt-3"><button type="button" data-action="close-edit" class="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-sm font-medium text-white hover:bg-white/10">Cancelar</button><button type="submit" class="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-ink-200">Guardar cambios</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- PASSWORD -->
+<div id="pwModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-pw"></div>
+  <div class="gradient-border relative w-full max-w-lg overflow-hidden rounded-3xl bg-[#06120c]/95 p-6 shadow-2xl sm:p-8">
+    <div class="flex items-start justify-between gap-4"><h2 id="pwTitle" class="font-display text-xl font-semibold text-white">Cambiar contraseña</h2><button data-action="close-pw" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button></div>
+    <form id="pwForm" class="mt-5 space-y-4">
+      <input type="hidden" id="pwId"/>
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Nueva contraseña</span><input id="pw1" type="password" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Repite la contraseña</span><input id="pw2" type="password" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+      <p id="pwError" class="hidden rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"></p>
+      <div class="flex justify-end gap-2 pt-3"><button type="button" data-action="close-pw" class="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-sm font-medium text-white hover:bg-white/10">Cancelar</button><button type="submit" class="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-ink-200">Actualizar</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- NEW PICK -->
+<div id="newPickModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-newpick"></div>
+  <div class="gradient-border relative my-auto w-full max-w-xl overflow-hidden rounded-3xl bg-[#06120c]/95 p-6 shadow-2xl sm:p-8">
+    <div class="flex items-start justify-between gap-4"><h2 class="font-display text-xl font-semibold text-white">Nuevo pronóstico</h2><button data-action="close-newpick" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button></div>
+    <form id="newPickForm" class="mt-5 space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Fecha</span><input type="date" id="npDate" required class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+        <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Hora</span><input type="time" id="npTime" required class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+      </div>
+
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Etiqueta</span>
+        <select id="npTier" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30">
+          <option value="standard">Sin etiqueta (estándar)</option>
+          <option value="exclusive">EXCLUSIVE — pronóstico premium</option>
+          <option value="funbet">FUNBET — combinada (solo Exclusive)</option>
+        </select>
+        <p id="npTierHint" class="mt-1.5 text-xs text-ink-500">Si marcas <span class="text-white">EXCLUSIVE</span> y activas también el plan <span class="text-white">Pro</span>, los clientes Pro recibirán este pronóstico como su "+1 EXCLUSIVE" del mes.</p>
+      </label>
+
+      <fieldset>
+        <legend class="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Disponible para los planes</legend>
+        <div id="npPlansGroup" class="flex flex-wrap gap-2">
+          <label class="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Basic" class="accent-emerald-400"/> Basic</label>
+          <label class="flex items-center gap-2 rounded-full border border-accent-neon/30 bg-accent-neon/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Pro" class="accent-emerald-400"/> Pro</label>
+          <label class="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Exclusive" class="accent-emerald-400"/> Exclusive</label>
+        </div>
+      </fieldset>
+
+      <!-- Eventos (lista dinámica) -->
+      <div>
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Eventos del pronóstico</span>
+          <button type="button" id="addEventBtn" class="hidden rounded-full border border-accent-neon/40 bg-accent-neon/5 px-3 py-1 text-[11px] font-medium text-accent-neon hover:bg-accent-neon/15">+ Añadir evento</button>
+        </div>
+        <div id="eventsContainer" class="space-y-3"></div>
+      </div>
+
+      <!-- Cuota total (visible solo en funbet) -->
+      <div id="totalOddsDisplay" class="hidden gradient-border rounded-2xl bg-accent-neon/5 p-4 text-center">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Cuota total combinada</div>
+        <div id="totalOddsValue" class="mt-1 font-display text-3xl font-semibold text-gradient">0,00</div>
+      </div>
+
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Stake (unidades) — para todo el pronóstico</span><input type="number" id="npStake" step="0.5" min="0.5" max="10" required placeholder="3" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+
+      <datalist id="npCompetitions"></datalist>
+      <datalist id="npTeams"></datalist>
+
+      <p id="npError" class="hidden rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"></p>
+      <div class="flex justify-end gap-2 pt-2"><button type="button" data-action="close-newpick" class="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-sm font-medium text-white hover:bg-white/10">Cancelar</button><button type="submit" class="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-ink-200">Crear pronóstico</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- FOLLOW BET -->
+<div id="followModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-follow"></div>
+  <div class="gradient-border relative w-full max-w-lg overflow-hidden rounded-3xl bg-[#06120c]/95 p-6 shadow-2xl sm:p-8">
+    <div class="flex items-start justify-between gap-4"><h2 class="font-display text-xl font-semibold text-white">Apuesta seguida</h2><button data-action="close-follow" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button></div>
+    <div id="followPickInfo" class="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm"></div>
+    <form id="followForm" class="mt-5 space-y-4">
+      <input type="hidden" id="followPickId"/>
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Importe que has apostado (€)</span><input id="followAmount" type="number" step="0.01" min="0.01" placeholder="0,00" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/><p id="followAmountHint" class="mt-1.5 text-xs text-ink-500"></p></label>
+      <p id="followError" class="hidden rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"></p>
+      <div class="flex justify-end gap-2 pt-3"><button type="button" data-action="close-follow" class="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-sm font-medium text-white hover:bg-white/10">Cancelar</button><button type="submit" class="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-ink-200">Confirmar apuesta seguida</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   PERSISTENCIA — localStorage para datos, sessionStorage para login
+============================================================ */
+const STORAGE = {
+  pool:     'tipster-pool',
+  followed: 'tipster-followed',
+  clients:  'tipster-clients',
+};
+function loadJSON(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+}
+function saveJSON(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); }
+  catch (e) { console.warn('localStorage lleno o no disponible:', e); }
+}
+
+/* ============================================================
+   ⚠️ MIGRACIÓN — al cargar una nueva versión, limpia solo los
+   flags de sesión. NO toca los datos de localStorage para que
+   los pronósticos y clientes que has creado se mantengan.
+============================================================ */
+const APP_VERSION = '2026-05-05-signup-flow';
+if (localStorage.getItem('tipster-version') !== APP_VERSION) {
+  // Limpieza por cambio de versión: borra los clientes de prueba y apuestas seguidas.
+  localStorage.removeItem(STORAGE.clients);
+  localStorage.removeItem(STORAGE.followed);
+  sessionStorage.removeItem('tipster-admin');
+  sessionStorage.removeItem('tipster-client');
+  localStorage.setItem('tipster-version', APP_VERSION);
+}
+
+/* ============================================================
+   AÑO + MENÚ MÓVIL
+============================================================ */
+document.getElementById('year').textContent = new Date().getFullYear();
+const menuBtn = document.getElementById('menuBtn');
+const mobileMenu = document.getElementById('mobileMenu');
+const bar1 = document.getElementById('bar1'), bar2 = document.getElementById('bar2'), bar3 = document.getElementById('bar3');
+let menuOpen = false;
+menuBtn.addEventListener('click', () => {
+  menuOpen = !menuOpen;
+  if (menuOpen) {
+    mobileMenu.style.maxHeight = '24rem'; mobileMenu.style.opacity = '1';
+    bar1.style.transform = 'translateY(6px) rotate(45deg)'; bar2.style.opacity = '0'; bar3.style.transform = 'translateY(-6px) rotate(-45deg)';
+  } else {
+    mobileMenu.style.maxHeight = '0'; mobileMenu.style.opacity = '0';
+    bar1.style.transform = ''; bar2.style.opacity = '1'; bar3.style.transform = '';
+  }
+});
+mobileMenu.querySelectorAll('a:not([data-action])').forEach(a => a.addEventListener('click', () => menuBtn.click()));
+
+/* ============================================================
+   ⚠️ PROTOTIPO — credenciales en cliente, NO usar en producción
+============================================================ */
+const ADMIN_EMAIL = "angelnavarroceldran@hotmail.com";
+const ADMIN_PASSWORD = "Reymisterio1.";
+
+/* ============================================================
+   CLIENTES (mock)
+============================================================ */
+// Lista vacía: cualquier persona crea su cuenta desde la home.
+// Cada cliente tiene: id, name, email, password, plan, price, status, joinedAt, verified.
+const initialClients = [];
+let clients = loadJSON(STORAGE.clients, JSON.parse(JSON.stringify(initialClients)));
+function saveClients() { saveJSON(STORAGE.clients, clients); }
+
+const PLAN_PRICES = { Basic: 9.99, Pro: 19.99, Exclusive: 34.99 };
+const UNIT_VALUE_BY_PLAN = { Basic: 5, Pro: 10, Exclusive: 20 };
+const fmtEuro = (n) => n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+
+const statusInfo = {
+  active:  { label: "Activo",   cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" },
+  paused:  { label: "Pausado",  cls: "border-amber-500/40 bg-amber-500/10 text-amber-300" },
+  revoked: { label: "Revocado", cls: "border-red-500/40 bg-red-500/10 text-red-300" },
+};
+const resultInfo = {
+  pending: { label: 'Pendiente', cls: 'border-amber-500/40 bg-amber-500/10 text-amber-300' },
+  won:     { label: 'Acertada',  cls: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' },
+  lost:    { label: 'Fallada',   cls: 'border-red-500/40 bg-red-500/10 text-red-300' },
+  void:    { label: 'Anulada',   cls: 'border-white/15 bg-white/5 text-ink-200' },
+};
+
+/* ============================================================
+   DEPORTES + ICONOS SVG
+============================================================ */
+function sportIcon(sport, size = 18) {
+  const s = String(size);
+  if (sport === 'Fútbol') {
+    return `<svg viewBox="0 0 32 32" width="${s}" height="${s}" aria-hidden="true">
+      <circle cx="16" cy="16" r="14" fill="#f6f7f8" stroke="#0a0a0a" stroke-width="1"/>
+      <polygon points="16,9 20.5,12.3 18.7,17.5 13.3,17.5 11.5,12.3" fill="#0a0a0a"/>
+      <line x1="16" y1="9" x2="16" y2="3" stroke="#0a0a0a" stroke-width="1"/>
+      <line x1="20.5" y1="12.3" x2="26" y2="11.5" stroke="#0a0a0a" stroke-width="1"/>
+      <line x1="18.7" y1="17.5" x2="22" y2="22.5" stroke="#0a0a0a" stroke-width="1"/>
+      <line x1="13.3" y1="17.5" x2="10" y2="22.5" stroke="#0a0a0a" stroke-width="1"/>
+      <line x1="11.5" y1="12.3" x2="6" y2="11.5" stroke="#0a0a0a" stroke-width="1"/>
+    </svg>`;
+  }
+  if (sport === 'Tenis') {
+    return `<svg viewBox="0 0 32 32" width="${s}" height="${s}" aria-hidden="true">
+      <circle cx="16" cy="16" r="14" fill="#dbf551" stroke="#94a824" stroke-width="0.6"/>
+      <path d="M 3.5 12.5 Q 16 7 28.5 12.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M 3.5 19.5 Q 16 25 28.5 19.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>`;
+  }
+  if (sport === 'Baloncesto') {
+    return `<svg viewBox="0 0 32 32" width="${s}" height="${s}" aria-hidden="true">
+      <circle cx="16" cy="16" r="14" fill="#e88421" stroke="#5b2d04" stroke-width="0.8"/>
+      <line x1="16" y1="2" x2="16" y2="30" stroke="#3a1e07" stroke-width="1"/>
+      <path d="M 2.5 16 Q 16 11 29.5 16" fill="none" stroke="#3a1e07" stroke-width="1"/>
+      <path d="M 2.5 16 Q 16 21 29.5 16" fill="none" stroke="#3a1e07" stroke-width="1"/>
+      <path d="M 6 6 Q 11 16 6 26" fill="none" stroke="#3a1e07" stroke-width="0.8"/>
+      <path d="M 26 6 Q 21 16 26 26" fill="none" stroke="#3a1e07" stroke-width="0.8"/>
+    </svg>`;
+  }
+  return '';
+}
+
+/* ============================================================
+   COMPETICIONES (con slug para logo opcional)
+============================================================ */
+const COMPETITIONS = {
+  /* === Fútbol — competiciones europeas === */
+  'Champions League':           { slug: 'championsleague',           sport: 'Fútbol', color: '#0a1f60', text: '#fff', short: 'UCL' },
+  'Europa League':              { slug: 'europaleague',              sport: 'Fútbol', color: '#ff6900', text: '#fff', short: 'UEL' },
+  'Conference League':          { slug: 'europa_conference_league',  sport: 'Fútbol', color: '#0e7c2e', text: '#fff', short: 'UECL' },
+  'Mundial de Clubes':          { slug: 'club_world_cup',            sport: 'Fútbol', color: '#bd9b3b', text: '#000', short: 'FCWC' },
+  'Mundial 2026':               { slug: 'mundial_2026',              sport: 'Fútbol', color: '#bd0000', text: '#fff', short: 'WC26' },
+  /* === Fútbol — ligas === */
+  'LaLiga':                     { slug: 'espana',                    sport: 'Fútbol', color: '#ee2737', text: '#fff', short: 'LL' },
+  'Premier League':             { slug: 'inglaterra',                sport: 'Fútbol', color: '#3d195b', text: '#fff', short: 'PL' },
+  'Bundesliga':                 { slug: 'alemania',                  sport: 'Fútbol', color: '#d20515', text: '#fff', short: 'BL' },
+  'Serie A':                    { slug: 'italia',                    sport: 'Fútbol', color: '#008fd7', text: '#fff', short: 'A' },
+  'Ligue 1':                    { slug: 'francia',                   sport: 'Fútbol', color: '#091c3e', text: '#fff', short: 'L1' },
+  /* === Fútbol — copas nacionales === */
+  'Copa del Rey':               { slug: 'copadelrey',                sport: 'Fútbol', color: '#a40034', text: '#ffd700', short: 'CdR' },
+  'Coppa Italia':               { slug: 'coppaitalia',               sport: 'Fútbol', color: '#003366', text: '#fff', short: 'CIt' },
+  'FA Cup':                     { slug: 'facup',                     sport: 'Fútbol', color: '#002b5c', text: '#fff', short: 'FA' },
+  /* === Fútbol — Sudamérica === */
+  'Libertadores':               { slug: 'libertadores',              sport: 'Fútbol', color: '#ffe600', text: '#000', short: 'CL' },
+  /* === Tenis (sin logo todavía) === */
+  'Roland Garros':              { slug: 'roland-garros',             sport: 'Tenis',  color: '#c97a4a', text: '#fff', short: 'RG' },
+  'Wimbledon':                  { slug: 'wimbledon',                 sport: 'Tenis',  color: '#4f7942', text: '#fff', short: 'W' },
+  'US Open':                    { slug: 'us-open',                   sport: 'Tenis',  color: '#0066b2', text: '#fff', short: 'US' },
+  'Australian Open':            { slug: 'australian-open',           sport: 'Tenis',  color: '#fef200', text: '#000', short: 'AO' },
+  'ATP Masters':                { slug: 'atp-masters',               sport: 'Tenis',  color: '#1c4174', text: '#fff', short: 'ATP' },
+  /* === Baloncesto (sin logo todavía) === */
+  'NBA':                        { slug: 'nba',                       sport: 'Baloncesto', color: '#c8102e', text: '#fff', short: 'NBA' },
+  'EuroLeague':                 { slug: 'euroleague',                sport: 'Baloncesto', color: '#ff6900', text: '#fff', short: 'EL' },
+  'Liga ACB':                   { slug: 'liga-acb',                  sport: 'Baloncesto', color: '#00529c', text: '#fff', short: 'ACB' },
+};
+
+function competitionBadge(name) {
+  const c = COMPETITIONS[name];
+  if (!c) return '';
+  // Renderiza pill con texto, e intenta cargar el logo. Si carga, oculta el texto.
+  return `<span class="comp-badge rounded-md" style="background:${c.color};color:${c.text};padding:2px 6px;">
+    <img class="comp-logo" src="RECURSOS/${c.slug}.png" alt="${name}" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'"/>
+    <span class="comp-text text-[10px] font-bold tracking-wider">${c.short}</span>
+  </span>`;
+}
+
+/* ============================================================
+   EQUIPOS / JUGADORES
+============================================================ */
+const TEAMS = {
+  /* === LaLiga === */
+  'Real Madrid':          { slug: 'realmadrid',           color: '#fff',     text: '#1f3a72', short: 'RM' },
+  'Barcelona':            { slug: 'barcelona',            color: '#a50044',  text: '#fff',    short: 'FCB' },
+  'Atlético de Madrid':   { slug: 'atlmadrid',            color: '#ce3524',  text: '#fff',    short: 'ATM' },
+  'Sevilla':              { slug: 'sevilla',              color: '#fff',     text: '#e90b1c', short: 'SEV' },
+  'Valencia':             { slug: 'valencia',             color: '#f4af1f',  text: '#000',    short: 'VAL' },
+  'Athletic Club':        { slug: 'athletic',             color: '#ee2523',  text: '#fff',    short: 'ATH' },
+  'Real Sociedad':        { slug: 'realsociedad',         color: '#0067b1',  text: '#fff',    short: 'RSO' },
+  'Real Betis':           { slug: 'betis',                color: '#0bb363',  text: '#fff',    short: 'BET' },
+  'Alavés':               { slug: 'alaves',               color: '#002952',  text: '#fff',    short: 'ALA' },
+  'Celta de Vigo':        { slug: 'celta',                color: '#8ac4e1',  text: '#fff',    short: 'CEL' },
+  'Elche':                { slug: 'elche',                color: '#fff',     text: '#008b32', short: 'ELC' },
+  'Espanyol':             { slug: 'espanyol',             color: '#007ec4',  text: '#fff',    short: 'ESP' },
+  'Getafe':               { slug: 'getafe',               color: '#003a8e',  text: '#fff',    short: 'GET' },
+  'Girona':               { slug: 'girona',               color: '#c8102e',  text: '#fff',    short: 'GIR' },
+  'Levante':              { slug: 'levante',              color: '#870016',  text: '#fff',    short: 'LEV' },
+  'Mallorca':             { slug: 'mallorca',             color: '#cc0000',  text: '#000',    short: 'MAL' },
+  'Osasuna':              { slug: 'osasuna',              color: '#d2122e',  text: '#000',    short: 'OSA' },
+  'Rayo Vallecano':       { slug: 'rayovallecano',        color: '#fff',     text: '#ed1c24', short: 'RAY' },
+  'Real Oviedo':          { slug: 'realoviedo',           color: '#005bb8',  text: '#fff',    short: 'OVI' },
+  'Villarreal':           { slug: 'villarreal',           color: '#ffe800',  text: '#005099', short: 'VIL' },
+
+  /* === Premier League === */
+  'Arsenal':              { slug: 'arsenal',              color: '#ef0107',  text: '#fff',    short: 'ARS' },
+  'Aston Villa':          { slug: 'astonvilla',           color: '#7a003c',  text: '#95bfe5', short: 'AVL' },
+  'Bournemouth':          { slug: 'bournemouth',          color: '#d10027',  text: '#000',    short: 'BOU' },
+  'Brentford':            { slug: 'brentford',            color: '#fbb800',  text: '#e30613', short: 'BRE' },
+  'Brighton':             { slug: 'brighton',             color: '#0057b8',  text: '#fff',    short: 'BHA' },
+  'Burnley':              { slug: 'burnley',              color: '#6c1d45',  text: '#9bcbeb', short: 'BUR' },
+  'Chelsea':              { slug: 'chelsea',              color: '#034694',  text: '#fff',    short: 'CHE' },
+  'Crystal Palace':       { slug: 'crystalpalace',        color: '#1b458f',  text: '#c4122e', short: 'CRY' },
+  'Everton':              { slug: 'everton',              color: '#003399',  text: '#fff',    short: 'EVE' },
+  'Fulham':               { slug: 'fulham',               color: '#fff',     text: '#000',    short: 'FUL' },
+  'Leeds':                { slug: 'leeds',                color: '#fff',     text: '#1b449c', short: 'LEE' },
+  'Liverpool':            { slug: 'liverpool',            color: '#c8102e',  text: '#fff',    short: 'LIV' },
+  'Manchester City':      { slug: 'manchestercity',       color: '#6cabdd',  text: '#fff',    short: 'MCI' },
+  'Manchester United':    { slug: 'manchesterunited',     color: '#da291c',  text: '#fff',    short: 'MUN' },
+  'Newcastle':            { slug: 'newcastle',            color: '#241f20',  text: '#fff',    short: 'NEW' },
+  'Nottingham Forest':    { slug: 'nottingham_forest',    color: '#dc052d',  text: '#fff',    short: 'NFO' },
+  'Sunderland':           { slug: 'sunderland',           color: '#eb172b',  text: '#fff',    short: 'SUN' },
+  'Tottenham':            { slug: 'tottenham',            color: '#132257',  text: '#fff',    short: 'TOT' },
+  'West Ham':             { slug: 'westham',              color: '#7a263a',  text: '#1bb1e7', short: 'WHU' },
+  'Wolves':               { slug: 'wolves',               color: '#fdb913',  text: '#231f20', short: 'WOL' },
+
+  /* === Bundesliga === */
+  'Augsburgo':            { slug: 'augsburgo',            color: '#ba3733',  text: '#fff',    short: 'AUG' },
+  'Bayer Leverkusen':     { slug: 'bayerleverkusen',      color: '#e32219',  text: '#000',    short: 'B04' },
+  'Bayern München':       { slug: 'bayernmunchen',        color: '#dc052d',  text: '#fff',    short: 'BAY' },
+  'Borussia Dortmund':    { slug: 'borussiadortmund',     color: '#fde100',  text: '#000',    short: 'BVB' },
+  'B. Mönchengladbach':   { slug: 'bmonchengladbach',     color: '#fff',     text: '#009444', short: 'BMG' },
+  'Eintracht Frankfurt':  { slug: 'eintrachtfrankfurt',   color: '#000',     text: '#e1000f', short: 'SGE' },
+  'Freiburg':             { slug: 'freiburg',             color: '#c8102e',  text: '#fff',    short: 'SCF' },
+  'Hamburgo':             { slug: 'hamburgo',             color: '#0f4f93',  text: '#fff',    short: 'HSV' },
+  'Heidenheim':           { slug: 'heidenheim',           color: '#2459a8',  text: '#fff',    short: 'HEI' },
+  'Hoffenheim':           { slug: 'hoffenheim',           color: '#1961b5',  text: '#fff',    short: 'TSG' },
+  'Köln':                 { slug: 'koln',                 color: '#ed1b24',  text: '#fff',    short: 'KOL' },
+  'Mainz 05':             { slug: 'mainz05',              color: '#dd0741',  text: '#fff',    short: 'M05' },
+  'RB Leipzig':           { slug: 'rbleipzig',            color: '#dd0741',  text: '#fff',    short: 'RBL' },
+  'St. Pauli':            { slug: 'st_pauli',             color: '#663131',  text: '#fff',    short: 'STP' },
+  'Stuttgart':            { slug: 'stuttgart',            color: '#e32219',  text: '#fff',    short: 'VFB' },
+  'Union Berlin':         { slug: 'unionberlin',          color: '#c9100e',  text: '#eb1c24', short: 'FCU' },
+  'Werder Bremen':        { slug: 'werderbremen',         color: '#009639',  text: '#fff',    short: 'SVW' },
+  'Wolfsburg':            { slug: 'wolfsburg',            color: '#65b32e',  text: '#fff',    short: 'WOB' },
+
+  /* === Serie A === */
+  'Atalanta':             { slug: 'atalanta',             color: '#1d4198',  text: '#fff',    short: 'ATA' },
+  'Bologna':              { slug: 'bologna',              color: '#802125',  text: '#fff',    short: 'BOL' },
+  'Cagliari':             { slug: 'cagliari',             color: '#b7142a',  text: '#fff',    short: 'CAG' },
+  'Como':                 { slug: 'como',                 color: '#04284a',  text: '#fff',    short: 'COM' },
+  'Cremonese':            { slug: 'cremonese',            color: '#b0011e',  text: '#fff',    short: 'CRE' },
+  'Fiorentina':           { slug: 'fiorentina',           color: '#5e2384',  text: '#fff',    short: 'FIO' },
+  'Genoa':                { slug: 'genoa',                color: '#c8102e',  text: '#fff',    short: 'GEN' },
+  'Hellas Verona':        { slug: 'hellasverona',         color: '#003f94',  text: '#ffe600', short: 'VER' },
+  'Inter de Milán':       { slug: 'inter',                color: '#0068a8',  text: '#fff',    short: 'INT' },
+  'Juventus':             { slug: 'juventus',             color: '#000',     text: '#fff',    short: 'JUV' },
+  'Lazio':                { slug: 'lazio',                color: '#87ceeb',  text: '#000',    short: 'LAZ' },
+  'Lecce':                { slug: 'lecce',                color: '#ffe600',  text: '#bb1126', short: 'LEC' },
+  'AC Milan':             { slug: 'milan',                color: '#fb090b',  text: '#fff',    short: 'MIL' },
+  'Napoli':               { slug: 'napoli',               color: '#12a0d7',  text: '#fff',    short: 'NAP' },
+  'Parma':                { slug: 'parma',                color: '#003d80',  text: '#ffe600', short: 'PAR' },
+  'Pisa':                 { slug: 'pisa',                 color: '#002853',  text: '#fff',    short: 'PIS' },
+  'Roma':                 { slug: 'roma',                 color: '#8e1f2f',  text: '#f0bb33', short: 'ROM' },
+  'Sassuolo':             { slug: 'sassuolo',             color: '#006428',  text: '#000',    short: 'SAS' },
+  'Torino':               { slug: 'torino',               color: '#8a1538',  text: '#fff',    short: 'TOR' },
+  'Udinese':              { slug: 'udinese',              color: '#000',     text: '#fff',    short: 'UDI' },
+
+  /* === Ligue 1 === */
+  'Angers':               { slug: 'angers',               color: '#fff',     text: '#000',    short: 'ANG' },
+  'Auxerre':              { slug: 'auxerre',              color: '#fff',     text: '#0050a5', short: 'AUX' },
+  'Le Havre':             { slug: 'havre',                color: '#182b49',  text: '#fff',    short: 'HAC' },
+  'Lille':                { slug: 'lille',                color: '#da020e',  text: '#fff',    short: 'LIL' },
+  'Lorient':              { slug: 'lorient',              color: '#e7710e',  text: '#000',    short: 'LOR' },
+  'Lyon':                 { slug: 'olympiquelyon',        color: '#fff',     text: '#dc1e1e', short: 'OL' },
+  'Marseille':            { slug: 'olimpiquemarsella',    color: '#27aae1',  text: '#fff',    short: 'OM' },
+  'Metz':                 { slug: 'metz',                 color: '#8b0000',  text: '#fff',    short: 'MET' },
+  'Monaco':               { slug: 'monaco',               color: '#e60026',  text: '#fff',    short: 'MON' },
+  'Nantes':               { slug: 'nantes',               color: '#fcd116',  text: '#0e7c2e', short: 'NAN' },
+  'Niza':                 { slug: 'niza',                 color: '#000',     text: '#cd1219', short: 'NIC' },
+  'Paris FC':             { slug: 'paris_fc',             color: '#01237d',  text: '#fff',    short: 'PFC' },
+  'PSG':                  { slug: 'psg',                  color: '#004170',  text: '#fff',    short: 'PSG' },
+  'RC Lens':              { slug: 'racinglens',           color: '#e4022d',  text: '#fcc324', short: 'RCL' },
+  'Estrasburgo':          { slug: 'racingetrasburgo',     color: '#0f58a8',  text: '#fff',    short: 'RCS' },
+  'Rennes':               { slug: 'rennais',              color: '#da0007',  text: '#000',    short: 'REN' },
+  'Stade Brestois':       { slug: 'stadebretois',         color: '#cf2127',  text: '#fff',    short: 'BRE' },
+  'Toulouse':             { slug: 'toulouse',             color: '#5c2581',  text: '#fff',    short: 'TFC' },
+
+  /* === Selecciones === */
+  'España':               { slug: 'espana',               color: '#c60b1e',  text: '#ffc400', short: 'ESP' },
+  'Italia':               { slug: 'italia',               color: '#0066b2',  text: '#fff',    short: 'ITA' },
+  'Inglaterra':           { slug: 'inglaterra',           color: '#fff',     text: '#cf081f', short: 'ING' },
+  'Francia':              { slug: 'francia',              color: '#002395',  text: '#fff',    short: 'FRA' },
+  'Alemania':             { slug: 'alemania',             color: '#000',     text: '#ffce00', short: 'ALE' },
+
+  /* === Sudamérica === */
+  'Boca Juniors':         { slug: 'boca-juniors',         color: '#003572',  text: '#febc11', short: 'BOC' },
+  'River Plate':          { slug: 'river-plate',          color: '#fff',     text: '#dc1e1e', short: 'RIV' },
+  'Flamengo':             { slug: 'flamengo',             color: '#e8141d',  text: '#fff',    short: 'FLA' },
+  'Palmeiras':            { slug: 'palmeiras',            color: '#006437',  text: '#fff',    short: 'PAL' },
+
+  /* === Tenis (jugadores) — sin logo subido todavía, sale el círculo === */
+  'Carlos Alcaraz':       { slug: 'carlos-alcaraz',       color: '#ec7c1a',  text: '#fff',    short: 'ALC' },
+  'Jannik Sinner':        { slug: 'jannik-sinner',        color: '#ff6800',  text: '#fff',    short: 'SIN' },
+  'Novak Djokovic':       { slug: 'novak-djokovic',       color: '#003f72',  text: '#fff',    short: 'DJK' },
+  'Alexander Zverev':     { slug: 'alexander-zverev',     color: '#1d3461',  text: '#fff',    short: 'ZVR' },
+  'Iga Swiatek':          { slug: 'iga-swiatek',          color: '#dc143c',  text: '#fff',    short: 'SWI' },
+  'Aryna Sabalenka':      { slug: 'aryna-sabalenka',      color: '#fde100',  text: '#000',    short: 'SAB' },
+
+  /* === NBA — sin logo subido todavía, sale el círculo === */
+  'LA Lakers':            { slug: 'la-lakers',            color: '#552583',  text: '#fdb927', short: 'LAL' },
+  'Boston Celtics':       { slug: 'boston-celtics',       color: '#007a33',  text: '#fff',    short: 'BOS' },
+  'Milwaukee Bucks':      { slug: 'milwaukee-bucks',      color: '#00471b',  text: '#eee1c6', short: 'MIL' },
+  'Miami Heat':           { slug: 'miami-heat',           color: '#98002e',  text: '#f9a01b', short: 'MIA' },
+  'Golden State Warriors':{ slug: 'golden-state-warriors',color: '#1d428a',  text: '#ffc72c', short: 'GSW' },
+};
+
+function teamBadge(name, size = 28) {
+  const t = TEAMS[name];
+  if (!t) {
+    const init = name.split(' ').map(w => w[0]).join('').slice(0,3).toUpperCase();
+    return `<span title="${name}" style="background:#374151;color:#fff;width:${size}px;height:${size}px" class="badge-img"><span class="badge-fallback">${init}</span></span>`;
+  }
+  return `<span title="${name}" style="background:${t.color};color:${t.text};width:${size}px;height:${size}px" class="badge-img">
+    <span class="badge-fallback text-[10px]">${t.short}</span>
+    <img class="badge-logo" src="RECURSOS/${t.slug}.png" alt="${name}" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'"/>
+  </span>`;
+}
+
+// Pinta un solo evento (fila con competición + equipos opcionales)
+function singleEventLine(e, showNames = false) {
+  if (!e.competition && !e.team1 && !e.team2) return '';
+  const compHTML = e.competition ? `<span class="shrink-0">${competitionBadge(e.competition)}</span>` : '';
+  if (!showNames) {
+    const left = e.team1 ? teamBadge(e.team1) : '';
+    const right = e.team2 ? teamBadge(e.team2) : '';
+    const vs = (e.team1 && e.team2) ? `<span class="text-[10px] font-semibold uppercase tracking-[0.3em] text-ink-500">vs</span>` : '';
+    return `<div class="flex flex-wrap items-center gap-2">${compHTML}${left}${vs}${right}</div>`;
+  }
+  const t1 = e.team1 ? `<span class="inline-flex items-center gap-2 whitespace-nowrap">${teamBadge(e.team1)}<span class="font-display text-sm font-semibold text-white">${e.team1}</span></span>` : '';
+  const t2 = e.team2 ? `<span class="inline-flex items-center gap-2 whitespace-nowrap">${teamBadge(e.team2)}<span class="font-display text-sm font-semibold text-white">${e.team2}</span></span>` : '';
+  const vs = (e.team1 && e.team2) ? `<span class="text-[10px] font-semibold uppercase tracking-[0.3em] text-ink-500 shrink-0">vs</span>` : '';
+  return `<div class="flex flex-wrap items-center gap-x-3 gap-y-2">${compHTML}${t1}${vs}${t2}</div>`;
+}
+
+// Pinta el bloque de eventos de un pick (compatible con picks de un solo evento o multi-evento)
+function eventBlock(p, showNames = false) {
+  const events = Array.isArray(p.events) ? p.events : [pickFirstEvent(p)];
+  if (events.length === 1) {
+    return singleEventLine(events[0], showNames);
+  }
+  // Multi-evento (funbet): cada evento con su línea + pickType + cuota individual
+  return events.map((e, i) => `<div class="${i > 0 ? 'mt-3 border-t border-white/10 pt-3' : ''}">
+    ${singleEventLine(e, showNames)}
+    <div class="mt-1.5 flex items-center gap-2 text-xs">
+      <span class="text-ink-200/85">${e.pickType}</span>
+      <span class="text-ink-500/50">·</span>
+      <span class="font-semibold text-white">@${(e.odds||0).toFixed(2)}</span>
+    </div>
+  </div>`).join('');
+}
+
+/* ============================================================
+   POOL DE PRONÓSTICOS (vacío — el admin los crea)
+============================================================ */
+// Migra picks viejos (un solo evento) al formato events[]
+function migratePick(p) {
+  if (Array.isArray(p.events)) return p;
+  const ev = { sport: p.sport, competition: p.competition || null, team1: p.team1 || null, team2: p.team2 || null, pickType: p.pickType, odds: p.odds };
+  return { ...p, events: [ev], totalOdds: p.odds };
+}
+let monthlyPicksPool = loadJSON(STORAGE.pool, []).map(migratePick);
+function savePool() { saveJSON(STORAGE.pool, monthlyPicksPool); }
+function pickWhen(p) { return `${p.date} ${p.time}`; }
+function availablePicksFor(client) {
+  return monthlyPicksPool.filter(p => p.plans.includes(client.plan) && p.result === 'pending');
+}
+// Helpers para picks combinados (funbet) y simples
+function pickFirstEvent(p) {
+  return (Array.isArray(p.events) && p.events.length > 0)
+    ? p.events[0]
+    : { sport: p.sport, competition: p.competition, team1: p.team1, team2: p.team2, pickType: p.pickType, odds: p.odds };
+}
+function pickIsCombined(p) { return Array.isArray(p.events) && p.events.length > 1; }
+function pickTotalOdds(p) {
+  if (typeof p.totalOdds === 'number') return p.totalOdds;
+  if (Array.isArray(p.events) && p.events.length > 0) return p.events.reduce((acc, e) => acc * (e.odds || 1), 1);
+  return p.odds || 0;
+}
+
+/* ============================================================
+   APUESTAS SEGUIDAS
+============================================================ */
+let followedBets = loadJSON(STORAGE.followed, {});
+function saveFollowed() { saveJSON(STORAGE.followed, followedBets); }
+function getFollowed(clientId) { return followedBets[clientId] || []; }
+function findFollowed(clientId, pickId) { return getFollowed(clientId).find(b => b.pickId === pickId); }
+function followBet(clientId, pickId, amount) {
+  if (!followedBets[clientId]) followedBets[clientId] = [];
+  if (followedBets[clientId].some(b => b.pickId === pickId)) return false;
+  followedBets[clientId].push({ pickId, amount, followedAt: new Date().toISOString() });
+  saveFollowed();
+  return true;
+}
+function unfollowBet(clientId, pickId) {
+  if (!followedBets[clientId]) return;
+  followedBets[clientId] = followedBets[clientId].filter(b => b.pickId !== pickId);
+  saveFollowed();
+}
+
+/* ============================================================
+   STATS POR CLIENTE — DATOS REALES (todo a 0 si no hay datos)
+============================================================ */
+function statsFor(client) {
+  const unitValue = UNIT_VALUE_BY_PLAN[client.plan] ?? 5;
+  const followed = getFollowed(client.id);
+  let picks=0, won=0, lost=0, voided=0, totalInvested=0, totalReturned=0, stakeUnitsSum=0, bestOdds=0;
+  followed.forEach(b => {
+    const p = monthlyPicksPool.find(x => x.id === b.pickId);
+    if (!p) return;
+    picks++; totalInvested += b.amount; stakeUnitsSum += p.recommendedStake;
+    const tOdds = pickTotalOdds(p);
+    if (p.result === 'won') { won++; totalReturned += b.amount * tOdds; if (tOdds > bestOdds) bestOdds = tOdds; }
+    else if (p.result === 'lost') { lost++; }
+    else if (p.result === 'void') { voided++; totalReturned += b.amount; }
+  });
+  const resolved = won + lost;
+  const winRate = resolved > 0 ? won / resolved : 0;
+  const totalEarnings = totalReturned - totalInvested;
+  const roi = totalInvested > 0 ? totalEarnings / totalInvested : 0;
+  const avgStakeUnits = picks > 0 ? stakeUnitsSum / picks : 0;
+  const avgAmount = picks > 0 ? totalInvested / picks : 0;
+  return { picks, won, lost, voided, winRate, unitValue, avgStakeUnits, avgAmount, totalInvested, totalEarnings, roi, bestOdds };
+}
+
+/* ============================================================
+   AUTH FLOW
+============================================================ */
+const publicSite = document.getElementById('publicSite');
+const adminPanel = document.getElementById('adminPanel');
+const clientPanel = document.getElementById('clientPanel');
+const loginModal = document.getElementById('loginModal');
+let activeClientId = null;
+
+function openLogin() { loginModal.classList.remove('hidden'); document.getElementById('loginEmail').focus(); }
+function closeLogin() { loginModal.classList.add('hidden'); document.getElementById('loginError').classList.add('hidden'); document.getElementById('loginForm').reset(); }
+function showAdmin() {
+  publicSite.classList.add('hidden'); clientPanel.classList.add('hidden'); adminPanel.classList.remove('hidden');
+  switchTab('clients'); window.scrollTo(0, 0); renderAdmin();
+}
+function hideAdmin() { adminPanel.classList.add('hidden'); publicSite.classList.remove('hidden'); window.scrollTo(0, 0); }
+function showClientView(clientId) {
+  activeClientId = clientId;
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  publicSite.classList.add('hidden'); adminPanel.classList.add('hidden'); clientPanel.classList.remove('hidden');
+  document.getElementById('clientHeaderName').textContent = `Hola, ${c.name.split(' ')[0]}`;
+  document.getElementById('clientStatsContent').innerHTML = statsPanelHTML(c, false);
+  window.scrollTo(0, 0);
+}
+function hideClientView() { activeClientId = null; clientPanel.classList.add('hidden'); publicSite.classList.remove('hidden'); window.scrollTo(0, 0); }
+
+document.querySelectorAll('[data-action="open-login"]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }));
+document.querySelectorAll('[data-action="close-login"]').forEach(el => el.addEventListener('click', closeLogin));
+
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
+  errEl.classList.add('hidden');
+
+  // Admin
+  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    sessionStorage.setItem('tipster-admin', 'true'); sessionStorage.removeItem('tipster-client');
+    closeLogin(); showAdmin(); return;
+  }
+  // Cliente: comprobar email + contraseña propia
+  const c = clients.find(x => x.email.toLowerCase() === email);
+  if (!c) return showErr('No existe ninguna cuenta con ese email.');
+  if (c.password !== password) return showErr('Contraseña incorrecta.');
+  if (!c.verified) return showErr('Tu cuenta aún no está verificada. Revisa tu email.');
+  if (c.status === 'revoked') return showErr('Tu acceso ha sido revocado. Contacta con soporte.');
+  sessionStorage.setItem('tipster-client', String(c.id)); sessionStorage.removeItem('tipster-admin');
+  closeLogin(); showClientView(c.id);
+});
+
+const storedClientId = sessionStorage.getItem('tipster-client');
+if (sessionStorage.getItem('tipster-admin') === 'true') showAdmin();
+else if (storedClientId) showClientView(parseInt(storedClientId));
+
+document.getElementById('logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('tipster-admin'); hideAdmin(); });
+document.getElementById('clientLogoutBtn').addEventListener('click', () => { sessionStorage.removeItem('tipster-client'); hideClientView(); });
+
+/* ============================================================
+   TABLA DE CLIENTES (admin)
+============================================================ */
+const planColor = { Basic: 'border-white/15 bg-white/5 text-ink-200', Pro: 'border-accent-neon/40 bg-accent-neon/10 text-accent-neon', Exclusive: 'border-amber-500/40 bg-amber-500/10 text-amber-300' };
+function pickBadges(p) {
+  return `<div class="flex flex-wrap justify-end gap-1.5">${p.plans.map(pl => `<span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${planColor[pl]}">${pl}</span>`).join('')}</div>`;
+}
+function tierBadge(p) {
+  if (p.tier === 'exclusive') return `<span class="rounded-full border border-accent-neon/50 bg-accent-neon/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-accent-neon">Exclusive</span>`;
+  if (p.tier === 'funbet') return `<span class="rounded-full border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Funbet</span>`;
+  return '';
+}
+
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function monthKey(dateStr) { return dateStr.slice(0, 7); }
+function monthLabel(key) { const [y,m] = key.split('-'); return `${MONTH_NAMES[parseInt(m,10)-1]} ${y}`; }
+function groupByMonth(items, dateAccessor = (it) => it.date) {
+  const map = {};
+  items.forEach(it => { const k = monthKey(dateAccessor(it)); (map[k] = map[k] || []).push(it); });
+  return Object.keys(map).sort().reverse().map(k => ({ key: k, label: monthLabel(k), items: map[k] }));
+}
+
+function actionsHTML(c) {
+  const isPaused = c.status === "paused", isRevoked = c.status === "revoked";
+  let html = `<div class="flex flex-wrap items-center gap-1.5 md:flex-nowrap md:justify-end md:whitespace-nowrap">`;
+  html += `<button data-action="stats" data-id="${c.id}" class="rounded-full border border-accent-neon/40 bg-accent-neon/5 px-3 py-1.5 text-[11px] font-medium text-accent-neon hover:bg-accent-neon/15">Estadísticas</button>`;
+  html += `<button data-action="edit" data-id="${c.id}" class="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-white/10">Editar</button>`;
+  html += `<button data-action="password" data-id="${c.id}" class="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-white/10">Contraseña</button>`;
+  if (isRevoked) html += `<button data-action="reactivate" data-id="${c.id}" class="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-white/10">Reactivar</button>`;
+  else { html += `<button data-action="pause" data-id="${c.id}" class="rounded-full border border-amber-500/30 bg-amber-500/5 px-3 py-1.5 text-[11px] font-medium text-amber-300 hover:bg-amber-500/15">${isPaused ? "Reactivar" : "Pausar"}</button>`;
+         html += `<button data-action="revoke" data-id="${c.id}" class="rounded-full border border-red-500/30 bg-red-500/5 px-3 py-1.5 text-[11px] font-medium text-red-300 hover:bg-red-500/15">Revocar</button>`; }
+  html += `<button data-action="delete" data-id="${c.id}" class="rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-[11px] font-medium text-red-300 hover:bg-red-500/20">Eliminar</button>`;
+  return html + `</div>`;
+}
+const sBadge = (s) => `<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${statusInfo[s].cls}">${statusInfo[s].label}</span>`;
+
+function renderAdmin() {
+  const active = clients.filter(c => c.status === 'active'), paused = clients.filter(c => c.status !== 'active');
+  const mrr = active.reduce((s,c) => s + c.price, 0);
+  document.getElementById('kpiTotal').textContent = clients.length;
+  document.getElementById('kpiActive').textContent = active.length;
+  document.getElementById('kpiPaused').textContent = paused.length;
+  document.getElementById('kpiMrr').textContent = fmtEuro(mrr);
+
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const planF = document.getElementById('planFilter').value;
+  const statF = document.getElementById('statusFilter').value;
+  const filt = clients.filter(c => (!search || c.name.toLowerCase().includes(search) || c.email.toLowerCase().includes(search)) && (planF==='all'||c.plan===planF) && (statF==='all'||c.status===statF));
+
+  const earningsCell = (c) => {
+    const e = statsFor(c).totalEarnings;
+    const cls = e > 0 ? 'text-accent-neon' : e < 0 ? 'text-red-300' : 'text-ink-500';
+    const sign = e > 0 ? '+' : e < 0 ? '−' : '';
+    return `<td class="px-5 py-4 font-semibold ${cls}">${sign}${fmtEuro(Math.abs(e))}</td>`;
+  };
+  // Color del nombre: amarillo si está pausado, rojo si revocado, blanco si activo
+  const nameColor = (c) => c.status === 'paused' ? 'text-amber-300' : c.status === 'revoked' ? 'text-red-300' : 'text-white';
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = filt.length === 0 ? `<tr><td colspan="7" class="px-5 py-10 text-center text-ink-500">No hay clientes que coincidan.</td></tr>` :
+    filt.map(c => `<tr class="hover:bg-white/[0.03] transition">
+      <td class="px-5 py-4"><div class="font-medium ${nameColor(c)}">${c.name}</div><div class="text-xs text-ink-500">${c.email}</div></td>
+      <td class="px-5 py-4 text-ink-200/80">${c.plan}</td>
+      <td class="px-5 py-4 text-ink-200/80">${fmtEuro(c.price)}</td>
+      ${earningsCell(c)}
+      <td class="px-5 py-4 text-ink-500">${c.joinedAt}</td>
+      <td class="px-5 py-4">${sBadge(c.status)}</td>
+      <td class="px-5 py-4">${actionsHTML(c)}</td>
+    </tr>`).join('');
+
+  const ml = document.getElementById('mobileList');
+  ml.innerHTML = filt.length === 0 ? `<p class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center text-ink-500">No hay clientes que coincidan.</p>` :
+    filt.map(c => {
+      const e = statsFor(c).totalEarnings;
+      const ecls = e > 0 ? 'text-accent-neon' : e < 0 ? 'text-red-300' : 'text-ink-500';
+      const esign = e > 0 ? '+' : e < 0 ? '−' : '';
+      return `<article class="gradient-border relative overflow-hidden bg-white/[0.02] p-5">
+        <div class="flex items-start justify-between gap-3"><div class="min-w-0"><h3 class="truncate font-display text-base font-semibold ${nameColor(c)}">${c.name}</h3><p class="truncate text-xs text-ink-500">${c.email}</p></div>${sBadge(c.status)}</div>
+        <div class="mt-4 grid grid-cols-3 gap-2 text-xs">
+          <div><div class="text-[10px] uppercase tracking-[0.16em] text-ink-500">Plan</div><div class="mt-1 text-sm font-medium text-white">${c.plan}</div></div>
+          <div><div class="text-[10px] uppercase tracking-[0.16em] text-ink-500">Precio</div><div class="mt-1 text-sm font-medium text-white">${fmtEuro(c.price)}</div></div>
+          <div><div class="text-[10px] uppercase tracking-[0.16em] text-ink-500">Ganancias</div><div class="mt-1 text-sm font-medium ${ecls}">${esign}${fmtEuro(Math.abs(e))}</div></div>
+        </div>
+        <div class="mt-4 border-t border-white/5 pt-4">${actionsHTML(c)}</div>
+      </article>`;
+    }).join('');
+}
+['searchInput','planFilter','statusFilter'].forEach(id => { document.getElementById(id).addEventListener('input', renderAdmin); document.getElementById(id).addEventListener('change', renderAdmin); });
+
+/* Acciones cliente (delegación) */
+function onTableAction(e) {
+  const btn = e.target.closest('[data-action][data-id]'); if (!btn) return;
+  const id = parseInt(btn.dataset.id), action = btn.dataset.action;
+  const c = clients.find(x => x.id === id); if (!c) return;
+  if (action === 'stats') openStatsDetail(c);
+  else if (action === 'edit') openEdit(c);
+  else if (action === 'password') openPw(c);
+  else if (action === 'pause') { c.status = c.status==='paused'?'active':'paused'; saveClients(); renderAdmin(); }
+  else if (action === 'reactivate') { c.status = 'active'; saveClients(); renderAdmin(); }
+  else if (action === 'revoke') { if (confirm(`¿Revocar a ${c.name}?`)) { c.status = 'revoked'; saveClients(); renderAdmin(); } }
+  else if (action === 'delete') { if (confirm(`¿Eliminar a ${c.name}? Esta acción no se puede deshacer.`)) { clients = clients.filter(x => x.id !== c.id); saveClients(); renderAdmin(); } }
+}
+document.getElementById('tableBody').addEventListener('click', onTableAction);
+document.getElementById('mobileList').addEventListener('click', onTableAction);
+
+/* ============================================================
+   PANEL DE ESTADÍSTICAS (cliente y admin)
+============================================================ */
+function statsPanelHTML(c, forAdmin) {
+  const s = statsFor(c);
+  const status = statusInfo[c.status];
+  return `
+    <div class="mb-6 flex flex-col gap-1">
+      ${forAdmin ? `<span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Estadísticas del cliente</span>` : ''}
+      <div class="flex flex-wrap items-center gap-3"><h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${c.name}</h2><span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.cls}">${status.label}</span></div>
+      <p class="text-sm text-ink-500">Plan ${c.plan} · ${fmtEuro(c.price)}/mes · alta el ${c.joinedAt}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      ${kpiCard('Picks este mes', `${s.won} / ${s.picks}`)}
+      ${kpiCard('Tasa de acierto', `${(s.winRate*100).toFixed(0)}%`)}
+      ${kpiCard('Ganancias mes', fmtEuro(s.totalEarnings), true)}
+      ${kpiCard('ROI', `${(s.roi*100).toFixed(1)}%`)}
+    </div>
+    <div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      ${kpiCard('Inversión total', fmtEuro(s.totalInvested))}
+      ${kpiCard('Importe medio / pick', fmtEuro(s.avgAmount))}
+      ${kpiCard('Stake medio', `${s.avgStakeUnits.toFixed(1)} u`)}
+      ${kpiCard('Valor unidad', `${fmtEuro(s.unitValue)} / u`)}
+    </div>
+    <div class="mt-4 flex items-center gap-2 text-xs text-ink-500">
+      <span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span>
+      Mejor cuota acertada del mes: <span class="font-semibold text-white">${s.bestOdds.toFixed(2)}</span>
+    </div>
+    ${availablePicksHTML(c, forAdmin)}
+    ${followedBetsHTML(c, forAdmin)}
+  `;
+}
+function kpiCard(label, value, highlight=false) {
+  return `<div class="gradient-border relative overflow-hidden bg-white/[0.02] p-4 sm:p-5 ${highlight ? 'ring-1 ring-accent-neon/30' : ''}">
+    <div class="pointer-events-none absolute -top-12 -right-8 h-32 w-32 rounded-full opacity-20 blur-3xl" style="background:linear-gradient(135deg,#00e696,#22c55e,#10b981);"></div>
+    <div class="relative"><div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">${label}</div><div class="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl ${highlight?'text-gradient':'text-white'}">${value}</div></div>
+  </div>`;
+}
+
+function availablePickCard(p, c, forAdmin) {
+  const isFollowed = !!findFollowed(c.id, p.id);
+  const recommendedAmount = p.recommendedStake * (statsFor(c).unitValue);
+  const followedBet = findFollowed(c.id, p.id);
+  let actionHTML = '';
+  if (forAdmin) {
+    actionHTML = isFollowed ? `<div class="flex flex-wrap items-center justify-end gap-2"><span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-300">✓ Seguida — ${fmtEuro(followedBet.amount)}</span><span class="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-[11px] font-medium text-amber-300"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14.5"/></svg>Pendiente</span></div>`
+                            : `<div class="text-[11px] uppercase tracking-[0.16em] text-ink-500">Pendiente de decisión del cliente</div>`;
+  } else if (isFollowed) {
+    actionHTML = `<div class="flex flex-wrap items-center justify-end gap-2"><span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-300">✓ Seguida — ${fmtEuro(followedBet.amount)}</span><span class="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-[11px] font-medium text-amber-300"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14.5"/></svg>Pendiente</span><button data-follow-action="unfollow" data-pick-id="${p.id}" class="rounded-full border border-red-500/30 bg-red-500/5 px-3 py-1.5 text-[11px] font-medium text-red-300 hover:bg-red-500/15">Deshacer</button></div>`;
+  } else {
+    actionHTML = `<button data-follow-action="follow" data-pick-id="${p.id}" data-recommended="${recommendedAmount}" class="rounded-full bg-white px-4 py-2 text-[12px] font-semibold text-black transition hover:bg-ink-200">Apuesta seguida</button>`;
+  }
+  const fe = pickFirstEvent(p);
+  const isCombined = pickIsCombined(p);
+  const totalOdds = pickTotalOdds(p);
+  const headerLabel = isCombined ? `Combinada (${p.events.length} eventos)` : fe.sport;
+  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
+          <span class="inline-flex items-center gap-1.5">${sportIcon(fe.sport,16)}<span>${headerLabel}</span></span>
+          <span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>${tierBadge(p)}
+        </div>
+        ${eventBlock(p, true) ? `<div class="mt-3">${eventBlock(p, true)}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
+        ${isCombined ? '' : `<p class="mt-2 text-sm text-ink-200/80">${fe.pickType}</p>`}
+      </div>
+      ${pickBadges(p)}
+    </div>
+    ${isCombined ? `<div class="mt-3 flex items-center justify-between rounded-xl border border-accent-neon/30 bg-accent-neon/10 px-3 py-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">Cuota total combinada</span><span class="font-display text-lg font-bold text-accent-neon">${totalOdds.toFixed(2)}</span></div>` : ''}
+    <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+      <div><span class="text-ink-500">Cuota${isCombined ? ' total' : ''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
+      <div><span class="text-ink-500">Stake recom.</span> <span class="ml-1 font-semibold text-white">${p.recommendedStake} u</span></div>
+      <div><span class="text-ink-500">Importe sugerido</span> <span class="ml-1 font-semibold text-white">${fmtEuro(recommendedAmount)}</span></div>
+    </div>
+    <div class="mt-5 flex items-center justify-end">${actionHTML}</div>
+  </article>`;
+}
+
+function availablePicksHTML(c, forAdmin) {
+  const picks = availablePicksFor(c);
+  const intro = forAdmin
+    ? `<p class="mt-1 text-sm text-ink-500">Apuestas que el cliente puede seguir según su plan ${c.plan}.</p>`
+    : `<p class="mt-1 text-sm text-ink-500">Estas son las apuestas que tu plan <span class="text-white">${c.plan}</span> incluye. Despliega cada mes y pulsa <span class="text-white">Apuesta seguida</span> en las que decidas jugar.</p>`;
+  let body = '';
+  if (picks.length === 0) {
+    body = `<p class="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center text-sm text-ink-500">No hay pronósticos publicados todavía. Cuando el equipo publique nuevos pronósticos, aparecerán aquí.</p>`;
+  } else {
+    const groups = groupByMonth(picks);
+    body = `<div class="mt-4 space-y-3">${groups.map((g, i) => `<details class="month-group" ${i===0?'open':''}>
+      <summary><span class="font-display text-base font-semibold text-white">Pronósticos · ${g.label}</span><span class="text-xs text-ink-500">${g.items.length} ${g.items.length===1?'apuesta':'apuestas'}</span></summary>
+      <div class="group-body grid gap-4 md:grid-cols-2 xl:grid-cols-3">${g.items.map(p => availablePickCard(p, c, forAdmin)).join('')}</div>
+    </details>`).join('')}</div>`;
+  }
+  return `<div id="availableSection" class="mt-10" data-client-id="${c.id}" data-for-admin="${forAdmin?'1':'0'}">
+    <div class="flex items-baseline justify-between gap-3"><h3 class="font-display text-xl font-semibold tracking-tight text-white">Apuestas disponibles</h3><span class="text-[10px] uppercase tracking-[0.18em] text-ink-500">${picks.length} disponibles</span></div>
+    ${intro}${body}
+  </div>`;
+}
+
+// Pinta la celda "Partido" de la tabla con logos + nombres
+function partidoCell(p) {
+  const fe = pickFirstEvent(p);
+  const isCombined = pickIsCombined(p);
+  if (isCombined) {
+    const lines = p.events.map(e => {
+      const compHTML = e.competition ? competitionBadge(e.competition) : '';
+      const t1 = e.team1 ? teamBadge(e.team1, 22) : '';
+      const t2 = e.team2 ? teamBadge(e.team2, 22) : '';
+      const vs = (e.team1 && e.team2) ? `<span class="text-[9px] uppercase tracking-[0.2em] text-ink-500 shrink-0">vs</span>` : '';
+      return `<div class="flex flex-wrap items-center gap-1.5">${compHTML}${t1}${vs}${t2}</div>`;
+    }).join('');
+    return `<div class="space-y-1.5">${lines}<div class="text-[11px] text-ink-500 mt-1">Combinada · ${p.events.length} eventos</div></div>`;
+  }
+  // Single event con logos + nombres
+  const compHTML = fe.competition ? competitionBadge(fe.competition) : '';
+  const t1 = fe.team1 ? `<span class="inline-flex items-center gap-1.5 whitespace-nowrap">${teamBadge(fe.team1, 22)}<span class="text-sm font-medium text-white">${fe.team1}</span></span>` : '';
+  const t2 = fe.team2 ? `<span class="inline-flex items-center gap-1.5 whitespace-nowrap">${teamBadge(fe.team2, 22)}<span class="text-sm font-medium text-white">${fe.team2}</span></span>` : '';
+  const vs = (fe.team1 && fe.team2) ? `<span class="text-[10px] uppercase tracking-[0.18em] text-ink-500 shrink-0">vs</span>` : '';
+  return `<div class="flex flex-col gap-1.5">${compHTML ? `<div>${compHTML}</div>` : ''}<div class="flex flex-wrap items-center gap-2">${t1}${vs}${t2}</div></div>`;
+}
+
+function followedBetRow(b) {
+  const p = monthlyPicksPool.find(x => x.id === b.pickId);
+  if (!p) return { html: '', invested: 0, net: 0 };
+  const date = new Date(b.followedAt).toLocaleDateString('es-ES');
+  const ri = resultInfo[p.result];
+  const fe = pickFirstEvent(p);
+  const isCombined = pickIsCombined(p);
+  const totalOdds = pickTotalOdds(p);
+  let resultExtra = '', net = 0;
+  if (p.result === 'won') { const profit = b.amount * (totalOdds - 1); net = profit; resultExtra = `<span class="ml-2 text-emerald-300 font-semibold">+${fmtEuro(profit)}</span>`; }
+  else if (p.result === 'lost') { net = -b.amount; resultExtra = `<span class="ml-2 text-red-300 font-semibold">-${fmtEuro(b.amount)}</span>`; }
+  else if (p.result === 'void') { resultExtra = `<span class="ml-2 text-ink-500">+${fmtEuro(0)}</span>`; }
+  const html = `<tr class="hover:bg-white/[0.03] transition">
+    <td class="px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-ink-500"><span class="inline-flex items-center gap-1.5">${sportIcon(fe.sport,14)}<span>${isCombined?'Combinada':fe.sport}</span></span></td>
+    <td class="px-4 py-3 align-top">${partidoCell(p)}</td>
+    <td class="px-4 py-3 text-ink-200/80">${isCombined?'—':fe.pickType}</td>
+    <td class="px-4 py-3 text-ink-200/80">${totalOdds.toFixed(2)}</td>
+    <td class="px-4 py-3 font-semibold text-white">${fmtEuro(b.amount)}</td>
+    <td class="px-4 py-3 text-ink-500">${date}</td>
+    <td class="px-4 py-3 whitespace-nowrap"><span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${ri.cls}">${ri.label}</span>${resultExtra}</td>
+  </tr>`;
+  return { html, invested: b.amount, net };
+}
+
+function followedBetsHTML(c, forAdmin) {
+  const list = getFollowed(c.id);
+  if (list.length === 0) {
+    return `<div class="mt-10"><h3 class="font-display text-xl font-semibold tracking-tight text-white">Mis apuestas seguidas</h3><p class="mt-1 text-sm text-ink-500">${forAdmin?'El cliente todavía no ha seguido ninguna apuesta.':'Aún no has seguido ninguna apuesta. Cuando lo hagas, aparecerán aquí.'}</p></div>`;
+  }
+  let totalInvested = 0, netResult = 0;
+  list.forEach(b => { const r = followedBetRow(b); totalInvested += r.invested; netResult += r.net; });
+  const groups = groupByMonth(list, (b) => b.followedAt.slice(0,10));
+  const groupsHTML = groups.map((g,i) => {
+    const rows = g.items.map(b => followedBetRow(b).html).join('');
+    return `<details class="month-group" ${i===0?'open':''}>
+      <summary><span class="font-display text-base font-semibold text-white">Apuestas seguidas · ${g.label}</span><span class="text-xs text-ink-500">${g.items.length} ${g.items.length===1?'apuesta':'apuestas'}</span></summary>
+      <div class="group-body"><div class="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02]">
+        <table class="w-full min-w-[920px] text-left text-sm">
+          <thead class="bg-white/[0.03] text-[11px] uppercase tracking-[0.16em] text-ink-500"><tr><th class="px-4 py-3 font-medium">Deporte</th><th class="px-4 py-3 font-medium">Partido</th><th class="px-4 py-3 font-medium">Pick</th><th class="px-4 py-3 font-medium">Cuota</th><th class="px-4 py-3 font-medium">Importe</th><th class="px-4 py-3 font-medium">Seguida el</th><th class="px-4 py-3 font-medium">Estado</th></tr></thead>
+          <tbody class="divide-y divide-white/5">${rows}</tbody>
+        </table></div></div>
+    </details>`;
+  }).join('');
+  const netClass = netResult>0?'text-emerald-300':netResult<0?'text-red-300':'text-ink-200';
+  const netSign = netResult>0?'+':netResult<0?'−':'';
+  return `<div class="mt-10">
+    <div class="flex flex-wrap items-baseline justify-between gap-3">
+      <h3 class="font-display text-xl font-semibold tracking-tight text-white">Mis apuestas seguidas</h3>
+      <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[10px] uppercase tracking-[0.18em] text-ink-500">
+        <span>Total apostado: <span class="text-accent-neon">${fmtEuro(totalInvested)}</span></span>
+        <span>Resultado neto: <span class="${netClass}">${netSign}${fmtEuro(Math.abs(netResult))}</span></span>
+      </div>
+    </div>
+    <div class="mt-4 space-y-3">${groupsHTML}</div>
+  </div>`;
+}
+
+/* ============================================================
+   STATS DETAIL VIEW (admin viendo cliente)
+============================================================ */
+function openStatsDetail(c) {
+  document.getElementById('clientsTab').classList.add('hidden');
+  document.getElementById('picksTab').classList.add('hidden');
+  document.getElementById('rankingsTab').classList.add('hidden');
+  document.getElementById('statsDetailView').classList.remove('hidden');
+  document.getElementById('statsDetailContent').innerHTML = statsPanelHTML(c, true);
+  switchTabUI('clients');
+  window.scrollTo(0, 0);
+}
+document.getElementById('statsBackBtn').addEventListener('click', () => {
+  document.getElementById('statsDetailView').classList.add('hidden');
+  document.getElementById('clientsTab').classList.remove('hidden');
+});
+
+/* ============================================================
+   TABS DEL ADMIN
+============================================================ */
+function switchTabUI(tab) { document.querySelectorAll('.adm-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab)); }
+function switchTab(tab) {
+  switchTabUI(tab);
+  document.getElementById('statsDetailView').classList.add('hidden');
+  document.getElementById('clientsTab').classList.add('hidden');
+  document.getElementById('picksTab').classList.add('hidden');
+  document.getElementById('rankingsTab').classList.add('hidden');
+  if (tab === 'clients') document.getElementById('clientsTab').classList.remove('hidden');
+  else if (tab === 'picks') { document.getElementById('picksTab').classList.remove('hidden'); renderPicksAdmin(); }
+  else if (tab === 'rankings') { document.getElementById('rankingsTab').classList.remove('hidden'); renderRankings(); }
+}
+document.querySelectorAll('.adm-tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+/* ============================================================
+   RANKINGS
+============================================================ */
+const medals = ['🥇','🥈','🥉','4º','5º'];
+function renderRankings() {
+  const enriched = clients.map(c => ({ c, s: statsFor(c) }));
+  const board = (title, subtitle, items, valueFn, fmt = (v) => v) => {
+    const rows = items.map((it, i) => `<button data-action="stats" data-id="${it.c.id}" class="flex w-full items-center gap-4 rounded-xl border border-transparent px-3 py-3 text-left transition hover:border-white/10 hover:bg-white/[0.03]">
+      <span class="font-display text-lg w-8 text-center ${i===0?'text-gradient':'text-ink-500'}">${medals[i]||(i+1)+'º'}</span>
+      <span class="flex-1 min-w-0"><span class="block truncate text-sm font-medium text-white">${it.c.name}</span><span class="block truncate text-xs text-ink-500">${it.c.plan} · ${it.c.email}</span></span>
+      <span class="font-display text-base font-semibold ${i===0?'text-accent-neon':'text-white'}">${fmt(valueFn(it))}</span>
+    </button>`).join('');
+    return `<div class="gradient-border relative overflow-hidden bg-white/[0.02] p-5 sm:p-6">
+      <div class="flex items-baseline justify-between gap-3"><h3 class="font-display text-lg font-semibold tracking-tight text-white">${title}</h3><span class="text-[10px] uppercase tracking-[0.18em] text-ink-500">${subtitle}</span></div>
+      <div class="mt-3 space-y-1">${rows}</div>
+    </div>`;
+  };
+  const top = (key, n=5) => [...enriched].sort((a,b) => key(b) - key(a)).slice(0, n);
+  document.getElementById('rankingsContent').innerHTML = `<div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    ${board('Mayores ganancias','Top 5 del mes', top(x=>x.s.totalEarnings), x=>x.s.totalEarnings, fmtEuro)}
+    ${board('Mayor inversión total','Top 5 del mes', top(x=>x.s.totalInvested), x=>x.s.totalInvested, fmtEuro)}
+    ${board('Mejor cuota acertada','Top 5 cuota máxima', top(x=>x.s.bestOdds), x=>x.s.bestOdds, v=>v.toFixed(2))}
+    ${board('Mayor tasa de acierto','Top 5 win rate', top(x=>x.s.winRate), x=>x.s.winRate, v=>`${(v*100).toFixed(0)}%`)}
+    ${board('Mejor ROI','Top 5 retorno', top(x=>x.s.roi), x=>x.s.roi, v=>`${(v*100).toFixed(1)}%`)}
+    ${board('Más pronósticos','Top 5 volumen', top(x=>x.s.picks), x=>x.s.picks, v=>`${v} picks`)}
+  </div>`;
+}
+document.getElementById('rankingsContent').addEventListener('click', onTableAction);
+
+/* ============================================================
+   GESTIÓN DE PRONÓSTICOS (admin)
+============================================================ */
+let pickFilter = 'all';
+function pickAdminCard(p) {
+  const ri = resultInfo[p.result];
+  const isActive = (k) => p.result === k;
+  const fe = pickFirstEvent(p);
+  const isCombined = pickIsCombined(p);
+  const totalOdds = pickTotalOdds(p);
+  const headerLabel = isCombined ? `Combinada (${p.events.length} eventos)` : fe.sport;
+  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5 sm:p-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">${sportIcon(fe.sport,16)}<span>${headerLabel}</span></span>
+          <span class="text-ink-500/70 text-[10px]">·</span>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">${pickWhen(p)}</span>
+          <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${ri.cls}">${ri.label}</span>
+          ${tierBadge(p)}
+        </div>
+        ${eventBlock(p, true) ? `<div class="mt-3">${eventBlock(p, true)}</div>` : `<h4 class="mt-2 font-display text-base font-semibold text-white break-words">${p.match || ''}</h4>`}
+        ${isCombined ? '' : `<p class="mt-2 text-sm text-ink-200/80">${fe.pickType}</p>`}
+        <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+          <div><span class="text-ink-500">Cuota${isCombined ? ' total' : ''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
+          <div><span class="text-ink-500">Stake</span> <span class="ml-1 font-semibold text-white">${p.recommendedStake} u</span></div>
+          <div class="flex items-center gap-1.5"><span class="text-ink-500">Planes</span> ${pickBadges(p)}</div>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:whitespace-nowrap">
+        <button data-pick-action="won"  data-pick-id="${p.id}" class="rounded-full border px-3 py-1.5 text-[11px] font-medium transition ${isActive('won')?'border-emerald-400 bg-emerald-500/30 text-emerald-100':'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'}">✓ Acertado</button>
+        <button data-pick-action="void" data-pick-id="${p.id}" class="rounded-full border px-3 py-1.5 text-[11px] font-medium transition ${isActive('void')?'border-white/40 bg-white/15 text-white':'border-white/15 bg-white/5 text-ink-200 hover:bg-white/10'}">⊘ Anulado</button>
+        <button data-pick-action="lost" data-pick-id="${p.id}" class="rounded-full border px-3 py-1.5 text-[11px] font-medium transition ${isActive('lost')?'border-red-400 bg-red-500/30 text-red-100':'border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20'}">✗ Fallado</button>
+        ${p.result !== 'pending' ? `<button data-pick-action="reset" data-pick-id="${p.id}" class="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-white/10">↺ Reabrir</button>` : ''}
+        <button data-pick-action="delete" data-pick-id="${p.id}" aria-label="Eliminar" title="Eliminar" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-500/40 bg-red-500/10 text-red-300 transition hover:bg-red-500/20">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </article>`;
+}
+function renderPicksAdmin() {
+  const list = pickFilter==='all' ? [...monthlyPicksPool] : monthlyPicksPool.filter(p => p.result === pickFilter);
+  list.reverse();
+  const container = document.getElementById('picksList');
+  container.innerHTML = list.length === 0
+    ? `<p class="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-ink-500">${monthlyPicksPool.length === 0 ? 'No has creado ningún pronóstico todavía. Pulsa "+ Nuevo pronóstico" para empezar.' : 'No hay pronósticos en este filtro.'}</p>`
+    : list.map(pickAdminCard).join('');
+  document.querySelectorAll('[data-pickfilter]').forEach(b => b.classList.toggle('pf-active', b.dataset.pickfilter === pickFilter));
+}
+document.querySelectorAll('[data-pickfilter]').forEach(b => b.addEventListener('click', () => { pickFilter = b.dataset.pickfilter; renderPicksAdmin(); }));
+
+document.getElementById('picksList').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-pick-action][data-pick-id]'); if (!btn) return;
+  const id = btn.dataset.pickId, action = btn.dataset.pickAction;
+  const p = monthlyPicksPool.find(x => x.id === id); if (!p) return;
+  if (action==='won'||action==='lost'||action==='void') { p.result = action; savePool(); renderPicksAdmin(); }
+  else if (action === 'reset') { p.result = 'pending'; savePool(); renderPicksAdmin(); }
+  else if (action === 'delete') {
+    if (confirm(`¿Eliminar el pronóstico "${p.match}"?\n\nSi algún cliente lo había seguido, se eliminará también de su historial.`)) {
+      monthlyPicksPool = monthlyPicksPool.filter(x => x.id !== id);
+      savePool();
+      Object.keys(followedBets).forEach(cid => { followedBets[cid] = followedBets[cid].filter(b => b.pickId !== id); });
+      saveFollowed(); renderPicksAdmin();
+    }
+  }
+});
+
+/* ============================================================
+   MODAL: NUEVO PRONÓSTICO (con eventos dinámicos para funbet)
+============================================================ */
+const newPickModal = document.getElementById('newPickModal');
+let evCounter = 0;
+
+const TENNIS_PLAYERS = new Set(['Carlos Alcaraz','Jannik Sinner','Novak Djokovic','Alexander Zverev','Iga Swiatek','Aryna Sabalenka']);
+const NBA_TEAMS = new Set(['LA Lakers','Boston Celtics','Milwaukee Bucks','Miami Heat','Golden State Warriors']);
+
+// Datalists globales (mismos para todos los eventos)
+function refreshGlobalDatalists() {
+  document.getElementById('npCompetitions').innerHTML = Object.keys(COMPETITIONS).map(n => `<option value="${n}"></option>`).join('');
+  document.getElementById('npTeams').innerHTML = Object.keys(TEAMS).map(n => `<option value="${n}"></option>`).join('');
+}
+
+// Crea una fila de evento. eventData es opcional para precargar.
+function eventRowHTML(idx) {
+  return `
+    <div class="event-row gradient-border rounded-xl bg-white/[0.02] p-4" data-event-idx="${idx}">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Evento <span class="event-num">1</span></span>
+        <button type="button" class="event-remove hidden text-[11px] font-medium text-red-300 hover:text-red-200">Eliminar</button>
+      </div>
+      <div class="space-y-3">
+        <fieldset>
+          <legend class="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-500">Deporte</legend>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Fútbol"><input type="radio" name="ev-sport-${idx}" value="Fútbol" class="hidden" checked/><span class="ev-sport-icon"></span> Fútbol</label>
+            <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Tenis"><input type="radio" name="ev-sport-${idx}" value="Tenis" class="hidden"/><span class="ev-sport-icon"></span> Tenis</label>
+            <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Baloncesto"><input type="radio" name="ev-sport-${idx}" value="Baloncesto" class="hidden"/><span class="ev-sport-icon"></span> Baloncesto</label>
+          </div>
+        </fieldset>
+        <input list="npCompetitions" type="text" class="ev-competition w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Competición (ej. Champions League)"/>
+        <div class="grid grid-cols-2 gap-2">
+          <input list="npTeams" type="text" class="ev-team1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Local"/>
+          <input list="npTeams" type="text" class="ev-team2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Visitante"/>
+        </div>
+        <input type="text" class="ev-pick w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Pronóstico (ej. Más de 2.5 goles)"/>
+        <input type="number" step="0.01" min="1.01" class="ev-odds w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Cuota (ej. 1.85)"/>
+      </div>
+    </div>
+  `;
+}
+
+function paintEventSportIcons(rowEl) {
+  rowEl.querySelectorAll('.ev-sport[data-sport]').forEach(el => {
+    const span = el.querySelector('.ev-sport-icon');
+    if (span) span.innerHTML = sportIcon(el.dataset.sport, 14);
+  });
+}
+function activeEventSport(rowEl) {
+  const r = rowEl.querySelector('input[type="radio"]:checked');
+  return r ? r.value : 'Fútbol';
+}
+function setupEventRow(rowEl) {
+  paintEventSportIcons(rowEl);
+  rowEl.querySelectorAll('input[type="radio"]').forEach(r => {
+    r.addEventListener('change', () => {
+      rowEl.querySelectorAll('.ev-sport').forEach(el => el.classList.toggle('active', el.dataset.sport === r.value));
+    });
+  });
+  // Marca activo el deporte por defecto
+  const checked = rowEl.querySelector('input[type="radio"]:checked');
+  if (checked) rowEl.querySelectorAll('.ev-sport').forEach(el => el.classList.toggle('active', el.dataset.sport === checked.value));
+  // Cuota: actualizar total al cambiar
+  rowEl.querySelector('.ev-odds').addEventListener('input', updateTotalOdds);
+  // Botón eliminar
+  rowEl.querySelector('.event-remove').addEventListener('click', () => {
+    rowEl.remove();
+    renumberEvents();
+    updateTotalOdds();
+    updateEventControls();
+  });
+}
+
+function renumberEvents() {
+  document.querySelectorAll('#eventsContainer .event-row').forEach((r, i) => {
+    r.querySelector('.event-num').textContent = (i + 1);
+    r.dataset.eventIdx = i;
+  });
+}
+
+function addEventRow() {
+  const container = document.getElementById('eventsContainer');
+  const idx = evCounter++;
+  container.insertAdjacentHTML('beforeend', eventRowHTML(idx));
+  const rowEl = container.lastElementChild;
+  setupEventRow(rowEl);
+  renumberEvents();
+  updateEventControls();
+}
+
+function clearEventRows() {
+  document.getElementById('eventsContainer').innerHTML = '';
+}
+
+function updateTotalOdds() {
+  const odds = Array.from(document.querySelectorAll('#eventsContainer .ev-odds')).map(i => parseFloat(i.value)).filter(v => !isNaN(v) && v > 0);
+  const total = odds.reduce((a, b) => a * b, 1);
+  document.getElementById('totalOddsValue').textContent = total > 0 ? total.toFixed(2).replace('.', ',') : '0,00';
+}
+
+function updateEventControls() {
+  const tier = document.getElementById('npTier').value;
+  const isFunbet = tier === 'funbet';
+  const rows = document.querySelectorAll('#eventsContainer .event-row');
+  // Solo en funbet se ven el botón "+ Añadir" y la cuota total combinada
+  document.getElementById('addEventBtn').classList.toggle('hidden', !isFunbet || rows.length >= 10);
+  document.getElementById('totalOddsDisplay').classList.toggle('hidden', !isFunbet);
+  // El botón eliminar aparece solo si hay más de 1 evento (siempre 1 mínimo)
+  rows.forEach((r, i) => {
+    const btn = r.querySelector('.event-remove');
+    btn.classList.toggle('hidden', rows.length === 1);
+  });
+}
+
+document.getElementById('addEventBtn').addEventListener('click', () => {
+  addEventRow();
+  updateTotalOdds();
+});
+
+document.getElementById('npTier').addEventListener('change', (e) => {
+  const tier = e.target.value;
+  const cbs = document.querySelectorAll('input[name="np-plan"]');
+  if (tier === 'funbet') {
+    cbs.forEach(cb => cb.checked = (cb.value === 'Exclusive'));
+    // Asegurar al menos 3 eventos para una funbet (mas de 2)
+    const current = document.querySelectorAll('#eventsContainer .event-row').length;
+    for (let i = current; i < 3; i++) addEventRow();
+  } else if (tier === 'exclusive') {
+    cbs.forEach(cb => cb.checked = (cb.value === 'Pro' || cb.value === 'Exclusive'));
+    // Si volvemos a no-funbet, dejar solo 1 evento
+    while (document.querySelectorAll('#eventsContainer .event-row').length > 1) {
+      document.getElementById('eventsContainer').lastElementChild.remove();
+    }
+  } else {
+    while (document.querySelectorAll('#eventsContainer .event-row').length > 1) {
+      document.getElementById('eventsContainer').lastElementChild.remove();
+    }
+  }
+  renumberEvents();
+  updateTotalOdds();
+  updateEventControls();
+});
+
+function openNewPick() {
+  document.getElementById('newPickForm').reset();
+  document.getElementById('npError').classList.add('hidden');
+  document.querySelectorAll('input[name="np-plan"]').forEach(cb => cb.checked = true);
+  document.getElementById('npTier').value = 'standard';
+  document.getElementById('npDate').value = new Date().toISOString().slice(0,10);
+  refreshGlobalDatalists();
+  clearEventRows();
+  addEventRow();
+  updateTotalOdds();
+  updateEventControls();
+  newPickModal.classList.remove('hidden');
+}
+function closeNewPick() { newPickModal.classList.add('hidden'); }
+document.getElementById('newPickBtn').addEventListener('click', openNewPick);
+document.querySelectorAll('[data-action="close-newpick"]').forEach(el => el.addEventListener('click', closeNewPick));
+
+document.getElementById('newPickForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const err = document.getElementById('npError');
+  const fail = (m) => { err.textContent = m; err.classList.remove('hidden'); };
+  err.classList.add('hidden');
+
+  const date = document.getElementById('npDate').value;
+  const time = document.getElementById('npTime').value;
+  const stake = parseFloat(document.getElementById('npStake').value);
+  const tier = document.getElementById('npTier').value;
+  const plans = Array.from(document.querySelectorAll('input[name="np-plan"]:checked')).map(cb => cb.value);
+  if (!date || !time) return fail('Rellena fecha y hora.');
+  if (!stake || stake <= 0) return fail('El stake debe ser mayor que 0.');
+  if (plans.length === 0) return fail('Selecciona al menos un plan.');
+  if (tier === 'funbet' && (plans.length !== 1 || plans[0] !== 'Exclusive')) return fail('Las funbets solo pueden ir al plan Exclusive.');
+
+  // Recoger eventos
+  const rows = Array.from(document.querySelectorAll('#eventsContainer .event-row'));
+  if (tier === 'funbet' && rows.length < 3) return fail('Una funbet debe tener al menos 3 eventos.');
+  if (tier !== 'funbet' && rows.length !== 1) return fail('Solo las funbets pueden tener varios eventos.');
+
+  const events = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const sport = activeEventSport(r);
+    const competition = r.querySelector('.ev-competition').value.trim();
+    const team1 = r.querySelector('.ev-team1').value.trim();
+    const team2 = r.querySelector('.ev-team2').value.trim();
+    const pickType = r.querySelector('.ev-pick').value.trim();
+    const odds = parseFloat(r.querySelector('.ev-odds').value);
+    if (!pickType) return fail(`Evento ${i+1}: rellena el pronóstico.`);
+    if (!team1 && !team2) return fail(`Evento ${i+1}: especifica al menos un equipo.`);
+    if (!odds || odds < 1.01) return fail(`Evento ${i+1}: la cuota debe ser ≥ 1.01.`);
+    events.push({ sport, competition: competition || null, team1: team1 || null, team2: team2 || null, pickType, odds: +odds.toFixed(2) });
+  }
+
+  const totalOdds = +events.reduce((a, e) => a * e.odds, 1).toFixed(2);
+  // Compat: campos top-level con datos del primer evento
+  const first = events[0];
+  const matchString = events.map(e => (e.team1 && e.team2) ? `${e.team1} - ${e.team2}` : (e.team1 || e.team2 || '')).filter(Boolean).join(' · ');
+
+  monthlyPicksPool.push({
+    id: 'p_' + Date.now(),
+    date, time, plans, tier, result: 'pending',
+    recommendedStake: stake,
+    events,
+    totalOdds,
+    // Compat (para tablas y código antiguo)
+    sport: first.sport, competition: first.competition, team1: first.team1, team2: first.team2, pickType: first.pickType, odds: totalOdds, match: matchString,
+  });
+  savePool();
+  closeNewPick();
+  renderPicksAdmin();
+});
+
+/* ============================================================
+   MODAL: EDITAR CLIENTE
+============================================================ */
+const editModal = document.getElementById('editModal');
+function openEdit(c) {
+  document.getElementById('editId').value = c.id;
+  document.getElementById('editName').value = c.name;
+  document.getElementById('editEmail').value = c.email;
+  document.getElementById('editPlan').value = c.plan;
+  editModal.classList.remove('hidden');
+}
+function closeEdit() { editModal.classList.add('hidden'); }
+document.querySelectorAll('[data-action="close-edit"]').forEach(el => el.addEventListener('click', closeEdit));
+document.getElementById('editForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const id = parseInt(document.getElementById('editId').value);
+  const c = clients.find(x => x.id === id); if (!c) return closeEdit();
+  c.name = document.getElementById('editName').value.trim();
+  c.email = document.getElementById('editEmail').value.trim();
+  c.plan = document.getElementById('editPlan').value;
+  c.price = PLAN_PRICES[c.plan];
+  saveClients();
+  closeEdit(); renderAdmin();
+});
+
+/* ============================================================
+   MODAL: CONTRASEÑA
+============================================================ */
+const pwModal = document.getElementById('pwModal');
+function openPw(c) {
+  document.getElementById('pwId').value = c.id;
+  document.getElementById('pwTitle').textContent = `Cambiar contraseña — ${c.name}`;
+  document.getElementById('pw1').value = ''; document.getElementById('pw2').value = '';
+  document.getElementById('pwError').classList.add('hidden');
+  pwModal.classList.remove('hidden');
+}
+function closePw() { pwModal.classList.add('hidden'); }
+document.querySelectorAll('[data-action="close-pw"]').forEach(el => el.addEventListener('click', closePw));
+document.getElementById('pwForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const pw1 = document.getElementById('pw1').value, pw2 = document.getElementById('pw2').value;
+  const err = document.getElementById('pwError');
+  if (pw1.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres.'; err.classList.remove('hidden'); return; }
+  if (pw1 !== pw2) { err.textContent = 'Las contraseñas no coinciden.'; err.classList.remove('hidden'); return; }
+  const id = parseInt(document.getElementById('pwId').value);
+  const c = clients.find(x => x.id === id);
+  closePw(); alert(`Contraseña actualizada para ${c?.name || 'el cliente'}.`);
+});
+
+/* ============================================================
+   MODAL: SEGUIR APUESTA
+============================================================ */
+const followModal = document.getElementById('followModal');
+function openFollow(pick, recommendedAmount) {
+  document.getElementById('followPickId').value = pick.id;
+  const fe = pickFirstEvent(pick);
+  const isCombined = pickIsCombined(pick);
+  const totalOdds = pickTotalOdds(pick);
+  const headerLabel = isCombined ? `Combinada (${pick.events.length} eventos)` : fe.sport;
+  document.getElementById('followPickInfo').innerHTML = `
+    <div class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">${sportIcon(fe.sport,14)}<span>${headerLabel}</span><span class="text-ink-500/70">·</span><span>${pickWhen(pick)}</span></div>
+    ${eventBlock(pick, true) ? `<div class="mt-3">${eventBlock(pick, true)}</div>` : ''}
+    ${isCombined ? '' : `<div class="mt-1 text-sm text-ink-200/80">${fe.pickType}</div>`}
+    <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+      <div><span class="text-ink-500">Cuota${isCombined?' total':''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
+      <div><span class="text-ink-500">Stake recom.</span> <span class="ml-1 font-semibold text-white">${pick.recommendedStake} u</span></div>
+    </div>`;
+  document.getElementById('followAmount').value = recommendedAmount.toFixed(2);
+  document.getElementById('followAmountHint').textContent = `Importe sugerido: ${fmtEuro(recommendedAmount)} (puedes cambiarlo).`;
+  document.getElementById('followError').classList.add('hidden');
+  followModal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('followAmount').focus(), 50);
+}
+function closeFollow() { followModal.classList.add('hidden'); }
+document.querySelectorAll('[data-action="close-follow"]').forEach(el => el.addEventListener('click', closeFollow));
+
+document.getElementById('followForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const pickId = document.getElementById('followPickId').value;
+  const amt = parseFloat(document.getElementById('followAmount').value.replace(',', '.'));
+  const err = document.getElementById('followError');
+  if (!amt || amt <= 0) { err.textContent = 'Introduce un importe mayor que cero.'; err.classList.remove('hidden'); return; }
+  if (amt > 10000) { err.textContent = 'Importe demasiado alto. Revisa la cifra.'; err.classList.remove('hidden'); return; }
+  const clientId = activeClientId || parseInt(document.getElementById('availableSection')?.dataset.clientId);
+  if (!clientId) return;
+  followBet(clientId, pickId, amt);
+  closeFollow(); rerenderCurrentClientPanel();
+});
+
+function onFollowAction(e) {
+  const btn = e.target.closest('[data-follow-action]'); if (!btn) return;
+  const section = btn.closest('#availableSection'); if (!section) return;
+  const clientId = parseInt(section.dataset.clientId);
+  if (section.dataset.forAdmin === '1') return;
+  const pickId = btn.dataset.pickId, action = btn.dataset.followAction;
+  const pick = monthlyPicksPool.find(x => x.id === pickId); if (!pick) return;
+  if (action === 'follow') openFollow(pick, parseFloat(btn.dataset.recommended||'0'));
+  else if (action === 'unfollow') {
+    if (confirm(`¿Deshacer la apuesta seguida de "${pick.match}"?`)) { unfollowBet(clientId, pickId); rerenderCurrentClientPanel(); }
+  }
+}
+document.addEventListener('click', onFollowAction);
+
+function rerenderCurrentClientPanel() {
+  if (activeClientId) {
+    const c = clients.find(x => x.id === activeClientId);
+    if (c) document.getElementById('clientStatsContent').innerHTML = statsPanelHTML(c, false);
+    return;
+  }
+  const detail = document.getElementById('statsDetailView');
+  if (!detail.classList.contains('hidden')) {
+    const section = document.getElementById('availableSection');
+    if (section) {
+      const c = clients.find(x => x.id === parseInt(section.dataset.clientId));
+      if (c) document.getElementById('statsDetailContent').innerHTML = statsPanelHTML(c, true);
+    }
+  }
+}
+
+/* ============================================================
+   SIGNUP — Crear cuenta + email de verificación simulado
+============================================================ */
+const signupModal = document.getElementById('signupModal');
+const emailVerifyModal = document.getElementById('emailVerifyModal');
+let pendingClientId = null;  // cliente recién creado, esperando verificación
+
+function openSignup(plan) {
+  document.getElementById('signupForm').reset();
+  document.getElementById('signupError').classList.add('hidden');
+  // Marcar el plan elegido
+  const target = plan && ['Basic','Pro','Exclusive'].includes(plan) ? plan : 'Pro';
+  document.querySelectorAll('input[name="signup-plan"]').forEach(r => r.checked = (r.value === target));
+  document.querySelectorAll('.signup-plan').forEach(el => el.classList.toggle('active', el.dataset.plan === target));
+  signupModal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('signupName').focus(), 50);
+}
+function closeSignup() { signupModal.classList.add('hidden'); }
+
+// Botones que abren signup (de los planes y del modal de login)
+document.querySelectorAll('[data-action="open-signup"]').forEach(el => {
+  el.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeLogin();
+    openSignup(el.dataset.plan);
+  });
+});
+document.querySelectorAll('[data-action="close-signup"]').forEach(el => el.addEventListener('click', closeSignup));
+document.querySelector('[data-action="open-login-from-signup"]').addEventListener('click', (e) => {
+  e.preventDefault();
+  closeSignup();
+  openLogin();
+});
+
+// Resaltar plan al cambiar radio
+document.querySelectorAll('input[name="signup-plan"]').forEach(r => r.addEventListener('change', () => {
+  document.querySelectorAll('.signup-plan').forEach(el => el.classList.toggle('active', el.dataset.plan === r.value));
+}));
+
+document.getElementById('signupForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('signupError');
+  const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
+  errEl.classList.add('hidden');
+
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+  const pw1 = document.getElementById('signupPassword').value;
+  const pw2 = document.getElementById('signupPassword2').value;
+  const planRadio = document.querySelector('input[name="signup-plan"]:checked');
+  const plan = planRadio ? planRadio.value : null;
+
+  if (!name) return showErr('Introduce tu nombre.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Email no válido.');
+  if (email === ADMIN_EMAIL) return showErr('Ese email no está disponible.');
+  if (clients.some(c => c.email.toLowerCase() === email)) return showErr('Ya existe una cuenta con este email.');
+  if (pw1.length < 6) return showErr('La contraseña debe tener al menos 6 caracteres.');
+  if (pw1 !== pw2) return showErr('Las contraseñas no coinciden.');
+  if (!plan) return showErr('Selecciona un plan.');
+
+  // Crear cliente sin verificar
+  const newId = (clients.reduce((m, c) => Math.max(m, c.id), 0) || 0) + 1;
+  const newClient = {
+    id: newId, name, email, password: pw1, plan, price: PLAN_PRICES[plan],
+    status: 'active', verified: false,
+    joinedAt: new Date().toISOString().slice(0, 10),
+  };
+  clients.push(newClient);
+  saveClients();
+  pendingClientId = newId;
+
+  closeSignup();
+  // Abrir el "email" simulado
+  document.getElementById('emailVerifyTo').textContent = email;
+  document.getElementById('emailVerifyName').textContent = name.split(' ')[0] || name;
+  emailVerifyModal.classList.remove('hidden');
+});
+
+// Botón "Verificar mi cuenta" dentro del email simulado
+document.getElementById('emailVerifyBtn').addEventListener('click', () => {
+  if (!pendingClientId) { emailVerifyModal.classList.add('hidden'); return; }
+  const c = clients.find(x => x.id === pendingClientId);
+  if (c) { c.verified = true; saveClients(); }
+  emailVerifyModal.classList.add('hidden');
+  // Auto-login del usuario recién verificado
+  sessionStorage.setItem('tipster-client', String(pendingClientId));
+  sessionStorage.removeItem('tipster-admin');
+  showClientView(pendingClientId);
+  pendingClientId = null;
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeLogin(); closeSignup(); closeEdit(); closePw(); closeFollow(); closeNewPick(); }
+});
+</script>
+</body>
+</html>
