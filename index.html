@@ -642,6 +642,7 @@
       <button data-tab="clients" class="adm-tab active">Clientes</button>
       <button data-tab="picks" class="adm-tab">Pronósticos</button>
       <button data-tab="rankings" class="adm-tab">Rankings</button>
+      <button data-tab="results" class="adm-tab">Resultados</button>
       <button data-tab="chat" class="adm-tab">Chat</button>
     </div>
   </div>
@@ -735,6 +736,11 @@
   <!-- TAB: RANKINGS -->
   <div id="rankingsTab" class="hidden">
     <div id="rankingsContent" class="mx-auto mt-8 max-w-[1600px] space-y-5 px-5 pb-12 sm:px-8"></div>
+  </div>
+
+  <!-- TAB: RESULTADOS (admin global) -->
+  <div id="resultsTab" class="hidden">
+    <div id="resultsContent" class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8"></div>
   </div>
 
   <!-- TAB: CHAT (admins) -->
@@ -1054,7 +1060,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-pwa-safe-area-v2';
+const APP_VERSION = '2026-05-06-monthly-results';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1734,10 +1740,118 @@ function tierBadge(p) {
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 function monthKey(dateStr) { return dateStr.slice(0, 7); }
 function monthLabel(key) { const [y,m] = key.split('-'); return `${MONTH_NAMES[parseInt(m,10)-1]} ${y}`; }
+function monthLabelShort(key) { const [y,m] = key.split('-'); return `${MONTH_NAMES[parseInt(m,10)-1].slice(0,3)} ${y.slice(2)}`; }
 function groupByMonth(items, dateAccessor = (it) => it.date) {
   const map = {};
   items.forEach(it => { const k = monthKey(dateAccessor(it)); (map[k] = map[k] || []).push(it); });
   return Object.keys(map).sort().reverse().map(k => ({ key: k, label: monthLabel(k), items: map[k] }));
+}
+
+/* ============================================================
+   STATS MENSUALES — globales (equipo) y personales (cliente)
+============================================================ */
+// Devuelve estadísticas globales del equipo a partir de los picks publicados.
+// Calcula sobre TODOS los picks resueltos (no pendientes) de un mes.
+function computeGlobalMonthlyStats(picks) {
+  const resolved = picks.filter(p => p.result === 'win' || p.result === 'loss' || p.result === 'void');
+  const wins = resolved.filter(p => p.result === 'win').length;
+  const losses = resolved.filter(p => p.result === 'loss').length;
+  const voids = resolved.filter(p => p.result === 'void').length;
+  const playable = wins + losses; // void no cuenta para winrate
+  const winRate = playable > 0 ? wins / playable : 0;
+
+  // Yield = (profit / staked) * 100, en unidades. Voids no cuentan stake ni profit.
+  let totalStake = 0, totalProfit = 0;
+  resolved.forEach(p => {
+    const stake = p.recommendedStake || 0;
+    const odds = pickTotalOdds(p);
+    if (p.result === 'win') { totalProfit += stake * (odds - 1); totalStake += stake; }
+    else if (p.result === 'loss') { totalProfit -= stake; totalStake += stake; }
+    // void: no suma nada
+  });
+  const yieldPct = totalStake > 0 ? (totalProfit / totalStake) * 100 : 0;
+
+  // Cuotas
+  const allOdds = resolved.map(p => pickTotalOdds(p)).filter(x => x > 0);
+  const avgOdds = allOdds.length ? allOdds.reduce((a,b)=>a+b,0) / allOdds.length : 0;
+  const wonPicks = resolved.filter(p => p.result === 'win');
+  const maxWonOdds = wonPicks.length ? Math.max(...wonPicks.map(p => pickTotalOdds(p))) : 0;
+
+  // Stake
+  const stakes = resolved.map(p => p.recommendedStake || 0);
+  const avgStake = stakes.length ? stakes.reduce((a,b)=>a+b,0) / stakes.length : 0;
+  const maxStake = stakes.length ? Math.max(...stakes) : 0;
+
+  // Tipo de pronóstico más usado y deporte top
+  const pickTypeCount = {};
+  const sportCount = {};
+  resolved.forEach(p => {
+    const fe = pickFirstEvent(p);
+    if (fe.pickType) pickTypeCount[fe.pickType] = (pickTypeCount[fe.pickType] || 0) + 1;
+    if (fe.sport) sportCount[fe.sport] = (sportCount[fe.sport] || 0) + 1;
+  });
+  const topPickType = Object.entries(pickTypeCount).sort((a,b)=>b[1]-a[1])[0];
+  const topSport = Object.entries(sportCount).sort((a,b)=>b[1]-a[1])[0];
+
+  return {
+    resolvedCount: resolved.length, wins, losses, voids, winRate,
+    yieldPct, profitUnits: totalProfit, totalStake,
+    avgOdds, maxWonOdds, avgStake, maxStake,
+    topPickType: topPickType ? { name: topPickType[0], count: topPickType[1], pct: topPickType[1]/resolved.length } : null,
+    topSport: topSport ? { name: topSport[0], count: topSport[1], pct: topSport[1]/resolved.length } : null,
+  };
+}
+
+// Devuelve estadísticas personales de un cliente a partir de sus apuestas seguidas.
+// Usa euros reales (no unidades) porque el cliente apuesta en €.
+function computePersonalMonthlyStats(bets, picksById) {
+  const resolved = bets.filter(b => {
+    const p = picksById[b.pickId];
+    return p && (p.result === 'win' || p.result === 'loss' || p.result === 'void');
+  });
+  const enriched = resolved.map(b => {
+    const p = picksById[b.pickId];
+    const odds = pickTotalOdds(p);
+    let profit = 0;
+    if (p.result === 'win') profit = b.amount * (odds - 1);
+    else if (p.result === 'loss') profit = -b.amount;
+    return { bet: b, pick: p, odds, profit };
+  });
+  const wins = enriched.filter(x => x.pick.result === 'win').length;
+  const losses = enriched.filter(x => x.pick.result === 'loss').length;
+  const voids = enriched.filter(x => x.pick.result === 'void').length;
+  const playable = wins + losses;
+  const winRate = playable > 0 ? wins / playable : 0;
+
+  // Solo cuentan win/loss para invertido (los void no entran en ROI)
+  const playables = enriched.filter(x => x.pick.result !== 'void');
+  const totalInvested = playables.reduce((a,x)=>a+x.bet.amount,0);
+  const totalProfit = playables.reduce((a,x)=>a+x.profit,0);
+  const roi = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+
+  const amounts = enriched.map(x => x.bet.amount);
+  const avgAmount = amounts.length ? amounts.reduce((a,b)=>a+b,0) / amounts.length : 0;
+  const maxAmount = amounts.length ? Math.max(...amounts) : 0;
+  const allOdds = enriched.map(x => x.odds).filter(x => x > 0);
+  const avgOdds = allOdds.length ? allOdds.reduce((a,b)=>a+b,0) / allOdds.length : 0;
+  const bestProfit = enriched.length ? Math.max(...enriched.map(x => x.profit)) : 0;
+
+  // Tipo y deporte más jugados
+  const pickTypeCount = {}, sportCount = {};
+  enriched.forEach(x => {
+    const fe = pickFirstEvent(x.pick);
+    if (fe.pickType) pickTypeCount[fe.pickType] = (pickTypeCount[fe.pickType] || 0) + 1;
+    if (fe.sport) sportCount[fe.sport] = (sportCount[fe.sport] || 0) + 1;
+  });
+  const topPickType = Object.entries(pickTypeCount).sort((a,b)=>b[1]-a[1])[0];
+  const topSport = Object.entries(sportCount).sort((a,b)=>b[1]-a[1])[0];
+
+  return {
+    resolvedCount: resolved.length, wins, losses, voids, winRate,
+    roi, totalProfit, totalInvested, avgAmount, maxAmount, avgOdds, bestProfit,
+    topPickType: topPickType ? { name: topPickType[0], count: topPickType[1], pct: topPickType[1]/resolved.length } : null,
+    topSport: topSport ? { name: topSport[0], count: topSport[1], pct: topSport[1]/resolved.length } : null,
+  };
 }
 
 function actionsHTML(c) {
@@ -1872,7 +1986,154 @@ function statsPanelHTML(c, forAdmin) {
     </div>
     ${availablePicksHTML(c, forAdmin)}
     ${followedBetsHTML(c, forAdmin)}
+    ${monthlyResultsHTML('global', null)}
+    ${forAdmin ? '' : monthlyResultsHTML('personal', c)}
   `;
+}
+
+/* ============================================================
+   RESULTADOS MENSUALES — UI
+============================================================ */
+// Estado del mes seleccionado por sección (para que admin y cliente
+// puedan tener su selección independiente).
+const selectedMonths = { global: null, personal: null };
+
+// Construye el bloque completo de resultados mensuales (con selector de mes).
+// kind: 'global' (datos de picks publicados) o 'personal' (datos del cliente).
+// client: solo necesario en 'personal'.
+function monthlyResultsHTML(kind, client) {
+  const isGlobal = kind === 'global';
+  const title = isGlobal ? 'Resultados del equipo' : 'Mis estadísticas mensuales';
+  const subtitle = isGlobal
+    ? 'Rendimiento mensual de los pronósticos publicados por Master Betting.'
+    : 'Resultados de las apuestas que has seguido tú, mes a mes.';
+  const accentClass = isGlobal ? 'text-accent-neon' : 'text-amber-300';
+  const accentDot = isGlobal ? 'bg-accent-neon' : 'bg-amber-300';
+
+  // Recoge meses con datos
+  const months = monthsWithData(kind, client);
+  if (months.length === 0) {
+    return `<section class="mt-12">
+      <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full ${accentDot}"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] ${accentClass}">${isGlobal ? 'Equipo' : 'Personal'}</span></div>
+      <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">${title}</h3>
+      <p class="mt-1 text-sm text-ink-500">${subtitle}</p>
+      <div class="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center">
+        <p class="text-sm text-ink-500">${isGlobal ? 'Aún no hay pronósticos cerrados. En cuanto se resuelvan los primeros, aparecerán aquí las estadísticas mensuales del equipo.' : 'Aún no has seguido ninguna apuesta resuelta. Cuando lo hagas, aquí verás tus estadísticas personales mes a mes.'}</p>
+      </div>
+    </section>`;
+  }
+
+  // Mes seleccionado: el guardado, o el primero (más reciente)
+  if (!selectedMonths[kind] || !months.find(m => m.key === selectedMonths[kind])) {
+    selectedMonths[kind] = months[0].key;
+  }
+  const sel = selectedMonths[kind];
+
+  // Selector de meses (pills horizontales)
+  const tabs = months.map(m => {
+    const active = m.key === sel;
+    return `<button data-monthly-tab="${kind}" data-month="${m.key}"
+      class="flex-shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition ${
+        active
+          ? (isGlobal ? 'border-accent-neon/50 bg-accent-neon/15 text-accent-neon' : 'border-amber-400/50 bg-amber-400/15 text-amber-300')
+          : 'border-white/10 bg-white/[0.03] text-ink-300 hover:border-white/30 hover:text-white'
+      }">${monthLabel(m.key)}</button>`;
+  }).join('');
+
+  return `<section class="mt-12" data-monthly-section="${kind}">
+    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full ${accentDot}"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] ${accentClass}">${isGlobal ? 'Equipo' : 'Personal'}</span></div>
+    <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">${title}</h3>
+    <p class="mt-1 text-sm text-ink-500">${subtitle}</p>
+    <div class="mt-5 -mx-1 flex gap-2 overflow-x-auto pb-2 px-1" style="scrollbar-width:none;">${tabs}</div>
+    <div data-monthly-body="${kind}" class="mt-4">${monthlyStatsBodyHTML(kind, client, sel)}</div>
+  </section>`;
+}
+
+function monthsWithData(kind, client) {
+  if (kind === 'global') {
+    const resolved = monthlyPicksPool.filter(p => p.result !== 'pending');
+    return groupByMonth(resolved);
+  }
+  // personal
+  if (!client) return [];
+  const bets = getFollowed(client.id);
+  // Enriquecemos con la fecha del pick (no del followedAt) para agrupar por mes del partido
+  const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+  const enriched = bets
+    .map(b => ({ ...b, pick: picksById[b.pickId] }))
+    .filter(b => b.pick && b.pick.result !== 'pending');
+  return groupByMonth(enriched, b => b.pick.date);
+}
+
+// Cuerpo del bloque para un mes concreto (las tarjetas de stats)
+function monthlyStatsBodyHTML(kind, client, monthKeyVal) {
+  if (kind === 'global') {
+    const monthPicks = monthlyPicksPool.filter(p => monthKey(p.date) === monthKeyVal && p.result !== 'pending');
+    const s = computeGlobalMonthlyStats(monthPicks);
+    return globalStatsCardsHTML(s);
+  } else {
+    const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+    const bets = getFollowed(client.id).filter(b => {
+      const p = picksById[b.pickId];
+      return p && p.result !== 'pending' && monthKey(p.date) === monthKeyVal;
+    });
+    const s = computePersonalMonthlyStats(bets, picksById);
+    return personalStatsCardsHTML(s);
+  }
+}
+
+// Tarjeta KPI grande con título, valor grande y opcional sublabel
+function statTile(label, value, sublabel = '', tone = 'neutral') {
+  const toneCls = tone === 'good' ? 'text-accent-neon' : tone === 'bad' ? 'text-red-400' : tone === 'amber' ? 'text-amber-300' : 'text-white';
+  return `<div class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5">
+    <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">${label}</div>
+    <div class="mt-2 font-display text-2xl font-semibold tracking-tight ${toneCls} sm:text-3xl">${value}</div>
+    ${sublabel ? `<div class="mt-1 text-[11px] text-ink-500">${sublabel}</div>` : ''}
+  </div>`;
+}
+
+function globalStatsCardsHTML(s) {
+  const yieldTone = s.yieldPct > 0 ? 'good' : s.yieldPct < 0 ? 'bad' : 'neutral';
+  const profitTone = s.profitUnits > 0 ? 'good' : s.profitUnits < 0 ? 'bad' : 'neutral';
+  const fmtSigned = (n, d=2) => (n >= 0 ? '+' : '') + n.toFixed(d);
+  return `<div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      ${statTile('Pronósticos resueltos', s.resolvedCount, `${s.wins}W · ${s.losses}L${s.voids?` · ${s.voids} void`:''}`)}
+      ${statTile('% Aciertos', `${(s.winRate*100).toFixed(0)}%`, `${s.wins} de ${s.wins+s.losses}`, s.winRate >= 0.55 ? 'good' : s.winRate >= 0.45 ? 'neutral' : 'bad')}
+      ${statTile('Yield', `${fmtSigned(s.yieldPct,1)}%`, `Rentabilidad media`, yieldTone)}
+      ${statTile('Beneficio', `${fmtSigned(s.profitUnits,2)} u`, `Sobre ${s.totalStake.toFixed(2)} u apostadas`, profitTone)}
+    </div>
+    <div class="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      ${statTile('Cuota media', s.avgOdds.toFixed(2))}
+      ${statTile('Mayor cuota acertada', s.maxWonOdds ? s.maxWonOdds.toFixed(2) : '—', s.maxWonOdds ? '' : 'Sin verdes en este mes')}
+      ${statTile('Stake medio', `${s.avgStake.toFixed(1)} u`)}
+      ${statTile('Stake mayor', `${s.maxStake.toFixed(1)} u`)}
+    </div>
+    <div class="mt-4 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
+      ${statTile('Tipo de pronóstico más usado', s.topPickType ? s.topPickType.name : '—', s.topPickType ? `${s.topPickType.count} veces · ${(s.topPickType.pct*100).toFixed(0)}% del total` : '')}
+      ${statTile('Deporte más frecuente', s.topSport ? s.topSport.name : '—', s.topSport ? `${s.topSport.count} pronósticos · ${(s.topSport.pct*100).toFixed(0)}% del total` : '')}
+    </div>`;
+}
+
+function personalStatsCardsHTML(s) {
+  const roiTone = s.roi > 0 ? 'good' : s.roi < 0 ? 'bad' : 'neutral';
+  const profitTone = s.totalProfit > 0 ? 'good' : s.totalProfit < 0 ? 'bad' : 'neutral';
+  const fmtSigned = (n, d=1) => (n >= 0 ? '+' : '') + n.toFixed(d);
+  return `<div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      ${statTile('Apuestas resueltas', s.resolvedCount, `${s.wins}W · ${s.losses}L${s.voids?` · ${s.voids} void`:''}`)}
+      ${statTile('% Aciertos', `${(s.winRate*100).toFixed(0)}%`, `${s.wins} de ${s.wins+s.losses}`, s.winRate >= 0.55 ? 'good' : s.winRate >= 0.45 ? 'neutral' : 'bad')}
+      ${statTile('ROI', `${fmtSigned(s.roi,1)}%`, 'Rentabilidad sobre lo apostado', roiTone)}
+      ${statTile('Beneficio neto', fmtSigned(s.totalProfit,2)+' €', `Apostado: ${s.totalInvested.toFixed(2)} €`, profitTone)}
+    </div>
+    <div class="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      ${statTile('Apuesta media', `${s.avgAmount.toFixed(2)} €`)}
+      ${statTile('Apuesta mayor', `${s.maxAmount.toFixed(2)} €`)}
+      ${statTile('Cuota media', s.avgOdds.toFixed(2))}
+      ${statTile('Mayor beneficio', `${s.bestProfit.toFixed(2)} €`, 'En una sola apuesta', s.bestProfit > 0 ? 'good' : 'neutral')}
+    </div>
+    <div class="mt-4 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
+      ${statTile('Tipo más jugado', s.topPickType ? s.topPickType.name : '—', s.topPickType ? `${s.topPickType.count} veces · ${(s.topPickType.pct*100).toFixed(0)}% del total` : '')}
+      ${statTile('Deporte más jugado', s.topSport ? s.topSport.name : '—', s.topSport ? `${s.topSport.count} apuestas · ${(s.topSport.pct*100).toFixed(0)}% del total` : '')}
+    </div>`;
 }
 function kpiCard(label, value, highlight=false) {
   return `<div class="gradient-border relative overflow-hidden bg-white/[0.02] p-4 sm:p-5 ${highlight ? 'ring-1 ring-accent-neon/30' : ''}">
@@ -2101,11 +2362,17 @@ function switchTab(tab) {
   document.getElementById('clientsTab').classList.add('hidden');
   document.getElementById('picksTab').classList.add('hidden');
   document.getElementById('rankingsTab').classList.add('hidden');
+  document.getElementById('resultsTab').classList.add('hidden');
   document.getElementById('chatTab').classList.add('hidden');
   if (tab === 'clients') document.getElementById('clientsTab').classList.remove('hidden');
   else if (tab === 'picks') { document.getElementById('picksTab').classList.remove('hidden'); renderPicksAdmin(); }
   else if (tab === 'rankings') { document.getElementById('rankingsTab').classList.remove('hidden'); renderRankings(); }
+  else if (tab === 'results') { document.getElementById('resultsTab').classList.remove('hidden'); renderResultsAdmin(); }
   else if (tab === 'chat') { document.getElementById('chatTab').classList.remove('hidden'); openChat(); }
+}
+
+function renderResultsAdmin() {
+  document.getElementById('resultsContent').innerHTML = monthlyResultsHTML('global', null);
 }
 document.querySelectorAll('.adm-tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -2555,6 +2822,29 @@ document.addEventListener('click', onFollowAction);
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-locked-buy]'); if (!btn) return;
   alert('Compra individual de pronóstico Exclusive: 2,99€.\n\nEsta opción se activará cuando habilitemos la pasarela de pago. Mientras tanto, si quieres acceder al pronóstico, contacta con el equipo.');
+});
+
+// Pills del selector de mes en Resultados mensuales (admin y cliente)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-monthly-tab]'); if (!btn) return;
+  const kind = btn.dataset.monthlyTab;
+  const mk = btn.dataset.month;
+  selectedMonths[kind] = mk;
+  // Re-renderizar la sección entera para que los pills reflejen la selección
+  const section = btn.closest('[data-monthly-section]');
+  if (!section) return;
+  // Buscamos el cliente actual si es personal
+  let client = null;
+  if (kind === 'personal') {
+    const sectionContainer = section.closest('#availableSection') ? null : null;
+    // Recuperar el cliente desde el contexto: buscamos en clientStatsContent o statsDetailContent
+    const avSection = document.getElementById('availableSection');
+    if (avSection) {
+      const clientId = avSection.dataset.clientId;
+      client = clients.find(c => String(c.id) === String(clientId));
+    }
+  }
+  section.outerHTML = monthlyResultsHTML(kind, client);
 });
 
 function rerenderCurrentClientPanel() {
