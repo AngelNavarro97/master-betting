@@ -115,12 +115,17 @@
   details > summary::-webkit-details-marker { display: none; }
 
   /* Tabs admin */
-  .adm-tab { color: rgba(245,245,247,0.7); padding: 0.375rem 1rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; }
+  .adm-tab { color: rgba(245,245,247,0.7); padding: 0.375rem 1rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
   .adm-tab:hover { color: #fff; }
   .adm-tab.active { background: rgba(255,255,255,0.08); color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset; }
 
+  /* Scroll horizontal limpio (oculta scrollbar en todos los navegadores
+     y evita que el scroll bubble afecte al body en móvil) */
+  .pills-scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior-x: contain; touch-action: pan-x; }
+  .pills-scroller::-webkit-scrollbar { display: none; height: 0; width: 0; }
+
   /* Pills del panel cliente */
-  .cli-tab { color: rgba(245,245,247,0.7); padding: 0.45rem 1.05rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; position: relative; }
+  .cli-tab { color: rgba(245,245,247,0.7); padding: 0.45rem 1.05rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; position: relative; white-space: nowrap; flex-shrink: 0; }
   .cli-tab:hover { color: #fff; }
   .cli-tab.active { background: rgba(255,255,255,0.08); color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset; }
   /* Pill amarillo (Premium) */
@@ -662,12 +667,14 @@
   </header>
 
   <div class="mx-auto mt-6 max-w-[1600px] px-5 sm:px-8">
-    <div class="inline-flex flex-wrap rounded-full border border-white/10 bg-white/[0.03] p-1">
-      <button data-tab="clients" class="adm-tab active">Clientes</button>
-      <button data-tab="picks" class="adm-tab">Pronósticos</button>
-      <button data-tab="rankings" class="adm-tab">Rankings</button>
-      <button data-tab="results" class="adm-tab">Resultados</button>
-      <button data-tab="chat" class="adm-tab">Chat</button>
+    <div class="pills-scroller">
+      <div class="inline-flex flex-nowrap whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] p-1">
+        <button data-tab="clients" class="adm-tab active">Clientes</button>
+        <button data-tab="picks" class="adm-tab">Pronósticos</button>
+        <button data-tab="rankings" class="adm-tab">Rankings</button>
+        <button data-tab="results" class="adm-tab">Resultados</button>
+        <button data-tab="chat" class="adm-tab">Chat</button>
+      </div>
     </div>
   </div>
 
@@ -815,20 +822,21 @@
      ================================================================ -->
 <div id="clientPanel" class="hidden">
   <header class="border-b border-white/5 bg-black/30 backdrop-blur-md">
-    <div class="mx-auto flex max-w-[1200px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-      <div class="flex items-center gap-4">
-        <img src="Recurso%201.png" alt="Master Betting" class="h-10 w-auto sm:h-12 shrink-0"/>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button id="upgradeBtn" class="hidden inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black shadow-[0_0_24px_rgba(252,211,77,0.35)] transition hover:bg-amber-300">
+    <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-4 sm:gap-4 sm:px-8 sm:py-5">
+      <img src="Recurso%201.png" alt="Master Betting" class="h-9 w-auto sm:h-11 shrink-0"/>
+      <div class="flex flex-nowrap items-center gap-1.5 sm:gap-2">
+        <button id="upgradeBtn" class="hidden inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-2 text-xs font-semibold text-black transition hover:bg-amber-300 sm:px-4 sm:text-sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
-          Mejorar suscripción
+          <span class="hidden sm:inline">Mejorar plan</span>
         </button>
-        <a id="telegramBtn" href="https://t.me/" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-full bg-[#229ED9] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_24px_rgba(34,158,217,0.35)] transition hover:bg-[#1a8cc1]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.302.952-.14.579.192l-8.533 7.706h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.787l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"/></svg>
-          Unirme al canal de Telegram
+        <a id="telegramBtn" href="https://t.me/" target="_blank" rel="noopener" aria-label="Telegram" class="inline-flex items-center gap-1.5 rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 px-3 py-2 text-xs font-semibold text-[#7ec0e0] transition hover:border-[#229ED9]/60 hover:bg-[#229ED9]/20 hover:text-white sm:px-4 sm:text-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.302.952-.14.579.192l-8.533 7.706h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.787l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"/></svg>
+          <span class="hidden sm:inline">Telegram</span>
         </a>
-        <button id="clientLogoutBtn" class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10">Cerrar sesión</button>
+        <button id="clientLogoutBtn" aria-label="Cerrar sesión" class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-ink-200 transition hover:border-white/25 hover:bg-white/10 hover:text-white sm:px-4 sm:text-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span class="hidden sm:inline">Salir</span>
+        </button>
       </div>
     </div>
   </header>
@@ -1103,7 +1111,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-greeting-moved';
+const APP_VERSION = '2026-05-06-header-pills-responsive';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2152,8 +2160,8 @@ function statsPanelHTML(c, forAdmin) {
   const tab = currentClientTab;
 
   const pills = `
-    <div class="-mx-1 mb-6 flex gap-1 overflow-x-auto px-1 pb-1" style="scrollbar-width:none;">
-      <div class="inline-flex flex-nowrap rounded-full border border-white/10 bg-white/[0.03] p-1">
+    <div class="mb-6 pills-scroller">
+      <div class="inline-flex flex-nowrap whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] p-1">
         <button data-ctab="summary"  class="cli-tab ${tab==='summary'?'active':''}">Resumen</button>
         <button data-ctab="picks"    class="cli-tab ${tab==='picks'?'active':''}">Apuestas</button>
         ${showPremium ? `<button data-ctab="premium" class="cli-tab amber ${tab==='premium'?'active':''}">
