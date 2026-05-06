@@ -4,8 +4,22 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#000000" />
-<title>Tipster — Vista previa</title>
+<title>Master Betting</title>
 <link rel="icon" type="image/png" href="Recurso%201.png" />
+
+<!-- Icono de la app cuando se añade a pantalla de inicio (iOS) -->
+<link rel="apple-touch-icon" href="logo_masterbetting_app.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="logo_masterbetting_app.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="logo_masterbetting_app.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="logo_masterbetting_app.png" />
+
+<!-- Nombre que sale bajo el icono en iOS -->
+<meta name="apple-mobile-web-app-title" content="Master Betting" />
+<!-- Pantalla completa al abrir desde el icono (sin barra del navegador) -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<!-- Estilo de la barra de estado: black-translucent deja la barra de iOS sobre el fondo de la app -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1021,7 +1035,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-05-locked-exclusive';
+const APP_VERSION = '2026-05-06-pwa-icon';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
