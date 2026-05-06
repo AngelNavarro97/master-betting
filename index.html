@@ -54,6 +54,23 @@
   :root { color-scheme: dark; }
   html, body { background: #000; color: #f5f5f7; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
   html { scroll-behavior: smooth; }
+
+  /* === Soporte iPhone con Dynamic Island / notch en modo PWA ===
+     Solo se aplica cuando la web se abre desde la pantalla de inicio
+     (no afecta a la web normal en navegador). */
+  @media (display-mode: standalone) {
+    /* Empuja TODO el contenido del body por debajo de la zona segura */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    /* El navbar de la home (fixed) hay que reposicionarlo manualmente:
+       como body tiene padding-top, el header fixed sigue anclado al top del viewport.
+       Lo movemos también para que aterrice justo debajo de la Dynamic Island. */
+    header.fixed {
+      top: env(safe-area-inset-top);
+    }
+  }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: #0a0a0a; }
   ::-webkit-scrollbar-thumb { background: #2a2a2d; border-radius: 999px; }
@@ -1035,7 +1052,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-pwa-icon';
+const APP_VERSION = '2026-05-06-pwa-safe-area';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
