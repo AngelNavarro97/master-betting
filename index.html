@@ -1075,7 +1075,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-client-pills';
+const APP_VERSION = '2026-05-06-mybets-dropdowns';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2114,13 +2114,14 @@ function lockedPicksOnlyHTML(c) {
 }
 
 /* === Panel "Mis apuestas" del cliente, con filtros por estado y mes === */
-let clientBetsFilter = { status: 'all', monthKey: 'all' };
+// Por defecto: solo se ven las pendientes
+let clientBetsFilter = { status: 'pending', monthKey: 'all' };
 
 function followedBetsClientHTML(c) {
   const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
   const all = getFollowed(c.id).map(b => ({ ...b, pick: picksById[b.pickId] })).filter(b => b.pick);
 
-  // Conteos por estado (para mostrar en los filtros)
+  // Conteos por estado (para mostrar en el desplegable)
   const cntAll = all.length;
   const cntPending = all.filter(b => pickResult(b.pick) === 'pending').length;
   const cntWin = all.filter(b => pickResult(b.pick) === 'win').length;
@@ -2142,33 +2143,65 @@ function followedBetsClientHTML(c) {
   // Ordenar por fecha del partido descendente
   filtered.sort((a,b) => (b.pick.date + (b.pick.time||'')).localeCompare(a.pick.date + (a.pick.time||'')));
 
+  // Subtítulo distinto según filtros activos
+  const isDefaultView = clientBetsFilter.status === 'pending' && clientBetsFilter.monthKey === 'all';
+  const subtitle = isDefaultView
+    ? `Estás viendo tus <span class="text-amber-300 font-medium">apuestas pendientes</span>. Usa los filtros para ver acertadas, falladas o el resto del histórico.`
+    : `Filtra por estado y mes para encontrar lo que busques.`;
+
   const headerHTML = `<div>
     <h3 class="font-display text-xl font-semibold tracking-tight text-white">Mis apuestas</h3>
-    <p class="mt-1 text-sm text-ink-500">Todas las apuestas que has seguido. Filtra por estado o por mes.</p>
+    <p class="mt-1 text-sm text-ink-500">${subtitle}</p>
   </div>`;
 
-  const statusFiltersHTML = `<div class="mt-5 flex flex-wrap gap-2">
-    <button data-bet-filter="status" data-value="all" class="bet-filter ${clientBetsFilter.status==='all'?'active':''}">Todas <span class="ml-1 opacity-60">${cntAll}</span></button>
-    <button data-bet-filter="status" data-value="pending" class="bet-filter ${clientBetsFilter.status==='pending'?'active':''}">Pendientes <span class="ml-1 opacity-60">${cntPending}</span></button>
-    <button data-bet-filter="status" data-value="win" class="bet-filter ${clientBetsFilter.status==='win'?'active':''}">Acertadas <span class="ml-1 opacity-60">${cntWin}</span></button>
-    <button data-bet-filter="status" data-value="loss" class="bet-filter ${clientBetsFilter.status==='loss'?'active':''}">Falladas <span class="ml-1 opacity-60">${cntLoss}</span></button>
-    <button data-bet-filter="status" data-value="void" class="bet-filter ${clientBetsFilter.status==='void'?'active':''}">Anuladas <span class="ml-1 opacity-60">${cntVoid}</span></button>
-  </div>`;
+  // Selector de estado
+  const statusOptions = [
+    { v: 'all',     label: `Todas (${cntAll})` },
+    { v: 'pending', label: `Pendientes (${cntPending})` },
+    { v: 'win',     label: `Acertadas (${cntWin})` },
+    { v: 'loss',    label: `Falladas (${cntLoss})` },
+    { v: 'void',    label: `Anuladas (${cntVoid})` },
+  ];
 
-  const monthFiltersHTML = months.length > 0 ? `<div class="mt-3 flex flex-wrap gap-2">
-    <button data-bet-filter="month" data-value="all" class="bet-filter ${clientBetsFilter.monthKey==='all'?'active':''}">Todos los meses</button>
-    ${months.map(mk => `<button data-bet-filter="month" data-value="${mk}" class="bet-filter ${clientBetsFilter.monthKey===mk?'active':''}">${monthLabel(mk)}</button>`).join('')}
-  </div>` : '';
+  const monthOptions = [{ v: 'all', label: 'Todos los meses' }]
+    .concat(months.map(mk => ({ v: mk, label: monthLabel(mk) })));
+
+  const selectClass = `mt-1.5 w-full appearance-none rounded-2xl border border-white/10 bg-black/40 px-4 py-3 pr-10 text-sm text-white outline-none focus:border-white/30 focus:bg-black/60 cursor-pointer`;
+  const selectArrow = `<svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+
+  const filtersHTML = `<div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div>
+      <label class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Estado</label>
+      <div class="relative mt-0">
+        <select data-bet-filter="status" class="${selectClass}" style="background-image:none;">
+          ${statusOptions.map(o => `<option value="${o.v}" ${clientBetsFilter.status===o.v?'selected':''}>${o.label}</option>`).join('')}
+        </select>
+        ${selectArrow}
+      </div>
+    </div>
+    <div>
+      <label class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Mes</label>
+      <div class="relative mt-0">
+        <select data-bet-filter="month" class="${selectClass}" style="background-image:none;" ${months.length===0?'disabled':''}>
+          ${monthOptions.map(o => `<option value="${o.v}" ${clientBetsFilter.monthKey===o.v?'selected':''}>${o.label}</option>`).join('')}
+        </select>
+        ${selectArrow}
+      </div>
+    </div>
+  </div>`;
 
   // Cards por apuesta
   let listHTML;
   if (filtered.length === 0) {
-    listHTML = `<div class="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-sm text-ink-500">No hay apuestas con los filtros seleccionados.</div>`;
+    const emptyMsg = isDefaultView
+      ? 'No tienes apuestas pendientes en este momento. Usa el filtro de Estado para ver tus apuestas resueltas.'
+      : 'No hay apuestas con los filtros seleccionados.';
+    listHTML = `<div class="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-sm text-ink-500">${emptyMsg}</div>`;
   } else {
     listHTML = `<div class="mt-5 grid gap-3 md:grid-cols-2">${filtered.map(b => followedBetCardClient(b)).join('')}</div>`;
   }
 
-  // Resumen breve arriba
+  // Resumen breve (solo cuando hay filtros aplicados o hay datos)
   const totalInvested = filtered.reduce((a,b)=>a+b.amount,0);
   const closed = filtered.filter(b => { const r = pickResult(b.pick); return r==='win'||r==='loss'; });
   const totalProfit = closed.reduce((a,b)=>{
@@ -2176,6 +2209,7 @@ function followedBetsClientHTML(c) {
     if (pickResult(b.pick)==='win') return a + b.amount * (odds-1);
     return a - b.amount;
   }, 0);
+  // El bloque de resumen solo se muestra si hay apuestas filtradas
   const summaryHTML = filtered.length > 0 ? `<div class="mt-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
     ${kpiCard('Apuestas mostradas', filtered.length)}
     ${kpiCard('Invertido', fmtEuro(totalInvested))}
@@ -2183,7 +2217,7 @@ function followedBetsClientHTML(c) {
     ${kpiCard('Cuota media', (filtered.reduce((a,b)=>a+pickTotalOdds(b.pick),0)/filtered.length).toFixed(2))}
   </div>` : '';
 
-  return `${headerHTML}${statusFiltersHTML}${monthFiltersHTML}${summaryHTML}${listHTML}`;
+  return `${headerHTML}${filtersHTML}${summaryHTML}${listHTML}`;
 }
 
 // Tarjeta individual de "Mis apuestas"
@@ -2209,18 +2243,19 @@ function followedBetCardClient(b) {
     profitText = `Pendiente`; profitCls = 'text-amber-300';
   }
   const headerLabel = isCombined ? `Combinada (${p.events.length})` : (fe.sport || '');
+  const eventVisual = eventBlock(p, true); // logos de equipos + competición
   return `<article class="gradient-border rounded-2xl bg-white/[0.02] p-4">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
           <span>${headerLabel}</span><span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
         </div>
-        <h4 class="mt-1.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>
-        ${isCombined ? '' : `<p class="mt-1 text-xs text-ink-200/70">${fe.pickType||''}</p>`}
+        ${eventVisual ? `<div class="mt-2.5">${eventVisual}</div>` : `<h4 class="mt-1.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
+        ${isCombined ? '' : `<p class="mt-2 text-xs text-ink-200/85">${fe.pickType||''}</p>`}
       </div>
       ${badge}
     </div>
-    <div class="mt-3 flex items-center justify-between gap-3 text-xs">
+    <div class="mt-3 flex items-center justify-between gap-3 text-xs border-t border-white/5 pt-3">
       <div><span class="text-ink-500">Apostado</span> <span class="ml-1 font-semibold text-white">${fmtEuro(b.amount)}</span></div>
       <div><span class="text-ink-500">Cuota</span> <span class="ml-1 font-semibold text-white">${odds.toFixed(2)}</span></div>
       <div class="font-semibold ${profitCls}">${profitText}</div>
@@ -3098,11 +3133,11 @@ document.addEventListener('click', async (e) => {
   rerenderCurrentClientPanel();
 });
 
-// Filtros de "Mis apuestas" (estado y mes)
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-bet-filter]'); if (!btn) return;
-  const kind = btn.dataset.betFilter;
-  const value = btn.dataset.value;
+// Filtros de "Mis apuestas" (estado y mes) — ahora son <select>
+document.addEventListener('change', (e) => {
+  const sel = e.target.closest('select[data-bet-filter]'); if (!sel) return;
+  const kind = sel.dataset.betFilter;
+  const value = sel.value;
   if (kind === 'status') clientBetsFilter.status = value;
   else if (kind === 'month') clientBetsFilter.monthKey = value;
   rerenderCurrentClientPanel();
