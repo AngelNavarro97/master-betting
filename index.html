@@ -113,6 +113,21 @@
   .adm-tab:hover { color: #fff; }
   .adm-tab.active { background: rgba(255,255,255,0.08); color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset; }
 
+  /* Pills del panel cliente */
+  .cli-tab { color: rgba(245,245,247,0.7); padding: 0.45rem 1.05rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; position: relative; }
+  .cli-tab:hover { color: #fff; }
+  .cli-tab.active { background: rgba(255,255,255,0.08); color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset; }
+  /* Pill amarillo (Premium) */
+  .cli-tab.amber { color: rgba(252,211,77,0.85); }
+  .cli-tab.amber:hover { color: rgba(253,224,71,1); }
+  .cli-tab.amber.active { background: rgba(245,158,11,0.18); color: rgba(253,224,71,1); box-shadow: 0 0 0 1px rgba(245,158,11,0.35) inset; }
+  /* Badge verde con número (Mis apuestas) */
+  .cli-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9999px; background: #00e696; color: #0a0a0a; font-size: 11px; font-weight: 700; line-height: 1; }
+  /* Filtros de Mis apuestas */
+  .bet-filter { color: rgba(245,245,247,0.65); padding: 0.3rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); transition: all 0.2s; }
+  .bet-filter:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+  .bet-filter.active { background: rgba(0,230,150,0.12); color: #00e696; border-color: rgba(0,230,150,0.35); }
+
   /* Filtros pestaña Pronósticos */
   .pf-tab.pf-active { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.25); }
 
@@ -1060,7 +1075,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-monthly-results';
+const APP_VERSION = '2026-05-06-client-pills';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1750,13 +1765,22 @@ function groupByMonth(items, dateAccessor = (it) => it.date) {
 /* ============================================================
    STATS MENSUALES — globales (equipo) y personales (cliente)
 ============================================================ */
+// Normaliza el campo result: acepta tanto los valores antiguos (won/lost)
+// como los nuevos (win/loss). Devuelve siempre win/loss/void/pending.
+function pickResult(p) {
+  if (!p || !p.result) return 'pending';
+  if (p.result === 'won') return 'win';
+  if (p.result === 'lost') return 'loss';
+  return p.result;
+}
+
 // Devuelve estadísticas globales del equipo a partir de los picks publicados.
 // Calcula sobre TODOS los picks resueltos (no pendientes) de un mes.
 function computeGlobalMonthlyStats(picks) {
-  const resolved = picks.filter(p => p.result === 'win' || p.result === 'loss' || p.result === 'void');
-  const wins = resolved.filter(p => p.result === 'win').length;
-  const losses = resolved.filter(p => p.result === 'loss').length;
-  const voids = resolved.filter(p => p.result === 'void').length;
+  const resolved = picks.filter(p => { const r = pickResult(p); return r === 'win' || r === 'loss' || r === 'void'; });
+  const wins = resolved.filter(p => pickResult(p) === 'win').length;
+  const losses = resolved.filter(p => pickResult(p) === 'loss').length;
+  const voids = resolved.filter(p => pickResult(p) === 'void').length;
   const playable = wins + losses; // void no cuenta para winrate
   const winRate = playable > 0 ? wins / playable : 0;
 
@@ -1765,8 +1789,9 @@ function computeGlobalMonthlyStats(picks) {
   resolved.forEach(p => {
     const stake = p.recommendedStake || 0;
     const odds = pickTotalOdds(p);
-    if (p.result === 'win') { totalProfit += stake * (odds - 1); totalStake += stake; }
-    else if (p.result === 'loss') { totalProfit -= stake; totalStake += stake; }
+    const r = pickResult(p);
+    if (r === 'win') { totalProfit += stake * (odds - 1); totalStake += stake; }
+    else if (r === 'loss') { totalProfit -= stake; totalStake += stake; }
     // void: no suma nada
   });
   const yieldPct = totalStake > 0 ? (totalProfit / totalStake) * 100 : 0;
@@ -1774,7 +1799,7 @@ function computeGlobalMonthlyStats(picks) {
   // Cuotas
   const allOdds = resolved.map(p => pickTotalOdds(p)).filter(x => x > 0);
   const avgOdds = allOdds.length ? allOdds.reduce((a,b)=>a+b,0) / allOdds.length : 0;
-  const wonPicks = resolved.filter(p => p.result === 'win');
+  const wonPicks = resolved.filter(p => pickResult(p) === 'win');
   const maxWonOdds = wonPicks.length ? Math.max(...wonPicks.map(p => pickTotalOdds(p))) : 0;
 
   // Stake
@@ -1807,24 +1832,27 @@ function computeGlobalMonthlyStats(picks) {
 function computePersonalMonthlyStats(bets, picksById) {
   const resolved = bets.filter(b => {
     const p = picksById[b.pickId];
-    return p && (p.result === 'win' || p.result === 'loss' || p.result === 'void');
+    if (!p) return false;
+    const r = pickResult(p);
+    return r === 'win' || r === 'loss' || r === 'void';
   });
   const enriched = resolved.map(b => {
     const p = picksById[b.pickId];
     const odds = pickTotalOdds(p);
+    const r = pickResult(p);
     let profit = 0;
-    if (p.result === 'win') profit = b.amount * (odds - 1);
-    else if (p.result === 'loss') profit = -b.amount;
+    if (r === 'win') profit = b.amount * (odds - 1);
+    else if (r === 'loss') profit = -b.amount;
     return { bet: b, pick: p, odds, profit };
   });
-  const wins = enriched.filter(x => x.pick.result === 'win').length;
-  const losses = enriched.filter(x => x.pick.result === 'loss').length;
-  const voids = enriched.filter(x => x.pick.result === 'void').length;
+  const wins = enriched.filter(x => pickResult(x.pick) === 'win').length;
+  const losses = enriched.filter(x => pickResult(x.pick) === 'loss').length;
+  const voids = enriched.filter(x => pickResult(x.pick) === 'void').length;
   const playable = wins + losses;
   const winRate = playable > 0 ? wins / playable : 0;
 
   // Solo cuentan win/loss para invertido (los void no entran en ROI)
-  const playables = enriched.filter(x => x.pick.result !== 'void');
+  const playables = enriched.filter(x => pickResult(x.pick) !== 'void');
   const totalInvested = playables.reduce((a,x)=>a+x.bet.amount,0);
   const totalProfit = playables.reduce((a,x)=>a+x.profit,0);
   const roi = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
@@ -1962,12 +1990,14 @@ document.getElementById('mobileList').addEventListener('click', onTableAction);
 function statsPanelHTML(c, forAdmin) {
   const s = statsFor(c);
   const status = statusInfo[c.status];
-  return `
+  const headerHTML = `
     <div class="mb-6 flex flex-col gap-1">
       ${forAdmin ? `<span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Estadísticas del cliente</span>` : ''}
       <div class="flex flex-wrap items-center gap-3"><h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${c.name}</h2><span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.cls}">${status.label}</span></div>
       <p class="text-sm text-ink-500">Plan ${c.plan} · ${fmtEuro(c.price)}/mes · alta el ${c.joinedAt}</p>
-    </div>
+    </div>`;
+
+  const summaryKPIsHTML = `
     <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
       ${kpiCard('Picks este mes', `${s.won} / ${s.picks}`)}
       ${kpiCard('Tasa de acierto', `${(s.winRate*100).toFixed(0)}%`)}
@@ -1983,12 +2013,219 @@ function statsPanelHTML(c, forAdmin) {
     <div class="mt-4 flex items-center gap-2 text-xs text-ink-500">
       <span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span>
       Mejor cuota acertada del mes: <span class="font-semibold text-white">${s.bestOdds.toFixed(2)}</span>
+    </div>`;
+
+  // === Vista admin: layout antiguo (scroll largo, sin pills) ===
+  if (forAdmin) {
+    return `${headerHTML}${summaryKPIsHTML}
+      ${availablePicksHTML(c, forAdmin)}
+      ${followedBetsHTML(c, forAdmin)}
+      ${monthlyResultsHTML('global', null)}`;
+  }
+
+  // === Vista cliente: pills arriba + paneles ===
+  const showPremium = c.plan !== 'Exclusive';
+  const pendingCount = countPendingFollowedBets(c.id);
+  const tab = currentClientTab;
+
+  const pills = `
+    <div class="-mx-1 mb-6 flex gap-1 overflow-x-auto px-1 pb-1" style="scrollbar-width:none;">
+      <div class="inline-flex flex-nowrap rounded-full border border-white/10 bg-white/[0.03] p-1">
+        <button data-ctab="summary"  class="cli-tab ${tab==='summary'?'active':''}">Resumen</button>
+        <button data-ctab="picks"    class="cli-tab ${tab==='picks'?'active':''}">Apuestas</button>
+        ${showPremium ? `<button data-ctab="premium" class="cli-tab amber ${tab==='premium'?'active':''}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          Premium</button>` : ''}
+        <button data-ctab="mybets"   class="cli-tab ${tab==='mybets'?'active':''}">Mis apuestas${pendingCount>0?`<span class="cli-badge">${pendingCount}</span>`:''}</button>
+        <button data-ctab="team"     class="cli-tab ${tab==='team'?'active':''}">Resultados equipo</button>
+        <button data-ctab="mystats"  class="cli-tab ${tab==='mystats'?'active':''}">Mis estadísticas</button>
+      </div>
+    </div>`;
+
+  // Renderizar el panel activo
+  let panel = '';
+  if (tab === 'summary') {
+    panel = summaryKPIsHTML;
+  } else if (tab === 'picks') {
+    panel = availablePicksOnlyHTML(c);
+  } else if (tab === 'premium') {
+    panel = lockedPicksOnlyHTML(c);
+  } else if (tab === 'mybets') {
+    panel = followedBetsClientHTML(c);
+  } else if (tab === 'team') {
+    panel = monthlyResultsHTML('global', null);
+  } else if (tab === 'mystats') {
+    panel = monthlyResultsHTML('personal', c);
+  }
+
+  return `${headerHTML}${pills}<div data-client-panel-body data-client-id="${c.id}">${panel}</div>`;
+}
+
+// Estado del tab cliente activo
+let currentClientTab = 'summary';
+
+// Cuenta apuestas seguidas del cliente cuyo pick está aún pendiente
+function countPendingFollowedBets(clientId) {
+  const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+  return getFollowed(clientId).filter(b => {
+    const p = picksById[b.pickId];
+    return p && pickResult(p) === 'pending';
+  }).length;
+}
+
+/* === Panel "Apuestas" del cliente (solo las disponibles, sin la sección Premium) === */
+function availablePicksOnlyHTML(c) {
+  const picks = availablePicksFor(c);
+  const intro = `<p class="mt-1 text-sm text-ink-500">Estas son las apuestas que tu plan <span class="text-white">${c.plan}</span> incluye. Despliega cada mes y pulsa <span class="text-white">Apuesta seguida</span> en las que decidas jugar.</p>`;
+  let body;
+  if (picks.length === 0) {
+    body = `<p class="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center text-sm text-ink-500">No hay pronósticos publicados todavía. Cuando el equipo publique nuevos pronósticos, aparecerán aquí.</p>`;
+  } else {
+    const groups = groupByMonth(picks);
+    body = `<div class="mt-4 space-y-3">${groups.map((g, i) => `<details class="month-group" ${i===0?'open':''}>
+      <summary><span class="font-display text-base font-semibold text-white">Pronósticos · ${g.label}</span><span class="text-xs text-ink-500">${g.items.length} ${g.items.length===1?'apuesta':'apuestas'}</span></summary>
+      <div class="group-body grid gap-4 md:grid-cols-2 xl:grid-cols-3">${g.items.map(p => availablePickCard(p, c, false)).join('')}</div>
+    </details>`).join('')}</div>`;
+  }
+  return `<div id="availableSection" data-client-id="${c.id}" data-for-admin="0">
+    <div class="flex items-baseline justify-between gap-3"><h3 class="font-display text-xl font-semibold tracking-tight text-white">Apuestas disponibles</h3><span class="text-[10px] uppercase tracking-[0.18em] text-ink-500">${picks.length} disponibles</span></div>
+    ${intro}${body}
+  </div>`;
+}
+
+/* === Panel "Premium" del cliente (solo los Exclusive bloqueados) === */
+function lockedPicksOnlyHTML(c) {
+  const locked = lockedExclusivePicksFor(c);
+  if (locked.length === 0) {
+    return `<div>
+      <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-300"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Premium</span></div>
+      <h3 class="mt-2 font-display text-xl font-semibold tracking-tight text-white">Apuestas Exclusive</h3>
+      <p class="mt-1 text-sm text-ink-500">Aquí aparecerán las apuestas del plan Exclusive cuando el equipo publique alguna nueva. Podrás comprar el pronóstico individual por 2,99€.</p>
+      <div class="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-6 text-center text-sm text-amber-200/80">No hay apuestas Exclusive disponibles ahora mismo.</div>
+    </div>`;
+  }
+  // Necesitamos #availableSection para que el listener del botón "Comprar" sepa el contexto
+  return `<div id="availableSection" data-client-id="${c.id}" data-for-admin="0">
+    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-300"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Premium</span></div>
+    <h3 class="mt-2 font-display text-xl font-semibold tracking-tight text-white">Apuestas Exclusive disponibles</h3>
+    <p class="mt-1 text-sm text-ink-500">Apuestas del plan <span class="text-amber-300">Exclusive</span>. Puedes comprar el pronóstico de cualquiera de ellas por <span class="text-white">2,99€</span> sin necesidad de cambiar de plan.</p>
+    <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">${locked.map(p => lockedPickCard(p)).join('')}</div>
+  </div>`;
+}
+
+/* === Panel "Mis apuestas" del cliente, con filtros por estado y mes === */
+let clientBetsFilter = { status: 'all', monthKey: 'all' };
+
+function followedBetsClientHTML(c) {
+  const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+  const all = getFollowed(c.id).map(b => ({ ...b, pick: picksById[b.pickId] })).filter(b => b.pick);
+
+  // Conteos por estado (para mostrar en los filtros)
+  const cntAll = all.length;
+  const cntPending = all.filter(b => pickResult(b.pick) === 'pending').length;
+  const cntWin = all.filter(b => pickResult(b.pick) === 'win').length;
+  const cntLoss = all.filter(b => pickResult(b.pick) === 'loss').length;
+  const cntVoid = all.filter(b => pickResult(b.pick) === 'void').length;
+
+  // Meses con datos (basados en la fecha del partido)
+  const monthSet = new Set(all.map(b => monthKey(b.pick.date)));
+  const months = Array.from(monthSet).sort().reverse();
+
+  // Aplicar filtros
+  let filtered = all.slice();
+  if (clientBetsFilter.status !== 'all') {
+    filtered = filtered.filter(b => pickResult(b.pick) === clientBetsFilter.status);
+  }
+  if (clientBetsFilter.monthKey !== 'all') {
+    filtered = filtered.filter(b => monthKey(b.pick.date) === clientBetsFilter.monthKey);
+  }
+  // Ordenar por fecha del partido descendente
+  filtered.sort((a,b) => (b.pick.date + (b.pick.time||'')).localeCompare(a.pick.date + (a.pick.time||'')));
+
+  const headerHTML = `<div>
+    <h3 class="font-display text-xl font-semibold tracking-tight text-white">Mis apuestas</h3>
+    <p class="mt-1 text-sm text-ink-500">Todas las apuestas que has seguido. Filtra por estado o por mes.</p>
+  </div>`;
+
+  const statusFiltersHTML = `<div class="mt-5 flex flex-wrap gap-2">
+    <button data-bet-filter="status" data-value="all" class="bet-filter ${clientBetsFilter.status==='all'?'active':''}">Todas <span class="ml-1 opacity-60">${cntAll}</span></button>
+    <button data-bet-filter="status" data-value="pending" class="bet-filter ${clientBetsFilter.status==='pending'?'active':''}">Pendientes <span class="ml-1 opacity-60">${cntPending}</span></button>
+    <button data-bet-filter="status" data-value="win" class="bet-filter ${clientBetsFilter.status==='win'?'active':''}">Acertadas <span class="ml-1 opacity-60">${cntWin}</span></button>
+    <button data-bet-filter="status" data-value="loss" class="bet-filter ${clientBetsFilter.status==='loss'?'active':''}">Falladas <span class="ml-1 opacity-60">${cntLoss}</span></button>
+    <button data-bet-filter="status" data-value="void" class="bet-filter ${clientBetsFilter.status==='void'?'active':''}">Anuladas <span class="ml-1 opacity-60">${cntVoid}</span></button>
+  </div>`;
+
+  const monthFiltersHTML = months.length > 0 ? `<div class="mt-3 flex flex-wrap gap-2">
+    <button data-bet-filter="month" data-value="all" class="bet-filter ${clientBetsFilter.monthKey==='all'?'active':''}">Todos los meses</button>
+    ${months.map(mk => `<button data-bet-filter="month" data-value="${mk}" class="bet-filter ${clientBetsFilter.monthKey===mk?'active':''}">${monthLabel(mk)}</button>`).join('')}
+  </div>` : '';
+
+  // Cards por apuesta
+  let listHTML;
+  if (filtered.length === 0) {
+    listHTML = `<div class="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-sm text-ink-500">No hay apuestas con los filtros seleccionados.</div>`;
+  } else {
+    listHTML = `<div class="mt-5 grid gap-3 md:grid-cols-2">${filtered.map(b => followedBetCardClient(b)).join('')}</div>`;
+  }
+
+  // Resumen breve arriba
+  const totalInvested = filtered.reduce((a,b)=>a+b.amount,0);
+  const closed = filtered.filter(b => { const r = pickResult(b.pick); return r==='win'||r==='loss'; });
+  const totalProfit = closed.reduce((a,b)=>{
+    const odds = pickTotalOdds(b.pick);
+    if (pickResult(b.pick)==='win') return a + b.amount * (odds-1);
+    return a - b.amount;
+  }, 0);
+  const summaryHTML = filtered.length > 0 ? `<div class="mt-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+    ${kpiCard('Apuestas mostradas', filtered.length)}
+    ${kpiCard('Invertido', fmtEuro(totalInvested))}
+    ${kpiCard('Beneficio', (totalProfit>=0?'+':'')+totalProfit.toFixed(2)+' €', totalProfit>0)}
+    ${kpiCard('Cuota media', (filtered.reduce((a,b)=>a+pickTotalOdds(b.pick),0)/filtered.length).toFixed(2))}
+  </div>` : '';
+
+  return `${headerHTML}${statusFiltersHTML}${monthFiltersHTML}${summaryHTML}${listHTML}`;
+}
+
+// Tarjeta individual de "Mis apuestas"
+function followedBetCardClient(b) {
+  const p = b.pick;
+  const fe = pickFirstEvent(p);
+  const odds = pickTotalOdds(p);
+  const isCombined = pickIsCombined(p);
+  let badge, profitText, profitCls;
+  const r = pickResult(p);
+  if (r === 'win') {
+    badge = `<span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300">Acertada</span>`;
+    const profit = b.amount * (odds - 1);
+    profitText = `+${profit.toFixed(2)} €`; profitCls = 'text-accent-neon';
+  } else if (r === 'loss') {
+    badge = `<span class="rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-red-300">Fallada</span>`;
+    profitText = `-${b.amount.toFixed(2)} €`; profitCls = 'text-red-300';
+  } else if (r === 'void') {
+    badge = `<span class="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-300">Anulada</span>`;
+    profitText = `0,00 €`; profitCls = 'text-ink-300';
+  } else {
+    badge = `<span class="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14.5"/></svg>Pendiente</span>`;
+    profitText = `Pendiente`; profitCls = 'text-amber-300';
+  }
+  const headerLabel = isCombined ? `Combinada (${p.events.length})` : (fe.sport || '');
+  return `<article class="gradient-border rounded-2xl bg-white/[0.02] p-4">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
+          <span>${headerLabel}</span><span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
+        </div>
+        <h4 class="mt-1.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>
+        ${isCombined ? '' : `<p class="mt-1 text-xs text-ink-200/70">${fe.pickType||''}</p>`}
+      </div>
+      ${badge}
     </div>
-    ${availablePicksHTML(c, forAdmin)}
-    ${followedBetsHTML(c, forAdmin)}
-    ${monthlyResultsHTML('global', null)}
-    ${forAdmin ? '' : monthlyResultsHTML('personal', c)}
-  `;
+    <div class="mt-3 flex items-center justify-between gap-3 text-xs">
+      <div><span class="text-ink-500">Apostado</span> <span class="ml-1 font-semibold text-white">${fmtEuro(b.amount)}</span></div>
+      <div><span class="text-ink-500">Cuota</span> <span class="ml-1 font-semibold text-white">${odds.toFixed(2)}</span></div>
+      <div class="font-semibold ${profitCls}">${profitText}</div>
+    </div>
+  </article>`;
 }
 
 /* ============================================================
@@ -2051,31 +2288,30 @@ function monthlyResultsHTML(kind, client) {
 
 function monthsWithData(kind, client) {
   if (kind === 'global') {
-    const resolved = monthlyPicksPool.filter(p => p.result !== 'pending');
+    const resolved = monthlyPicksPool.filter(p => pickResult(p) !== 'pending');
     return groupByMonth(resolved);
   }
   // personal
   if (!client) return [];
   const bets = getFollowed(client.id);
-  // Enriquecemos con la fecha del pick (no del followedAt) para agrupar por mes del partido
   const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
   const enriched = bets
     .map(b => ({ ...b, pick: picksById[b.pickId] }))
-    .filter(b => b.pick && b.pick.result !== 'pending');
+    .filter(b => b.pick && pickResult(b.pick) !== 'pending');
   return groupByMonth(enriched, b => b.pick.date);
 }
 
 // Cuerpo del bloque para un mes concreto (las tarjetas de stats)
 function monthlyStatsBodyHTML(kind, client, monthKeyVal) {
   if (kind === 'global') {
-    const monthPicks = monthlyPicksPool.filter(p => monthKey(p.date) === monthKeyVal && p.result !== 'pending');
+    const monthPicks = monthlyPicksPool.filter(p => monthKey(p.date) === monthKeyVal && pickResult(p) !== 'pending');
     const s = computeGlobalMonthlyStats(monthPicks);
     return globalStatsCardsHTML(s);
   } else {
     const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
     const bets = getFollowed(client.id).filter(b => {
       const p = picksById[b.pickId];
-      return p && p.result !== 'pending' && monthKey(p.date) === monthKeyVal;
+      return p && pickResult(p) !== 'pending' && monthKey(p.date) === monthKeyVal;
     });
     const s = computePersonalMonthlyStats(bets, picksById);
     return personalStatsCardsHTML(s);
@@ -2465,11 +2701,17 @@ document.getElementById('picksList').addEventListener('click', async (e) => {
   const p = monthlyPicksPool.find(x => x.id === id); if (!p) return;
 
   if (action==='won' || action==='lost' || action==='void' || action==='reset') {
-    const newResult = action === 'reset' ? 'pending' : action;
+    // Mapeamos las acciones del admin a los valores de la BD: win/loss/void/pending
+    const newResult = action === 'reset' ? 'pending'
+                     : action === 'won'   ? 'win'
+                     : action === 'lost'  ? 'loss'
+                     : 'void';
     p.result = newResult;
     renderPicksAdmin();
     const { error } = await sb.from('picks').update({ result: newResult }).eq('id', id);
     if (error) alert('Error guardando resultado: ' + error.message);
+    // Si está visible la pestaña Resultados del admin, repintarla
+    if (!document.getElementById('resultsTab').classList.contains('hidden')) renderResultsAdmin();
   } else if (action === 'delete') {
     if (confirm(`¿Eliminar el pronóstico "${p.match}"?\n\nSi algún cliente lo había seguido, se eliminará también de su historial.`)) {
       const { error } = await sb.from('picks').delete().eq('id', id);
@@ -2830,21 +3072,40 @@ document.addEventListener('click', (e) => {
   const kind = btn.dataset.monthlyTab;
   const mk = btn.dataset.month;
   selectedMonths[kind] = mk;
-  // Re-renderizar la sección entera para que los pills reflejen la selección
   const section = btn.closest('[data-monthly-section]');
   if (!section) return;
-  // Buscamos el cliente actual si es personal
+  // Recuperar cliente desde el contexto
   let client = null;
   if (kind === 'personal') {
-    const sectionContainer = section.closest('#availableSection') ? null : null;
-    // Recuperar el cliente desde el contexto: buscamos en clientStatsContent o statsDetailContent
-    const avSection = document.getElementById('availableSection');
-    if (avSection) {
-      const clientId = avSection.dataset.clientId;
-      client = clients.find(c => String(c.id) === String(clientId));
-    }
+    const wrapper = btn.closest('[data-client-panel-body]');
+    const cid = wrapper?.dataset.clientId;
+    if (cid) client = clients.find(c => String(c.id) === String(cid));
   }
   section.outerHTML = monthlyResultsHTML(kind, client);
+});
+
+// Pills de la navegación principal del cliente (Resumen / Apuestas / Premium / Mis apuestas / ...)
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-ctab]'); if (!btn) return;
+  const newTab = btn.dataset.ctab;
+  if (currentClientTab === newTab) return;
+  currentClientTab = newTab;
+  // Si vamos a una pestaña de stats, refrescamos picks desde Supabase
+  // para que los cambios de resultado del admin se vean al instante
+  if (newTab === 'team' || newTab === 'mystats' || newTab === 'mybets' || newTab === 'summary') {
+    try { await loadPicksFromSupabase(); } catch(err) { console.error(err); }
+  }
+  rerenderCurrentClientPanel();
+});
+
+// Filtros de "Mis apuestas" (estado y mes)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-bet-filter]'); if (!btn) return;
+  const kind = btn.dataset.betFilter;
+  const value = btn.dataset.value;
+  if (kind === 'status') clientBetsFilter.status = value;
+  else if (kind === 'month') clientBetsFilter.monthKey = value;
+  rerenderCurrentClientPanel();
 });
 
 function rerenderCurrentClientPanel() {
