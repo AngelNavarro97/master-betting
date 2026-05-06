@@ -818,10 +818,6 @@
     <div class="mx-auto flex max-w-[1200px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
       <div class="flex items-center gap-4">
         <img src="Recurso%201.png" alt="Master Betting" class="h-10 w-auto sm:h-12 shrink-0"/>
-        <div>
-          <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
-          <h1 id="clientHeaderName" class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Hola, cliente</h1>
-        </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button id="upgradeBtn" class="hidden inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black shadow-[0_0_24px_rgba(252,211,77,0.35)] transition hover:bg-amber-300">
@@ -1107,7 +1103,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-logo-upgrade';
+const APP_VERSION = '2026-05-06-greeting-moved';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1668,7 +1664,6 @@ function showClientView(clientId) {
   const c = clients.find(x => x.id === clientId);
   if (!c) return;
   publicSite.classList.add('hidden'); adminPanel.classList.add('hidden'); clientPanel.classList.remove('hidden');
-  document.getElementById('clientHeaderName').textContent = `Hola, ${c.name.split(' ')[0]}`;
   // Botón "Mejorar suscripción": solo visible para Basic y Pro (Exclusive ya está en lo más alto)
   const upgradeBtn = document.getElementById('upgradeBtn');
   if (upgradeBtn) {
@@ -2107,10 +2102,21 @@ document.getElementById('mobileList').addEventListener('click', onTableAction);
 function statsPanelHTML(c, forAdmin) {
   const s = statsFor(c);
   const status = statusInfo[c.status];
-  const headerHTML = `
+  // Para vista cliente: mostramos arriba "Mi cuenta" + "Hola," + nombre completo + plan
+  // Para vista admin: el bloque de "Estadísticas del cliente" como antes
+  const headerHTML = forAdmin ? `
     <div class="mb-6 flex flex-col gap-1">
-      ${forAdmin ? `<span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Estadísticas del cliente</span>` : ''}
+      <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Estadísticas del cliente</span>
       <div class="flex flex-wrap items-center gap-3"><h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${c.name}</h2><span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.cls}">${status.label}</span></div>
+      <p class="text-sm text-ink-500">Plan ${c.plan} · ${fmtEuro(c.price)}/mes · alta el ${c.joinedAt}</p>
+    </div>` : `
+    <div class="mb-6 flex flex-col gap-1">
+      <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
+      <p class="mt-1 text-sm text-ink-500">Hola,</p>
+      <div class="flex flex-wrap items-center gap-3">
+        <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${c.name}</h2>
+        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.cls}">${status.label}</span>
+      </div>
       <p class="text-sm text-ink-500">Plan ${c.plan} · ${fmtEuro(c.price)}/mes · alta el ${c.joinedAt}</p>
     </div>`;
 
