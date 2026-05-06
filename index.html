@@ -1075,7 +1075,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-picks-fullwidth';
+const APP_VERSION = '2026-05-06-2cols-amber';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1747,7 +1747,7 @@ function pickBadges(p) {
   return `<div class="flex flex-wrap justify-end gap-1.5">${p.plans.map(pl => `<span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${planColor[pl]}">${pl}</span>`).join('')}</div>`;
 }
 function tierBadge(p) {
-  if (p.tier === 'exclusive') return `<span class="rounded-full border border-accent-neon/50 bg-accent-neon/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-accent-neon">Exclusive</span>`;
+  if (p.tier === 'exclusive') return `<span class="rounded-full border border-amber-400/60 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Exclusive</span>`;
   if (p.tier === 'funbet') return `<span class="rounded-full border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Funbet</span>`;
   return '';
 }
@@ -2084,7 +2084,7 @@ function availablePicksOnlyHTML(c) {
     const groups = groupByMonth(picks);
     body = `<div class="mt-4 space-y-3">${groups.map((g, i) => `<details class="month-group" ${i===0?'open':''}>
       <summary><span class="font-display text-base font-semibold text-white">Pronósticos · ${g.label}</span><span class="text-xs text-ink-500">${g.items.length} ${g.items.length===1?'apuesta':'apuestas'}</span></summary>
-      <div class="group-body grid gap-4 md:grid-cols-2 xl:grid-cols-3">${g.items.map(p => availablePickCard(p, c, false)).join('')}</div>
+      <div class="group-body grid gap-3 md:grid-cols-2">${g.items.map(p => availablePickCard(p, c, false)).join('')}</div>
     </details>`).join('')}</div>`;
   }
   return `<div id="availableSection" data-client-id="${c.id}" data-for-admin="0">
@@ -2109,7 +2109,7 @@ function lockedPicksOnlyHTML(c) {
     <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-300"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Premium</span></div>
     <h3 class="mt-2 font-display text-xl font-semibold tracking-tight text-white">Apuestas Exclusive disponibles</h3>
     <p class="mt-1 text-sm text-ink-500">Apuestas del plan <span class="text-amber-300">Exclusive</span>. Puedes comprar el pronóstico de cualquiera de ellas por <span class="text-white">2,99€</span> sin necesidad de cambiar de plan.</p>
-    <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">${locked.map(p => lockedPickCard(p)).join('')}</div>
+    <div class="mt-5 grid gap-3 md:grid-cols-2">${locked.map(p => lockedPickCard(p)).join('')}</div>
   </div>`;
 }
 
@@ -2443,7 +2443,7 @@ function availablePickCard(p, c, forAdmin) {
     ${headerLineHTML}
     ${eventVisual ? `<div class="mt-3">${eventVisual}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
     ${isCombined ? '' : `<p class="mt-2.5 text-sm text-ink-200/85">${fe.pickType}</p>`}
-    ${isCombined ? `<div class="mt-3 flex items-center justify-between rounded-xl border border-accent-neon/30 bg-accent-neon/10 px-3 py-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">Cuota total combinada</span><span class="font-display text-lg font-bold text-accent-neon">${totalOdds.toFixed(2)}</span></div>` : ''}
+    ${isCombined ? `<div class="mt-3 flex items-center justify-between rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Cuota total combinada</span><span class="font-display text-lg font-bold text-amber-200">${totalOdds.toFixed(2)}</span></div>` : ''}
     <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-white/5 pt-3 text-xs">
       <div><span class="text-ink-500">Cuota${isCombined ? ' total' : ''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
       <div><span class="text-ink-500">Stake recom.</span> <span class="ml-1 font-semibold text-white">${p.recommendedStake} u</span></div>
@@ -2500,7 +2500,7 @@ function lockedPicksHTML(c) {
       <span class="text-[10px] uppercase tracking-[0.18em] text-amber-300">${locked.length} premium</span>
     </div>
     <p class="mt-1 text-sm text-ink-500">Apuestas del plan <span class="text-amber-300">Exclusive</span>. Puedes comprar el pronóstico de cualquiera de ellas por <span class="text-white">2,99€</span> sin necesidad de cambiar de plan.</p>
-    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">${locked.map(p => lockedPickCard(p)).join('')}</div>
+    <div class="mt-4 grid gap-3 md:grid-cols-2">${locked.map(p => lockedPickCard(p)).join('')}</div>
   </div>`;
 }
 
@@ -2516,7 +2516,7 @@ function availablePicksHTML(c, forAdmin) {
     const groups = groupByMonth(picks);
     body = `<div class="mt-4 space-y-3">${groups.map((g, i) => `<details class="month-group" ${i===0?'open':''}>
       <summary><span class="font-display text-base font-semibold text-white">Pronósticos · ${g.label}</span><span class="text-xs text-ink-500">${g.items.length} ${g.items.length===1?'apuesta':'apuestas'}</span></summary>
-      <div class="group-body grid gap-4 md:grid-cols-2 xl:grid-cols-3">${g.items.map(p => availablePickCard(p, c, forAdmin)).join('')}</div>
+      <div class="group-body grid gap-3 md:grid-cols-2">${g.items.map(p => availablePickCard(p, c, forAdmin)).join('')}</div>
     </details>`).join('')}</div>`;
   }
   // Solo mostramos los Exclusive bloqueados a clientes (no en vista admin)
