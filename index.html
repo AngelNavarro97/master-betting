@@ -961,7 +961,28 @@
     </div>
     <form id="loginForm" class="mt-2 space-y-4">
       <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="tu@email.com" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/></div>
-      <div><label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/></div>
+      <div>
+        <label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Contraseña</label>
+        <div class="relative mt-2">
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 pr-12 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+          <button type="button" id="togglePwBtn" aria-label="Mostrar contraseña" class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-white/5 hover:text-white">
+            <!-- Icono ojo (cuando contraseña oculta) -->
+            <svg id="eyeShow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <!-- Icono ojo tachado (cuando contraseña visible) -->
+            <svg id="eyeHide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="hidden">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-ink-200/85 cursor-pointer transition hover:border-white/20 hover:bg-white/[0.05]">
+        <input id="loginRemember" type="checkbox" class="h-4 w-4 accent-emerald-400 cursor-pointer"/>
+        <span>Mantener sesión iniciada durante <span class="text-white">10 días</span></span>
+      </label>
       <p id="loginError" class="hidden rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">Credenciales incorrectas. Inténtalo de nuevo.</p>
       <div class="flex gap-2 pt-2">
         <button type="button" data-action="close-login" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">Cancelar</button>
@@ -1111,7 +1132,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-header-pills-responsive';
+const APP_VERSION = '2026-05-06-login-eye-remember';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1761,10 +1782,27 @@ function hideClientView() { activeClientId = null; clientPanel.classList.add('hi
 document.querySelectorAll('[data-action="open-login"]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }));
 document.querySelectorAll('[data-action="close-login"]').forEach(el => el.addEventListener('click', closeLogin));
 
+// Toggle ver/ocultar contraseña en el modal de login
+document.getElementById('togglePwBtn')?.addEventListener('click', () => {
+  const input = document.getElementById('loginPassword');
+  const eyeShow = document.getElementById('eyeShow');
+  const eyeHide = document.getElementById('eyeHide');
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  eyeShow.classList.toggle('hidden', isHidden);
+  eyeHide.classList.toggle('hidden', !isHidden);
+  document.getElementById('togglePwBtn').setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
+});
+
+// Constantes para "Mantener sesión iniciada"
+const REMEMBER_KEY = 'mb-session-expires';
+const REMEMBER_DAYS = 10;
+
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
   const password = document.getElementById('loginPassword').value;
+  const remember = document.getElementById('loginRemember').checked;
   const errEl = document.getElementById('loginError');
   const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
   errEl.classList.add('hidden');
@@ -1787,6 +1825,18 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       return showErr('Email o contraseña incorrectos.');
     }
     return showErr('Error: ' + error.message);
+  }
+
+  // Guardar la "fecha de caducidad" de la sesión según la elección del usuario
+  if (remember) {
+    // 10 días: persiste tras cerrar el navegador
+    const expiresAt = Date.now() + REMEMBER_DAYS * 24 * 60 * 60 * 1000;
+    localStorage.setItem(REMEMBER_KEY, String(expiresAt));
+    sessionStorage.removeItem(REMEMBER_KEY);
+  } else {
+    // Solo mientras la pestaña/PWA esté abierta
+    sessionStorage.setItem(REMEMBER_KEY, 'session');
+    localStorage.removeItem(REMEMBER_KEY);
   }
 
   // Asegurar fila en clients (por si es un usuario antiguo sin perfil aún)
@@ -1833,10 +1883,38 @@ async function showClientFromSupabaseUser(user) {
   showClientView(client.id);
 }
 
+// Comprueba si la sesión que decidió el usuario sigue válida.
+// Si marcó "Mantener 10 días", se guardó en localStorage la fecha de caducidad.
+// Si no marcó nada, se guardó en sessionStorage (se borra al cerrar la PWA/pestaña).
+// Si el sello no existe o ya pasó la fecha, devolvemos false → forzar logout.
+function isSessionStillValid() {
+  // Caso A: el usuario marcó "Mantener 10 días"
+  const persistent = localStorage.getItem(REMEMBER_KEY);
+  if (persistent) {
+    const expiresAt = parseInt(persistent, 10) || 0;
+    if (Date.now() < expiresAt) return true;
+    // Caducó → limpiamos
+    localStorage.removeItem(REMEMBER_KEY);
+    return false;
+  }
+  // Caso B: solo sesión actual
+  if (sessionStorage.getItem(REMEMBER_KEY) === 'session') return true;
+  // No hay sello → tratamos como sesión inválida
+  return false;
+}
+
 // Auto-login al cargar la página: comprueba si hay sesión Supabase activa
+// Y además respeta la elección del usuario sobre "Mantener 10 días"
 (async () => {
   const { data: { session } } = await sb.auth.getSession();
   if (!session || !session.user) return;
+
+  // Si el usuario NO eligió mantener sesión, o ya caducaron los 10 días → cerrar
+  if (!isSessionStillValid()) {
+    await sb.auth.signOut();
+    return;
+  }
+
   await ensureClientRow(session.user);
   if (isAdmin(session.user.email)) {
     sessionStorage.setItem('tipster-admin', 'true');
@@ -1851,11 +1929,15 @@ async function showClientFromSupabaseUser(user) {
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await sb.auth.signOut();
   sessionStorage.removeItem('tipster-admin');
+  localStorage.removeItem(REMEMBER_KEY);
+  sessionStorage.removeItem(REMEMBER_KEY);
   hideAdmin();
 });
 document.getElementById('clientLogoutBtn').addEventListener('click', async () => {
   await sb.auth.signOut();
   sessionStorage.removeItem('tipster-client');
+  localStorage.removeItem(REMEMBER_KEY);
+  sessionStorage.removeItem(REMEMBER_KEY);
   hideClientView();
 });
 
