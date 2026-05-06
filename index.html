@@ -96,6 +96,12 @@
     background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 40%, rgba(255,255,255,0.08));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; }
+  /* Borde amarillo para tarjetas de pronósticos Exclusive */
+  .gradient-border-amber { position: relative; border-radius: 24px; isolation: isolate; }
+  .gradient-border-amber::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px;
+    background: linear-gradient(135deg, rgba(252,211,77,0.85), rgba(245,158,11,0.45) 50%, rgba(252,211,77,0.7));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; }
 
   .halo-inner { position:absolute; inset:-30%; z-index:-10; opacity:0.7; filter:blur(40px);
     background: conic-gradient(from 0deg, rgba(0,230,150,0.7), rgba(16,185,129,0.55), rgba(110,231,183,0.55), rgba(34,197,94,0.7), rgba(0,230,150,0.7));
@@ -1075,7 +1081,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-2cols-amber';
+const APP_VERSION = '2026-05-06-exclusive-yellow-border';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2035,9 +2041,9 @@ function statsPanelHTML(c, forAdmin) {
         <button data-ctab="picks"    class="cli-tab ${tab==='picks'?'active':''}">Apuestas</button>
         ${showPremium ? `<button data-ctab="premium" class="cli-tab amber ${tab==='premium'?'active':''}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-          Premium</button>` : ''}
+          Exclusive</button>` : ''}
         <button data-ctab="mybets"   class="cli-tab ${tab==='mybets'?'active':''}">Mis apuestas${pendingCount>0?`<span class="cli-badge">${pendingCount}</span>`:''}</button>
-        <button data-ctab="team"     class="cli-tab ${tab==='team'?'active':''}">Resultados equipo</button>
+        <button data-ctab="team"     class="cli-tab ${tab==='team'?'active':''}">Resultados generales</button>
         <button data-ctab="mystats"  class="cli-tab ${tab==='mystats'?'active':''}">Mis estadísticas</button>
       </div>
     </div>`;
@@ -2093,12 +2099,12 @@ function availablePicksOnlyHTML(c) {
   </div>`;
 }
 
-/* === Panel "Premium" del cliente (solo los Exclusive bloqueados) === */
+/* === Panel "Exclusive" del cliente (los picks Exclusive bloqueados) === */
 function lockedPicksOnlyHTML(c) {
   const locked = lockedExclusivePicksFor(c);
   if (locked.length === 0) {
     return `<div>
-      <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-300"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Premium</span></div>
+      <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-300"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Exclusive</span></div>
       <h3 class="mt-2 font-display text-xl font-semibold tracking-tight text-white">Apuestas Exclusive</h3>
       <p class="mt-1 text-sm text-ink-500">Aquí aparecerán las apuestas del plan Exclusive cuando el equipo publique alguna nueva. Podrás comprar el pronóstico individual por 2,99€.</p>
       <div class="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-6 text-center text-sm text-amber-200/80">No hay apuestas Exclusive disponibles ahora mismo.</div>
@@ -2106,7 +2112,7 @@ function lockedPicksOnlyHTML(c) {
   }
   // Necesitamos #availableSection para que el listener del botón "Comprar" sepa el contexto
   return `<div id="availableSection" data-client-id="${c.id}" data-for-admin="0">
-    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-300"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Premium</span></div>
+    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-300"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Exclusive</span></div>
     <h3 class="mt-2 font-display text-xl font-semibold tracking-tight text-white">Apuestas Exclusive disponibles</h3>
     <p class="mt-1 text-sm text-ink-500">Apuestas del plan <span class="text-amber-300">Exclusive</span>. Puedes comprar el pronóstico de cualquiera de ellas por <span class="text-white">2,99€</span> sin necesidad de cambiar de plan.</p>
     <div class="mt-5 grid gap-3 md:grid-cols-2">${locked.map(p => lockedPickCard(p)).join('')}</div>
@@ -2244,11 +2250,14 @@ function followedBetCardClient(b) {
   }
   const headerLabel = isCombined ? `Combinada (${p.events.length})` : (fe.sport || '');
   const eventVisual = eventBlock(p, true); // logos de equipos + competición
-  return `<article class="gradient-border rounded-2xl bg-white/[0.02] p-4">
+  // Si es un pick Exclusive, marco con borde amarillo para diferenciarlo
+  const borderCls = p.tier === 'exclusive' ? 'gradient-border-amber' : 'gradient-border';
+  return `<article class="${borderCls} rounded-2xl bg-white/[0.02] p-4">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
           <span>${headerLabel}</span><span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
+          ${tierBadge(p)}
         </div>
         ${eventVisual ? `<div class="mt-2.5">${eventVisual}</div>` : `<h4 class="mt-1.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
         ${isCombined ? '' : `<p class="mt-2 text-xs text-ink-200/85">${fe.pickType||''}</p>`}
@@ -2270,55 +2279,82 @@ function followedBetCardClient(b) {
 // puedan tener su selección independiente).
 const selectedMonths = { global: null, personal: null };
 
-// Construye el bloque completo de resultados mensuales (con selector de mes).
+// Construye el bloque completo de resultados mensuales con bloques colapsables por mes
+// (mismo patrón que la sección "Apuestas").
 // kind: 'global' (datos de picks publicados) o 'personal' (datos del cliente).
 // client: solo necesario en 'personal'.
 function monthlyResultsHTML(kind, client) {
   const isGlobal = kind === 'global';
-  const title = isGlobal ? 'Resultados del equipo' : 'Mis estadísticas mensuales';
+  const title = isGlobal ? 'Resultados generales' : 'Mis estadísticas mensuales';
   const subtitle = isGlobal
-    ? 'Rendimiento mensual de los pronósticos publicados por Master Betting.'
-    : 'Resultados de las apuestas que has seguido tú, mes a mes.';
+    ? 'Rendimiento mensual de los pronósticos publicados por Master Betting. Cada mes es desplegable.'
+    : 'Resultados de las apuestas que has seguido tú, mes a mes. Cada mes es desplegable.';
   const accentClass = isGlobal ? 'text-accent-neon' : 'text-amber-300';
   const accentDot = isGlobal ? 'bg-accent-neon' : 'bg-amber-300';
+  const sectionLabel = isGlobal ? 'Generales' : 'Personal';
 
-  // Recoge meses con datos
   const months = monthsWithData(kind, client);
+
   if (months.length === 0) {
     return `<section class="mt-12">
-      <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full ${accentDot}"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] ${accentClass}">${isGlobal ? 'Equipo' : 'Personal'}</span></div>
+      <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full ${accentDot}"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] ${accentClass}">${sectionLabel}</span></div>
       <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">${title}</h3>
       <p class="mt-1 text-sm text-ink-500">${subtitle}</p>
       <div class="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center">
-        <p class="text-sm text-ink-500">${isGlobal ? 'Aún no hay pronósticos cerrados. En cuanto se resuelvan los primeros, aparecerán aquí las estadísticas mensuales del equipo.' : 'Aún no has seguido ninguna apuesta resuelta. Cuando lo hagas, aquí verás tus estadísticas personales mes a mes.'}</p>
+        <p class="text-sm text-ink-500">${isGlobal ? 'Aún no hay pronósticos cerrados. En cuanto se resuelvan los primeros, aparecerán aquí las estadísticas mensuales.' : 'Aún no has seguido ninguna apuesta resuelta. Cuando lo hagas, aquí verás tus estadísticas personales mes a mes.'}</p>
       </div>
     </section>`;
   }
 
-  // Mes seleccionado: el guardado, o el primero (más reciente)
-  if (!selectedMonths[kind] || !months.find(m => m.key === selectedMonths[kind])) {
-    selectedMonths[kind] = months[0].key;
-  }
-  const sel = selectedMonths[kind];
-
-  // Selector de meses (pills horizontales)
-  const tabs = months.map(m => {
-    const active = m.key === sel;
-    return `<button data-monthly-tab="${kind}" data-month="${m.key}"
-      class="flex-shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition ${
-        active
-          ? (isGlobal ? 'border-accent-neon/50 bg-accent-neon/15 text-accent-neon' : 'border-amber-400/50 bg-amber-400/15 text-amber-300')
-          : 'border-white/10 bg-white/[0.03] text-ink-300 hover:border-white/30 hover:text-white'
-      }">${monthLabel(m.key)}</button>`;
+  // Bloque colapsable por mes (el primero abierto)
+  const monthBlocks = months.map((m, i) => {
+    const summaryRight = monthSummaryPreviewHTML(kind, client, m.key);
+    const body = monthlyStatsBodyHTML(kind, client, m.key);
+    return `<details class="month-group" ${i===0?'open':''}>
+      <summary>
+        <span class="font-display text-base font-semibold text-white">Resultados · ${monthLabel(m.key)}</span>
+        ${summaryRight}
+      </summary>
+      <div class="group-body">${body}</div>
+    </details>`;
   }).join('');
 
-  return `<section class="mt-12" data-monthly-section="${kind}">
-    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full ${accentDot}"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] ${accentClass}">${isGlobal ? 'Equipo' : 'Personal'}</span></div>
+  return `<section class="mt-12">
+    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full ${accentDot}"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] ${accentClass}">${sectionLabel}</span></div>
     <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">${title}</h3>
     <p class="mt-1 text-sm text-ink-500">${subtitle}</p>
-    <div class="mt-5 -mx-1 flex gap-2 overflow-x-auto pb-2 px-1" style="scrollbar-width:none;">${tabs}</div>
-    <div data-monthly-body="${kind}" class="mt-4">${monthlyStatsBodyHTML(kind, client, sel)}</div>
+    <div class="mt-5 space-y-3">${monthBlocks}</div>
   </section>`;
+}
+
+// Mini-resumen que sale a la derecha del summary cuando el bloque está cerrado
+// (para que de un vistazo veas cómo fue el mes sin abrirlo)
+function monthSummaryPreviewHTML(kind, client, monthKeyVal) {
+  if (kind === 'global') {
+    const monthPicks = monthlyPicksPool.filter(p => monthKey(p.date) === monthKeyVal && pickResult(p) !== 'pending');
+    const s = computeGlobalMonthlyStats(monthPicks);
+    const yieldStr = (s.yieldPct >= 0 ? '+' : '') + s.yieldPct.toFixed(1) + '%';
+    const yieldCls = s.yieldPct > 0 ? 'text-accent-neon' : s.yieldPct < 0 ? 'text-red-300' : 'text-ink-300';
+    return `<span class="flex items-center gap-3 text-xs">
+      <span class="text-ink-500">${s.resolvedCount} ${s.resolvedCount===1?'pick':'picks'}</span>
+      <span class="text-emerald-300">${s.wins}W</span><span class="text-red-300">${s.losses}L</span>
+      <span class="font-semibold ${yieldCls}">Yield ${yieldStr}</span>
+    </span>`;
+  } else {
+    const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+    const bets = getFollowed(client.id).filter(b => {
+      const p = picksById[b.pickId];
+      return p && pickResult(p) !== 'pending' && monthKey(p.date) === monthKeyVal;
+    });
+    const s = computePersonalMonthlyStats(bets, picksById);
+    const profitStr = (s.totalProfit >= 0 ? '+' : '') + s.totalProfit.toFixed(2) + ' €';
+    const profitCls = s.totalProfit > 0 ? 'text-accent-neon' : s.totalProfit < 0 ? 'text-red-300' : 'text-ink-300';
+    return `<span class="flex items-center gap-3 text-xs">
+      <span class="text-ink-500">${s.resolvedCount} ${s.resolvedCount===1?'apuesta':'apuestas'}</span>
+      <span class="text-emerald-300">${s.wins}W</span><span class="text-red-300">${s.losses}L</span>
+      <span class="font-semibold ${profitCls}">${profitStr}</span>
+    </span>`;
+  }
 }
 
 function monthsWithData(kind, client) {
@@ -2439,7 +2475,9 @@ function availablePickCard(p, c, forAdmin) {
   </div>`;
   // Visual del partido (logos a ancho completo, sin nada al lado que recorte)
   const eventVisual = eventBlock(p, true);
-  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-4 sm:p-5">
+  // Si es un pick Exclusive, marco con borde amarillo para diferenciarlo
+  const borderCls = p.tier === 'exclusive' ? 'gradient-border-amber' : 'gradient-border';
+  return `<article class="${borderCls} relative overflow-hidden rounded-2xl bg-white/[0.02] p-4 sm:p-5">
     ${headerLineHTML}
     ${eventVisual ? `<div class="mt-3">${eventVisual}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
     ${isCombined ? '' : `<p class="mt-2.5 text-sm text-ink-200/85">${fe.pickType}</p>`}
@@ -2454,35 +2492,27 @@ function availablePickCard(p, c, forAdmin) {
 }
 
 // Tarjeta de un pick Exclusive bloqueado (para clientes Basic / Pro).
-// Muestra partido + cuota + candado amarillo + pronóstico difuminado.
+// Muestra partido + cuota + pronóstico difuminado (sin candado en medio,
+// solo el del botón "Comprar").
 function lockedPickCard(p) {
   const fe = pickFirstEvent(p);
   const isCombined = pickIsCombined(p);
   const totalOdds = pickTotalOdds(p);
   const headerLabel = isCombined ? `Combinada (${p.events.length} eventos)` : fe.sport;
-  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5">
-    <div class="flex items-start justify-between gap-3">
-      <div class="min-w-0 flex-1">
-        <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
-          <span class="inline-flex items-center gap-1.5">${sportIcon(fe.sport,16)}<span>${headerLabel}</span></span>
-          <span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
-          <span class="rounded-full border border-amber-400/60 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Exclusive</span>
-        </div>
-        ${eventBlock(p, true) ? `<div class="mt-3">${eventBlock(p, true)}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
-        <div class="mt-3 relative inline-block">
-          <p class="text-sm text-ink-200/80 select-none" style="filter: blur(6px); letter-spacing: 0.04em;">█████ ███████ ██ ████ ██████</p>
-          <span class="absolute -top-2 -right-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-black shadow-lg">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-          </span>
-        </div>
-      </div>
+  return `<article class="gradient-border-amber relative overflow-hidden rounded-2xl bg-white/[0.02] p-4 sm:p-5">
+    <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
+      <span class="inline-flex items-center gap-1.5">${sportIcon(fe.sport,16)}<span>${headerLabel}</span></span>
+      <span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
+      <span class="rounded-full border border-amber-400/60 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Exclusive</span>
     </div>
-    ${isCombined ? `<div class="mt-3 flex items-center justify-between rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Cuota total combinada</span><span class="font-display text-lg font-bold text-amber-200">${totalOdds.toFixed(2)}</span></div>` : ''}
-    <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+    ${eventBlock(p, true) ? `<div class="mt-3">${eventBlock(p, true)}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
+    <p class="mt-3 text-sm text-ink-200/80 select-none" style="filter: blur(6px); letter-spacing: 0.04em;">█████ ███████ ██ ████ ██████</p>
+    ${isCombined ? `<div class="mt-3 flex items-center justify-between rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Cuota total combinada</span><span class="font-display text-lg font-bold text-amber-200">${totalOdds.toFixed(2)}</span></div>` : ''}
+    <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-white/5 pt-3 text-xs">
       <div><span class="text-ink-500">Cuota${isCombined ? ' total' : ''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
-      <div><span class="text-ink-500">Pronóstico</span> <span class="ml-1 font-semibold text-amber-300">Premium · bloqueado</span></div>
+      <div><span class="text-ink-500">Pronóstico</span> <span class="ml-1 font-semibold text-amber-300">bloqueado</span></div>
     </div>
-    <div class="mt-5 flex items-center justify-end">
+    <div class="mt-4 flex items-center justify-end">
       <button data-locked-buy="${p.id}" class="inline-flex items-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-[12px] font-semibold text-black transition hover:bg-amber-300">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
         Comprar apuesta · 2,99€
@@ -3102,23 +3132,8 @@ document.addEventListener('click', (e) => {
   alert('Compra individual de pronóstico Exclusive: 2,99€.\n\nEsta opción se activará cuando habilitemos la pasarela de pago. Mientras tanto, si quieres acceder al pronóstico, contacta con el equipo.');
 });
 
-// Pills del selector de mes en Resultados mensuales (admin y cliente)
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-monthly-tab]'); if (!btn) return;
-  const kind = btn.dataset.monthlyTab;
-  const mk = btn.dataset.month;
-  selectedMonths[kind] = mk;
-  const section = btn.closest('[data-monthly-section]');
-  if (!section) return;
-  // Recuperar cliente desde el contexto
-  let client = null;
-  if (kind === 'personal') {
-    const wrapper = btn.closest('[data-client-panel-body]');
-    const cid = wrapper?.dataset.clientId;
-    if (cid) client = clients.find(c => String(c.id) === String(cid));
-  }
-  section.outerHTML = monthlyResultsHTML(kind, client);
-});
+// (los antiguos pills de meses ya no existen — ahora son <details> nativos
+//  que se abren/cierran solos sin necesidad de listeners JS)
 
 // Pills de la navegación principal del cliente (Resumen / Apuestas / Premium / Mis apuestas / ...)
 document.addEventListener('click', async (e) => {
