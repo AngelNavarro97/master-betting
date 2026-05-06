@@ -650,9 +650,12 @@
 <div id="adminPanel" class="hidden">
   <header class="border-b border-white/5 bg-black/30 backdrop-blur-md">
     <div class="mx-auto flex max-w-[1600px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-      <div>
-        <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Panel admin</span>
-        <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Base de datos de clientes</h1>
+      <div class="flex items-center gap-4">
+        <img src="Recurso%201.png" alt="Master Betting" class="h-10 w-auto sm:h-12 shrink-0"/>
+        <div>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Panel admin</span>
+          <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Base de datos de clientes</h1>
+        </div>
       </div>
       <button id="logoutBtn" class="inline-flex items-center justify-center self-start rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10">Cerrar sesión</button>
     </div>
@@ -746,8 +749,8 @@
       <div class="mt-6 flex flex-wrap gap-2 text-xs">
         <button data-pickfilter="all" class="pf-tab pf-active rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-medium text-white">Todos</button>
         <button data-pickfilter="pending" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Pendientes</button>
-        <button data-pickfilter="won" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Acertadas</button>
-        <button data-pickfilter="lost" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Falladas</button>
+        <button data-pickfilter="win" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Acertadas</button>
+        <button data-pickfilter="loss" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Falladas</button>
         <button data-pickfilter="void" class="pf-tab rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-medium text-ink-200/80 hover:text-white">Anuladas</button>
       </div>
       <div id="picksList" class="mt-6 space-y-3"></div>
@@ -813,11 +816,18 @@
 <div id="clientPanel" class="hidden">
   <header class="border-b border-white/5 bg-black/30 backdrop-blur-md">
     <div class="mx-auto flex max-w-[1200px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-      <div>
-        <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
-        <h1 id="clientHeaderName" class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Hola, cliente</h1>
+      <div class="flex items-center gap-4">
+        <img src="Recurso%201.png" alt="Master Betting" class="h-10 w-auto sm:h-12 shrink-0"/>
+        <div>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
+          <h1 id="clientHeaderName" class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Hola, cliente</h1>
+        </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
+        <button id="upgradeBtn" class="hidden inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black shadow-[0_0_24px_rgba(252,211,77,0.35)] transition hover:bg-amber-300">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+          Mejorar suscripción
+        </button>
         <a id="telegramBtn" href="https://t.me/" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-full bg-[#229ED9] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_24px_rgba(34,158,217,0.35)] transition hover:bg-[#1a8cc1]">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.302.952-.14.579.192l-8.533 7.706h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.787l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"/></svg>
           Unirme al canal de Telegram
@@ -958,6 +968,22 @@
   </div>
 </div>
 
+<!-- UPGRADE PLAN MODAL -->
+<div id="upgradeModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-upgrade"></div>
+  <div class="gradient-border relative my-auto w-full max-w-5xl overflow-hidden rounded-3xl bg-[#06120c]/95 p-6 shadow-2xl sm:p-8">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Mejora tu suscripción</span>
+        <h2 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Lleva tu plan al siguiente nivel</h2>
+        <p class="mt-2 text-sm text-ink-200/70">Selecciona el plan que mejor se adapta a ti. Cancelas cuando quieras, sin permanencia.</p>
+      </div>
+      <button data-action="close-upgrade" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button>
+    </div>
+    <div id="upgradeContent" class="mt-6"></div>
+  </div>
+</div>
+
 <!-- EDIT CLIENT -->
 <div id="editModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-edit"></div>
@@ -1081,7 +1107,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-exclusive-yellow-border';
+const APP_VERSION = '2026-05-06-logo-upgrade';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1200,9 +1226,12 @@ const statusInfo = {
 };
 const resultInfo = {
   pending: { label: 'Pendiente', cls: 'border-amber-500/40 bg-amber-500/10 text-amber-300' },
+  win:     { label: 'Acertada',  cls: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' },
+  loss:    { label: 'Fallada',   cls: 'border-red-500/40 bg-red-500/10 text-red-300' },
+  void:    { label: 'Anulada',   cls: 'border-white/15 bg-white/5 text-ink-200' },
+  // Aliases por si quedan datos antiguos sin migrar
   won:     { label: 'Acertada',  cls: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' },
   lost:    { label: 'Fallada',   cls: 'border-red-500/40 bg-red-500/10 text-red-300' },
-  void:    { label: 'Anulada',   cls: 'border-white/15 bg-white/5 text-ink-200' },
 };
 
 /* ============================================================
@@ -1604,9 +1633,10 @@ function statsFor(client) {
     if (!p) return;
     picks++; totalInvested += b.amount; stakeUnitsSum += p.recommendedStake;
     const tOdds = pickTotalOdds(p);
-    if (p.result === 'won') { won++; totalReturned += b.amount * tOdds; if (tOdds > bestOdds) bestOdds = tOdds; }
-    else if (p.result === 'lost') { lost++; }
-    else if (p.result === 'void') { voided++; totalReturned += b.amount; }
+    const r = pickResult(p);
+    if (r === 'win') { won++; totalReturned += b.amount * tOdds; if (tOdds > bestOdds) bestOdds = tOdds; }
+    else if (r === 'loss') { lost++; }
+    else if (r === 'void') { voided++; totalReturned += b.amount; }
   });
   const resolved = won + lost;
   const winRate = resolved > 0 ? won / resolved : 0;
@@ -1639,9 +1669,90 @@ function showClientView(clientId) {
   if (!c) return;
   publicSite.classList.add('hidden'); adminPanel.classList.add('hidden'); clientPanel.classList.remove('hidden');
   document.getElementById('clientHeaderName').textContent = `Hola, ${c.name.split(' ')[0]}`;
+  // Botón "Mejorar suscripción": solo visible para Basic y Pro (Exclusive ya está en lo más alto)
+  const upgradeBtn = document.getElementById('upgradeBtn');
+  if (upgradeBtn) {
+    if (c.plan === 'Basic' || c.plan === 'Pro') upgradeBtn.classList.remove('hidden');
+    else upgradeBtn.classList.add('hidden');
+  }
   document.getElementById('clientStatsContent').innerHTML = statsPanelHTML(c, false);
   window.scrollTo(0, 0);
 }
+
+/* === Modal de mejora de plan === */
+// Genera el HTML de una tarjeta de plan tipo home, pero compacta para el modal.
+function planCardHTML(plan) {
+  const data = {
+    Pro: {
+      name: 'Pro',
+      price: '19,99',
+      tagline: 'Lo más popular. Más volumen, más oportunidad.',
+      bgClass: 'bg-plan-pro',
+      badge: '<span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>',
+      btnClass: 'bg-white/90 text-black/80 hover:bg-white',
+      features: [
+        '16 pronósticos mensuales',
+        '1 pronóstico del plan EXCLUSIVE incluido',
+        'Acceso al chat privado de Telegram',
+        'Soporte prioritario y comunidad activa',
+      ],
+    },
+    Exclusive: {
+      name: 'Exclusive',
+      price: '34,99',
+      tagline: 'El círculo cerrado. Reembolso garantizado.',
+      bgClass: 'bg-plan-exclusive',
+      badge: '<span class="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300">Premium</span>',
+      btnClass: 'border border-white/15 bg-white/5 text-white/80 hover:bg-white/10',
+      features: [
+        '25 pronósticos mensuales',
+        '2 funbets exclusivas al mes',
+        'Acceso al chat privado de Telegram',
+        'Reembolso directo si no obtienes ganancias',
+      ],
+    },
+  }[plan];
+  if (!data) return '';
+  return `<div class="gradient-border ${data.bgClass} relative h-full overflow-hidden rounded-3xl p-6 sm:p-7">
+    <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
+    <div class="flex items-center gap-3">
+      <h3 class="font-display text-3xl font-semibold tracking-tight text-white">${data.name}</h3>
+      ${data.badge}
+    </div>
+    <p class="mt-2 text-sm text-ink-200/70">${data.tagline}</p>
+    <div class="mt-6 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">${data.price}</span><span class="text-sm text-ink-500">€/mes</span></div>
+    <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">Próximamente · Contacta para upgrade</button>
+    <div class="my-6 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+    <ul class="space-y-3 text-sm text-ink-200/85">
+      ${data.features.map(f => `<li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>${f}</span></li>`).join('')}
+    </ul>
+  </div>`;
+}
+
+function openUpgradeModal() {
+  const c = clients.find(x => x.id === activeClientId);
+  if (!c) return;
+  let plansToShow = [];
+  if (c.plan === 'Basic') plansToShow = ['Pro', 'Exclusive'];
+  else if (c.plan === 'Pro') plansToShow = ['Exclusive'];
+  else return; // Exclusive ya tiene todo
+  const isOne = plansToShow.length === 1;
+  const gridClass = isOne ? 'grid grid-cols-1 gap-5 md:max-w-md md:mx-auto' : 'grid grid-cols-1 gap-5 md:grid-cols-2';
+  document.getElementById('upgradeContent').innerHTML = `<div class="${gridClass}">${plansToShow.map(planCardHTML).join('')}</div>`;
+  document.getElementById('upgradeModal').classList.remove('hidden');
+}
+
+function closeUpgradeModal() {
+  document.getElementById('upgradeModal').classList.add('hidden');
+}
+
+document.getElementById('upgradeBtn')?.addEventListener('click', openUpgradeModal);
+document.querySelectorAll('[data-action="close-upgrade"]').forEach(el => el.addEventListener('click', closeUpgradeModal));
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-upgrade-plan]'); if (!btn) return;
+  const plan = btn.dataset.upgradePlan;
+  alert(`Para mejorar al plan ${plan}, contacta con el equipo a través del chat de Telegram. La compra automática estará disponible cuando se active la pasarela de pago.`);
+});
 function hideClientView() { activeClientId = null; clientPanel.classList.add('hidden'); publicSite.classList.remove('hidden'); window.scrollTo(0, 0); }
 
 document.querySelectorAll('[data-action="open-login"]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }));
@@ -2584,14 +2695,15 @@ function followedBetRow(b) {
   const p = monthlyPicksPool.find(x => x.id === b.pickId);
   if (!p) return { html: '', invested: 0, net: 0 };
   const date = new Date(b.followedAt).toLocaleDateString('es-ES');
-  const ri = resultInfo[p.result];
+  const ri = resultInfo[p.result] || resultInfo.pending;
   const fe = pickFirstEvent(p);
   const isCombined = pickIsCombined(p);
   const totalOdds = pickTotalOdds(p);
   let resultExtra = '', net = 0;
-  if (p.result === 'won') { const profit = b.amount * (totalOdds - 1); net = profit; resultExtra = `<span class="ml-2 text-emerald-300 font-semibold">+${fmtEuro(profit)}</span>`; }
-  else if (p.result === 'lost') { net = -b.amount; resultExtra = `<span class="ml-2 text-red-300 font-semibold">-${fmtEuro(b.amount)}</span>`; }
-  else if (p.result === 'void') { resultExtra = `<span class="ml-2 text-ink-500">+${fmtEuro(0)}</span>`; }
+  const r = pickResult(p);
+  if (r === 'win') { const profit = b.amount * (totalOdds - 1); net = profit; resultExtra = `<span class="ml-2 text-emerald-300 font-semibold">+${fmtEuro(profit)}</span>`; }
+  else if (r === 'loss') { net = -b.amount; resultExtra = `<span class="ml-2 text-red-300 font-semibold">-${fmtEuro(b.amount)}</span>`; }
+  else if (r === 'void') { resultExtra = `<span class="ml-2 text-ink-500">+${fmtEuro(0)}</span>`; }
   const html = `<tr class="hover:bg-white/[0.03] transition">
     <td class="px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-ink-500"><span class="inline-flex items-center gap-1.5">${sportIcon(fe.sport,14)}<span>${isCombined?'Combinada':fe.sport}</span></span></td>
     <td class="px-4 py-3 align-top">${partidoCell(p)}</td>
@@ -2712,8 +2824,15 @@ document.getElementById('rankingsContent').addEventListener('click', onTableActi
 ============================================================ */
 let pickFilter = 'all';
 function pickAdminCard(p) {
-  const ri = resultInfo[p.result];
-  const isActive = (k) => p.result === k;
+  const ri = resultInfo[p.result] || resultInfo.pending;
+  // Normalizamos el resultado para el estado activo de los botones (acepta won/win, lost/loss)
+  const r = pickResult(p);
+  // Cada botón puede activarse con varios alias para máxima compatibilidad
+  const isActive = (k) => {
+    if (k === 'won')  return r === 'win';
+    if (k === 'lost') return r === 'loss';
+    return r === k;
+  };
   const fe = pickFirstEvent(p);
   const isCombined = pickIsCombined(p);
   const totalOdds = pickTotalOdds(p);
@@ -2752,7 +2871,10 @@ function pickAdminCard(p) {
 }
 function renderPicksAdmin() {
   // El array ya viene ordenado desde Supabase (más recientes primero), no hace falta reverse.
-  const list = pickFilter==='all' ? [...monthlyPicksPool] : monthlyPicksPool.filter(p => p.result === pickFilter);
+  // Usamos pickResult() para tolerar tanto los valores nuevos (win/loss) como los antiguos (won/lost)
+  const list = pickFilter==='all'
+    ? [...monthlyPicksPool]
+    : monthlyPicksPool.filter(p => pickResult(p) === pickFilter);
   const container = document.getElementById('picksList');
   container.innerHTML = list.length === 0
     ? `<p class="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-ink-500">${monthlyPicksPool.length === 0 ? 'No has creado ningún pronóstico todavía. Pulsa "+ Nuevo pronóstico" para empezar.' : 'No hay pronósticos en este filtro.'}</p>`
