@@ -1038,6 +1038,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
           <span>Mejorar plan</span>
         </button>
+        <button id="manageBillingBtn" class="hidden inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-white transition hover:border-white/30 hover:bg-white/10 sm:px-4 sm:text-sm whitespace-nowrap" title="Gestionar suscripción">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <span class="hidden sm:inline">Suscripción</span>
+        </button>
         <a id="telegramBtn" href="https://t.me/" target="_blank" rel="noopener" aria-label="Telegram" class="inline-flex items-center gap-1.5 rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 px-3 py-2 text-xs font-semibold text-[#7ec0e0] transition hover:border-[#229ED9]/60 hover:bg-[#229ED9]/20 hover:text-white sm:px-4 sm:text-sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.302.952-.14.579.192l-8.533 7.706h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.787l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"/></svg>
           <span class="hidden sm:inline">Telegram</span>
@@ -1454,7 +1458,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-stripe-spinner';
+const APP_VERSION = '2026-05-06-customer-portal';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1549,6 +1553,8 @@ async function loadClientsFromSupabase() {
       price: parseFloat(row.price),
       status: row.status,
       joinedAt: row.joined_at,
+      stripe_customer_id: row.stripe_customer_id || null,
+      stripe_subscription_id: row.stripe_subscription_id || null,
     }));
   saveClients();
 }
@@ -2146,6 +2152,13 @@ function showClientView(clientId) {
     if (c.plan === 'Basic' || c.plan === 'Pro') upgradeBtn.classList.remove('hidden');
     else upgradeBtn.classList.add('hidden');
   }
+  // Botón "Suscripción" (Customer Portal): solo visible si el cliente vino de Stripe
+  // (es decir, tiene stripe_customer_id). Los clientes creados a mano por admin no lo tienen.
+  const manageBtn = document.getElementById('manageBillingBtn');
+  if (manageBtn) {
+    if (c.stripe_customer_id) manageBtn.classList.remove('hidden');
+    else manageBtn.classList.add('hidden');
+  }
   document.getElementById('clientStatsContent').innerHTML = statsPanelHTML(c, false);
   window.scrollTo(0, 0);
 }
@@ -2417,6 +2430,8 @@ async function showClientFromSupabaseUser(user) {
   const client = row ? {
     id: row.id, name: row.name, email: row.email, plan: row.plan,
     price: parseFloat(row.price), status: row.status, joinedAt: row.joined_at, verified: true,
+    stripe_customer_id: row.stripe_customer_id || null,
+    stripe_subscription_id: row.stripe_subscription_id || null,
   } : {
     id: user.id,
     name: meta.name || user.email.split('@')[0],
@@ -4128,6 +4143,38 @@ window.addEventListener('focus', hideStripeLoadingOverlay);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') hideStripeLoadingOverlay();
 });
+
+// === Botón "Gestionar suscripción" → abre Stripe Customer Portal ===
+async function openCustomerPortal() {
+  const c = clients.find(x => x.id === activeClientId);
+  if (!c || !c.stripe_customer_id) {
+    alert('Tu cuenta no está vinculada a una suscripción de Stripe. Contacta con soporte si crees que es un error.');
+    return;
+  }
+  showStripeLoadingOverlay();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-customer-portal`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ customer_id: c.stripe_customer_id }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.url) {
+      hideStripeLoadingOverlay();
+      alert('No se pudo abrir el portal: ' + (json.error || 'desconocido'));
+      return;
+    }
+    window.location.href = json.url;
+  } catch (err) {
+    hideStripeLoadingOverlay();
+    alert('Error de red abriendo el portal: ' + String(err));
+  }
+}
+document.getElementById('manageBillingBtn')?.addEventListener('click', openCustomerPortal);
 
 // Estado intermedio: el plan/email pendientes mientras se verifica la edad
 let pendingCheckout = null;
