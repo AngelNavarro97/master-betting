@@ -1499,7 +1499,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-cookie-banner';
+const APP_VERSION = '2026-05-06-auto-push';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -3946,7 +3946,76 @@ document.getElementById('newPickForm').addEventListener('submit', async (e) => {
   closeNewPick();
   renderPicksAdmin();
   pickFilter = 'all';  // por si tenías un filtro activo
+
+  // Enviar push automático a los clientes del/los planes del pick
+  await sendPushForNewPick(data);
 });
+
+/* ============================================================
+   PUSH AUTOMÁTICO — al publicar un pick
+============================================================ */
+// Genera título y cuerpo de notificación a partir de los datos del pick
+function buildPickPushPayload(pickRow) {
+  const events = pickRow.events || [];
+  const isCombined = events.length > 1;
+  const tier = pickRow.tier;
+  const totalOdds = parseFloat(pickRow.total_odds);
+
+  let title, message;
+  if (tier === 'funbet' || isCombined) {
+    title = '💎 Nueva funbet Exclusive';
+    message = `Combinada de ${events.length} eventos · Cuota total ${totalOdds.toFixed(2)}. Entra y revísala.`;
+  } else if (tier === 'exclusive') {
+    title = '💎 Nuevo pick Exclusive';
+    const e = events[0] || {};
+    const match = (e.team1 && e.team2) ? `${e.team1} - ${e.team2}` : (e.team1 || e.team2 || '');
+    message = `${match} · ${e.pickType || ''} @${(e.odds || totalOdds).toFixed(2)}`;
+  } else {
+    title = '🎯 Nuevo pick disponible';
+    const e = events[0] || {};
+    const match = (e.team1 && e.team2) ? `${e.team1} - ${e.team2}` : (e.team1 || e.team2 || '');
+    message = `${e.sport || ''} · ${match} · ${e.pickType || ''} @${(e.odds || totalOdds).toFixed(2)}`;
+  }
+  return { title, message: message.replace(/^[\s·]+|[\s·]+$/g, '') };
+}
+
+// Llama a la Edge Function send-push-notification con los datos del pick recién creado
+async function sendPushForNewPick(pickRow) {
+  try {
+    const { title, message } = buildPickPushPayload(pickRow);
+    const plans = Array.isArray(pickRow.plans) ? pickRow.plans : [];
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, message, plans }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      console.error('[push] error:', data);
+      showToast('⚠ Pick creado, pero la notificación push falló: ' + (data.error?.[0] || 'error'), 'error');
+    } else {
+      showToast(`📲 Notificación enviada a clientes ${plans.join(' + ')}`, 'ok');
+    }
+  } catch (err) {
+    console.error('[push] error red:', err);
+    showToast('⚠ Pick creado, pero no se pudo enviar la push: ' + String(err), 'error');
+  }
+}
+
+// Toast simple para feedback admin (ok / error)
+function showToast(text, type = 'ok') {
+  const t = document.createElement('div');
+  const bg = type === 'ok' ? 'linear-gradient(135deg,#00e696,#22c55e)' : '#dc2626';
+  const fg = type === 'ok' ? '#000' : '#fff';
+  t.style.cssText = `position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9999;background:${bg};color:${fg};padding:12px 20px;border-radius:9999px;font-weight:600;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,0.4);max-width:90vw;text-align:center;animation:pageFadeIn 0.3s ease-out;`;
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 4500);
+}
 
 /* ============================================================
    MODAL: EDITAR CLIENTE
