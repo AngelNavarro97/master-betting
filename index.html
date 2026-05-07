@@ -1345,7 +1345,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-truly-unified';
+const APP_VERSION = '2026-05-06-notif-once';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2126,9 +2126,11 @@ function hideClientView() {
 /* ============================================================
    ONESIGNAL — notificaciones push
 ============================================================ */
-// Identifica al cliente en OneSignal y muestra nuestro modal personalizado si aún no aceptó.
+// Identifica al cliente en OneSignal y muestra nuestro modal personalizado SOLO la primera vez.
 async function identifyClientInOneSignal(c) {
   if (!window.OneSignalDeferred) return;
+  // Guardamos el ID del cliente para los listeners del modal
+  window.__notifClientId = String(c.id);
   window.OneSignalDeferred.push(async (OneSignal) => {
     try {
       // Vincular usuario a OneSignal por su ID de Supabase (para enviarle pushes individuales)
@@ -2139,20 +2141,29 @@ async function identifyClientInOneSignal(c) {
         email: c.email,
         name: c.name,
       });
-      // Si todavía no ha dado permiso, mostramos NUESTRO modal personalizado tras 1.5s
+      // Decidimos si mostramos nuestro modal:
+      // - Si ya está suscrito (optedIn) → NO mostrar.
+      // - Si ya rechazó el permiso nativo (denied) → NO mostrar.
+      // - Si ya le hemos enseñado nuestro modal alguna vez en este dispositivo → NO mostrar.
+      // - En cualquier otro caso (es la 1ª vez) → mostrar.
       const permission = OneSignal.Notifications.permission;
       const optedIn = OneSignal.User.PushSubscription.optedIn;
-      // Usamos localStorage para no agobiar: si ya pulsó "Ahora no" hace poco, no lo mostramos
-      const dismissedAt = parseInt(localStorage.getItem('mb-notif-dismissed') || '0', 10);
-      const oneDayMs = 24 * 60 * 60 * 1000;
-      const recentlyDismissed = (Date.now() - dismissedAt) < oneDayMs;
-      if (!optedIn && permission !== 'denied' && !recentlyDismissed) {
+      const flagKey = `mb-notif-shown-${c.id}`;
+      const alreadyShown = localStorage.getItem(flagKey) === '1';
+      if (!optedIn && permission !== 'denied' && !alreadyShown) {
         setTimeout(() => openNotifModal(), 1500);
       }
     } catch (err) {
       console.error('[OneSignal] identify error:', err);
     }
   });
+}
+
+// Marca el modal como "ya mostrado" para este cliente en este dispositivo.
+// Una vez marcado, no volvemos a mostrarlo nunca más.
+function markNotifModalAsShown() {
+  const cid = window.__notifClientId;
+  if (cid) localStorage.setItem(`mb-notif-shown-${cid}`, '1');
 }
 
 function openNotifModal() {
@@ -2163,24 +2174,22 @@ function closeNotifModal() {
 }
 
 // Listeners del modal de notificaciones
+// "Ahora no" / clic en el fondo: cerramos y marcamos como mostrado (no volverá a aparecer)
 document.querySelectorAll('[data-action="close-notif"]').forEach(el => {
   el.addEventListener('click', () => {
-    // Marcamos que el cliente lo cerró: no se lo mostraremos otra vez en 24h
-    localStorage.setItem('mb-notif-dismissed', String(Date.now()));
+    markNotifModalAsShown();
     closeNotifModal();
   });
 });
 
+// "Activar notificaciones": disparamos el permiso nativo y marcamos como mostrado
 document.getElementById('notifAcceptBtn')?.addEventListener('click', async () => {
+  markNotifModalAsShown();
   closeNotifModal();
   if (!window.OneSignalDeferred) return;
   window.OneSignalDeferred.push(async (OneSignal) => {
     try {
-      // Disparamos el permiso nativo del navegador / iOS (no se puede personalizar este).
       await OneSignal.Notifications.requestPermission();
-      // Si el usuario aceptó, OneSignal ya lo suscribe automáticamente.
-      // Limpiamos el dismissed por si lo había puesto antes.
-      localStorage.removeItem('mb-notif-dismissed');
     } catch (err) {
       console.error('[OneSignal] requestPermission error:', err);
     }
