@@ -1584,7 +1584,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-mbcoin-logo-spinner';
+const APP_VERSION = '2026-05-06-notif-sync-supabase';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1681,6 +1681,7 @@ async function loadClientsFromSupabase() {
       joinedAt: row.joined_at,
       stripe_customer_id: row.stripe_customer_id || null,
       stripe_subscription_id: row.stripe_subscription_id || null,
+      notifications_activated: !!row.notifications_activated,
     }));
   saveClients();
 }
@@ -2306,13 +2307,20 @@ async function identifyClientInOneSignal(c) {
         email: c.email,
         name: c.name,
       });
-      // Decidimos si mostramos nuestro modal:
-      // - Si ya está suscrito (optedIn) → NO mostrar.
-      // - Si ya rechazó el permiso nativo (denied) → NO mostrar.
-      // - Si ya le hemos enseñado nuestro modal alguna vez en este dispositivo → NO mostrar.
-      // - En cualquier otro caso (es la 1ª vez) → mostrar.
       const permission = OneSignal.Notifications.permission;
       const optedIn = OneSignal.User.PushSubscription.optedIn;
+
+      // Sincronización: si en ESTE dispositivo ya está suscrito pero el flag
+      // de Supabase está false, lo marcamos. Así la misión "Conectado" se
+      // refleja también desde otros dispositivos del mismo usuario.
+      if ((optedIn || permission === 'granted') && !c.notifications_activated) {
+        await markNotificationsActivated();
+      }
+
+      // Decidimos si mostramos el modal de oferta:
+      // - Si ya está suscrito en este dispositivo → NO mostrar.
+      // - Si ya rechazó permiso nativo aquí (denied) → NO mostrar.
+      // - Si ya le mostramos el modal en este dispositivo → NO mostrar.
       const flagKey = `mb-notif-shown-${c.id}`;
       const alreadyShown = localStorage.getItem(flagKey) === '1';
       if (!optedIn && permission !== 'denied' && !alreadyShown) {
@@ -2355,11 +2363,33 @@ document.getElementById('notifAcceptBtn')?.addEventListener('click', async () =>
   window.OneSignalDeferred.push(async (OneSignal) => {
     try {
       await OneSignal.Notifications.requestPermission();
+      // Si el usuario aceptó (permiso granted) → marcar en Supabase
+      // para que la misión "Conectado" cuente desde cualquier dispositivo
+      const optedIn = OneSignal.User.PushSubscription.optedIn;
+      const permission = OneSignal.Notifications.permission;
+      if (optedIn || permission === 'granted') {
+        await markNotificationsActivated();
+      }
     } catch (err) {
       console.error('[OneSignal] requestPermission error:', err);
     }
   });
 });
+
+// Marca el flag notifications_activated = true en Supabase para el cliente actual.
+// Una vez true, la misión "Conectado" queda completada en cualquier dispositivo.
+async function markNotificationsActivated() {
+  if (!activeClientId) return;
+  const c = clients.find(x => x.id === activeClientId);
+  if (!c || c.notifications_activated) return; // ya está marcado
+  const { error } = await sb.from('clients')
+    .update({ notifications_activated: true })
+    .eq('id', activeClientId);
+  if (error) { console.error('[notif] no se pudo marcar:', error); return; }
+  c.notifications_activated = true;
+  // Repintar para que la misión y la insignia se actualicen al instante
+  rerenderCurrentClientPanel();
+}
 
 async function logoutFromOneSignal() {
   if (!window.OneSignalDeferred) return;
@@ -2470,6 +2500,7 @@ async function showClientFromSupabaseUser(user) {
     price: parseFloat(row.price), status: row.status, joinedAt: row.joined_at, verified: true,
     stripe_customer_id: row.stripe_customer_id || null,
     stripe_subscription_id: row.stripe_subscription_id || null,
+    notifications_activated: !!row.notifications_activated,
   } : {
     id: user.id,
     name: meta.name || user.email.split('@')[0],
@@ -3030,7 +3061,7 @@ function computeClientMissionStats(client) {
     won, lost, voided, pending,
     funbetFollowed,
     totalInvested, totalReturned, profit,
-    notificationsActive: localStorage.getItem('mb-notif-shown-' + client.id) === '1',
+    notificationsActive: !!client.notifications_activated,
   };
 }
 
