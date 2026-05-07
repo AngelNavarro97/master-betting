@@ -767,11 +767,13 @@
         <a href="#sobre-nosotros" class="hover:text-white">Sobre nosotros</a>
         <a href="#" class="hover:text-white">Telegram</a>
         <a href="#" class="hover:text-white">Contacto</a>
+        <a href="privacidad.html" target="_blank" rel="noopener" class="hover:text-white">Política de privacidad</a>
+        <a href="juego-responsable.html" target="_blank" rel="noopener" class="hover:text-white">Juego responsable</a>
       </div>
     </div>
     <div class="mt-12 flex flex-col items-start justify-between gap-4 border-t border-white/5 pt-6 text-xs text-ink-500 md:flex-row md:items-center">
-      <p>© <span id="year"></span> Tipster. Todos los derechos reservados.</p>
-      <p class="max-w-xl text-ink-500/80">Juega con responsabilidad. Las apuestas conllevan riesgo. +18.</p>
+      <p>© <span id="year"></span> Master Betting. Todos los derechos reservados.</p>
+      <p class="max-w-xl text-ink-500/80">Juega con responsabilidad. Las apuestas conllevan riesgo. Solo para mayores de 18 años.</p>
     </div>
   </div>
 </footer>
@@ -1134,6 +1136,44 @@
   </div>
 </div>
 
+<!-- AGE VERIFICATION MODAL -->
+<div id="ageModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-age"></div>
+  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
+    <div class="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
+    <div class="relative">
+      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/10">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 9v4"/><path d="M12 17h.01"/>
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        </svg>
+      </div>
+      <h2 class="font-display text-2xl font-semibold tracking-tight text-white text-center">
+        Verificación de edad
+      </h2>
+      <p class="mt-3 text-center text-sm text-ink-200/80">
+        Master Betting es un servicio para <span class="text-white">mayores de 18 años</span>. Antes de continuar, indica tu fecha de nacimiento.
+      </p>
+      <div class="mt-6">
+        <label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Fecha de nacimiento</label>
+        <input id="ageBirthInput" type="date" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-white/30 focus:bg-black/60"/>
+        <p id="ageError" class="hidden mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 text-center"></p>
+      </div>
+      <p class="mt-4 text-center text-[11px] text-ink-500">
+        No guardamos tu fecha completa, solo verificamos que eres mayor de edad.
+      </p>
+      <div class="mt-5 flex flex-col gap-2 sm:flex-row">
+        <button type="button" data-action="close-age" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+          Cancelar
+        </button>
+        <button type="button" id="ageContinueBtn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-accent-neon py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">
+          Continuar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- NOTIFICATIONS OPT-IN MODAL -->
 <div id="notifModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-notif"></div>
@@ -1345,7 +1385,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-notif-once';
+const APP_VERSION = '2026-05-06-legal-age-verify';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -4004,27 +4044,83 @@ async function startStripeCheckout(plan, prefilledEmail = null) {
   }
 }
 
+// Estado intermedio: el plan/email pendientes mientras se verifica la edad
+let pendingCheckout = null;
+
 // Botones "Suscribirme" en la home (cards de planes)
 document.querySelectorAll('[data-stripe-plan]').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.preventDefault();
-    startStripeCheckout(btn.dataset.stripePlan);
+    pendingCheckout = { plan: btn.dataset.stripePlan, email: null };
+    openAgeModal();
   });
 });
 
-// Listener delegado: para botones que aparezcan dinámicamente (modal de upgrade)
+// Listener delegado: para botones de upgrade desde el panel cliente
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-upgrade-plan]'); if (!btn) return;
   e.preventDefault();
-  // Si es un cliente ya logueado, pasamos su email para que Stripe lo prefille
   let email = null;
   if (activeClientId) {
     const c = clients.find(x => x.id === activeClientId);
     if (c) email = c.email;
   }
   closeUpgradeModal();
+  // Para upgrades de clientes existentes, no pedimos verificación de edad otra vez
   startStripeCheckout(btn.dataset.upgradePlan, email);
 }, true);
+
+/* ============================================================
+   AGE VERIFICATION — solo para nuevos registros (homepage)
+============================================================ */
+function openAgeModal() {
+  const modal = document.getElementById('ageModal');
+  if (!modal) return;
+  document.getElementById('ageBirthInput').value = '';
+  document.getElementById('ageError').classList.add('hidden');
+  modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('ageBirthInput').focus(), 100);
+}
+
+function closeAgeModal() {
+  document.getElementById('ageModal')?.classList.add('hidden');
+  pendingCheckout = null;
+}
+
+document.querySelectorAll('[data-action="close-age"]').forEach(el => {
+  el.addEventListener('click', closeAgeModal);
+});
+
+document.getElementById('ageContinueBtn')?.addEventListener('click', () => {
+  const errEl = document.getElementById('ageError');
+  const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
+  errEl.classList.add('hidden');
+  const value = document.getElementById('ageBirthInput').value;
+  if (!value) return showErr('Introduce tu fecha de nacimiento.');
+
+  const birth = new Date(value);
+  if (isNaN(birth.getTime())) return showErr('Fecha no válida.');
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+
+  if (birth > today) return showErr('La fecha no puede ser futura.');
+  if (age > 120) return showErr('Fecha no válida.');
+  if (age < 18) {
+    return showErr(`Lo sentimos, este servicio es solo para mayores de 18 años. Apostar siendo menor de edad es ilegal en España y perjudicial. Si necesitas ayuda, visita jugarbien.es.`);
+  }
+
+  // Edad correcta → continuamos al checkout
+  document.getElementById('ageModal').classList.add('hidden');
+  if (pendingCheckout) {
+    startStripeCheckout(pendingCheckout.plan, pendingCheckout.email);
+    pendingCheckout = null;
+  }
+});
 
 // Mensaje al volver de Stripe (success / cancelled)
 (function handleStripeReturn() {
