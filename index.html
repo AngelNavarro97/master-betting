@@ -1337,8 +1337,59 @@
         <button type="button" data-action="close-login" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">Cancelar</button>
         <button type="submit" class="flex-1 rounded-full bg-white py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Acceder</button>
       </div>
-      <p class="pt-2 text-center text-xs text-ink-200/70">¿No tienes cuenta? <a href="#planes" data-action="close-login" class="font-semibold text-accent-neon hover:underline">Suscríbete a un plan</a></p>
+      <p class="pt-2 text-center text-xs text-ink-200/70">¿No recuerdas tu contraseña? <a href="#" data-action="open-recover" class="font-semibold text-accent-neon hover:underline">Recuperar contraseña</a></p>
+      <p class="pt-1 text-center text-xs text-ink-200/70">¿No tienes cuenta? <a href="#planes" data-action="close-login" class="font-semibold text-accent-neon hover:underline">Suscríbete a un plan</a></p>
     </form>
+  </div>
+</div>
+
+<!-- PASSWORD RECOVERY (paso 1: pedir email) -->
+<div id="recoveryModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-recover"></div>
+  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
+    <div class="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
+    <div class="relative">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Acceso</span>
+          <h2 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white">Recuperar contraseña</h2>
+        </div>
+        <button data-action="close-recover" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button>
+      </div>
+      <p class="mt-2 text-sm text-ink-200/70">Introduce el email de tu cuenta. Te enviaremos un enlace para crear una nueva contraseña.</p>
+      <label class="mt-5 block">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Email</span>
+        <input id="recoveryEmail" type="email" autocomplete="email" placeholder="tu@email.com" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+      </label>
+      <p id="recoveryMsg" class="hidden mt-3 rounded-xl border px-3 py-2 text-xs"></p>
+      <div class="mt-5 flex gap-2">
+        <button type="button" data-action="close-recover" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">Cancelar</button>
+        <button type="button" id="recoverySendBtn" class="flex-1 rounded-full bg-accent-neon py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">Enviar enlace</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PASSWORD RECOVERY (paso 2: definir nueva contraseña tras pulsar el email) -->
+<div id="newPasswordModal" class="hidden fixed inset-0 z-[105] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/85 backdrop-blur-sm"></div>
+  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
+    <div class="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
+    <div class="relative">
+      <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Cambio de contraseña</span>
+      <h2 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white">Define tu nueva contraseña</h2>
+      <p class="mt-2 text-sm text-ink-200/70">Has llegado aquí desde el email de recuperación. Introduce tu nueva contraseña y la guardaremos.</p>
+      <label class="mt-5 block">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Nueva contraseña</span>
+        <input id="newPasswordInput" type="password" autocomplete="new-password" placeholder="••••••••" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+      </label>
+      <label class="mt-3 block">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Repetir contraseña</span>
+        <input id="newPasswordInput2" type="password" autocomplete="new-password" placeholder="••••••••" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+      </label>
+      <p id="newPasswordMsg" class="hidden mt-3 rounded-xl border px-3 py-2 text-xs"></p>
+      <button type="button" id="newPasswordSaveBtn" class="mt-5 w-full rounded-full bg-accent-neon py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">Guardar nueva contraseña</button>
+    </div>
   </div>
 </div>
 
@@ -1656,7 +1707,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-edit-profile';
+const APP_VERSION = '2026-05-06-recover-password';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -4654,6 +4705,85 @@ async function openCustomerPortal() {
   }
 }
 document.getElementById('manageBillingBtn')?.addEventListener('click', openCustomerPortal);
+
+// === Recuperación de contraseña (Forgot password) ===
+
+// Abrir modal "Recuperar contraseña" desde el login
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('[data-action="open-recover"]');
+  if (!link) return;
+  e.preventDefault();
+  closeLogin();
+  // Pre-rellenar con el email que ya hubiera escrito en el login (si lo hay)
+  const loginEmail = document.getElementById('loginEmail').value.trim();
+  document.getElementById('recoveryEmail').value = loginEmail;
+  document.getElementById('recoveryMsg').classList.add('hidden');
+  document.getElementById('recoveryModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('recoveryEmail').focus(), 80);
+});
+
+document.querySelectorAll('[data-action="close-recover"]').forEach(el => {
+  el.addEventListener('click', () => document.getElementById('recoveryModal').classList.add('hidden'));
+});
+
+function showRecoveryMsg(text, type='ok') {
+  const el = document.getElementById('recoveryMsg');
+  el.textContent = text;
+  el.className = 'mt-3 rounded-xl border px-3 py-2 text-xs ' +
+    (type === 'ok' ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' : 'border-red-500/40 bg-red-500/10 text-red-300');
+}
+
+document.getElementById('recoverySendBtn')?.addEventListener('click', async () => {
+  const email = document.getElementById('recoveryEmail').value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return showRecoveryMsg('Introduce un email válido.', 'error');
+  }
+  const btn = document.getElementById('recoverySendBtn');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  // Supabase manda el email con un enlace que al pulsarse devuelve al usuario aquí
+  // con el evento onAuthStateChange tipo PASSWORD_RECOVERY
+  const redirectTo = window.location.origin + window.location.pathname + '#recovery';
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+  btn.disabled = false; btn.textContent = 'Enviar enlace';
+  if (error) return showRecoveryMsg('Error: ' + error.message, 'error');
+  showRecoveryMsg('✓ Si esa cuenta existe, te hemos enviado un email con instrucciones. Revisa tu bandeja de entrada (y spam por si acaso).', 'ok');
+});
+
+// === Cuando el usuario pulsa el enlace del email, Supabase dispara
+// el evento PASSWORD_RECOVERY. Mostramos un modal para que defina la nueva contraseña.
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    document.getElementById('newPasswordModal').classList.remove('hidden');
+    document.getElementById('newPasswordMsg').classList.add('hidden');
+  }
+});
+
+function showNewPwMsg(text, type='ok') {
+  const el = document.getElementById('newPasswordMsg');
+  el.textContent = text;
+  el.className = 'mt-3 rounded-xl border px-3 py-2 text-xs ' +
+    (type === 'ok' ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' : 'border-red-500/40 bg-red-500/10 text-red-300');
+}
+
+document.getElementById('newPasswordSaveBtn')?.addEventListener('click', async () => {
+  const pw1 = document.getElementById('newPasswordInput').value;
+  const pw2 = document.getElementById('newPasswordInput2').value;
+  if (pw1.length < 6) return showNewPwMsg('La contraseña debe tener al menos 6 caracteres.', 'error');
+  if (pw1 !== pw2) return showNewPwMsg('Las contraseñas no coinciden.', 'error');
+  const btn = document.getElementById('newPasswordSaveBtn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const { error } = await sb.auth.updateUser({ password: pw1 });
+  btn.disabled = false; btn.textContent = 'Guardar nueva contraseña';
+  if (error) return showNewPwMsg('Error: ' + error.message, 'error');
+  showNewPwMsg('✓ Contraseña actualizada. Ya puedes iniciar sesión con la nueva.', 'ok');
+  // Limpiar el hash de la URL para que no se reactive el flujo al recargar
+  history.replaceState(null, '', window.location.pathname);
+  setTimeout(() => {
+    document.getElementById('newPasswordModal').classList.add('hidden');
+    // Forzamos logout para que tenga que entrar con la nueva
+    sb.auth.signOut().finally(() => location.reload());
+  }, 1500);
+});
 
 // === Modal "Editar perfil" del cliente ===
 function openProfileModal() {
