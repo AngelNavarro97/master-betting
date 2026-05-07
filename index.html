@@ -1707,7 +1707,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-recover-fix';
+const APP_VERSION = '2026-05-06-recover-session-fix';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -4763,12 +4763,16 @@ document.getElementById('recoverySendBtn')?.addEventListener('click', async () =
 function openRecoveryFlow() {
   const modal = document.getElementById('newPasswordModal');
   if (!modal) return;
+  // Guardamos los tokens de la URL ANTES de cualquier limpieza, por si Supabase
+  // no ha terminado de procesarlos y los necesitamos en setSession manual.
+  const hash = window.location.hash || '';
+  if (hash.includes('access_token=')) {
+    window.__recoveryHash = hash;
+  }
   modal.classList.remove('hidden');
   document.getElementById('newPasswordMsg')?.classList.add('hidden');
-  // Limpiar el hash de la URL para que se vea limpia
-  if (window.location.hash) {
-    history.replaceState(null, '', window.location.pathname);
-  }
+  // NOTA: NO limpiamos el hash aquí. Lo limpiamos después de que el usuario
+  // guarde la nueva contraseña con éxito.
 }
 
 // Listener Supabase oficial
@@ -4802,15 +4806,37 @@ document.getElementById('newPasswordSaveBtn')?.addEventListener('click', async (
   if (pw1 !== pw2) return showNewPwMsg('Las contraseñas no coinciden.', 'error');
   const btn = document.getElementById('newPasswordSaveBtn');
   btn.disabled = true; btn.textContent = 'Guardando...';
+
+  // Asegurar que hay sesión. Si Supabase aún no procesó el hash, lo hacemos manualmente.
+  let { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    const hash = window.__recoveryHash || window.location.hash || '';
+    const params = new URLSearchParams(hash.replace('#', ''));
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (access_token && refresh_token) {
+      const { data, error: setErr } = await sb.auth.setSession({ access_token, refresh_token });
+      if (setErr) {
+        btn.disabled = false; btn.textContent = 'Guardar nueva contraseña';
+        return showNewPwMsg('Error de sesión: ' + setErr.message, 'error');
+      }
+      session = data.session;
+    }
+  }
+  if (!session) {
+    btn.disabled = false; btn.textContent = 'Guardar nueva contraseña';
+    return showNewPwMsg('Sesión de recuperación caducada. Vuelve a solicitar el enlace por email.', 'error');
+  }
+
   const { error } = await sb.auth.updateUser({ password: pw1 });
   btn.disabled = false; btn.textContent = 'Guardar nueva contraseña';
   if (error) return showNewPwMsg('Error: ' + error.message, 'error');
   showNewPwMsg('✓ Contraseña actualizada. Ya puedes iniciar sesión con la nueva.', 'ok');
-  // Limpiar el hash de la URL para que no se reactive el flujo al recargar
+  // Ahora sí limpiamos el hash y los tokens guardados
   history.replaceState(null, '', window.location.pathname);
+  delete window.__recoveryHash;
   setTimeout(() => {
     document.getElementById('newPasswordModal').classList.add('hidden');
-    // Forzamos logout para que tenga que entrar con la nueva
     sb.auth.signOut().finally(() => location.reload());
   }, 1500);
 });
