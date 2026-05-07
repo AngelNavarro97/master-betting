@@ -53,6 +53,10 @@
 <style>
   :root { color-scheme: dark; }
   html, body { background: #000; color: #f5f5f7; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+  /* Forzar que el documento ocupe siempre el alto completo de la pantalla.
+     Sin esto, en iOS PWA, cuando el contenido es corto, position:fixed se calcula
+     contra el alto del body (que sería corto) y la barra inferior "flota" arriba. */
+  html, body { min-height: 100vh; min-height: 100dvh; }
   html { scroll-behavior: smooth; }
 
   /* === Soporte iPhone con Dynamic Island / notch en modo PWA ===
@@ -124,11 +128,12 @@
   .pills-scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior-x: contain; touch-action: pan-x; }
   .pills-scroller::-webkit-scrollbar { display: none; height: 0; width: 0; }
 
-  /* Bottom nav app-style (móvil) — visible solo bajo el breakpoint sm */
+  /* Bottom nav app-style (móvil) — siempre fuera de clientPanel.
+     Visible solo cuando JS quita .hidden y la pantalla es < sm. */
   .cli-bottom-nav {
+    display: none;
     position: fixed !important;
     left: 0; right: 0; bottom: 0;
-    /* Doble por compatibilidad: iOS PWA a veces ignora bottom:0 */
     inset-block-end: 0;
     z-index: 60;
     background: rgba(8,8,10,0.95);
@@ -140,8 +145,11 @@
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
     will-change: transform;
-    /* Evita rebote raro al deslizar */
     touch-action: pan-y;
+  }
+  /* Solo visible en móvil cuando no tiene la clase hidden */
+  @media (max-width: 639px) {
+    .cli-bottom-nav:not(.hidden) { display: block; }
   }
   /* En PWA standalone, asegurar que la barra nunca queda detrás del notch inferior */
   @media (display-mode: standalone) {
@@ -876,9 +884,9 @@
     <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-4 sm:gap-4 sm:px-8 sm:py-5">
       <img src="Recurso%201.png" alt="Master Betting" class="h-9 w-auto sm:h-11 shrink-0"/>
       <div class="flex flex-nowrap items-center gap-1.5 sm:gap-2">
-        <button id="upgradeBtn" class="hidden inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-2 text-xs font-semibold text-black transition hover:bg-amber-300 sm:px-4 sm:text-sm">
+        <button id="upgradeBtn" class="hidden inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-2 text-xs font-semibold text-black transition hover:bg-amber-300 sm:px-4 sm:text-sm whitespace-nowrap">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
-          <span class="hidden sm:inline">Mejorar plan</span>
+          <span>Mejorar plan</span>
         </button>
         <a id="telegramBtn" href="https://t.me/" target="_blank" rel="noopener" aria-label="Telegram" class="inline-flex items-center gap-1.5 rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 px-3 py-2 text-xs font-semibold text-[#7ec0e0] transition hover:border-[#229ED9]/60 hover:bg-[#229ED9]/20 hover:text-white sm:px-4 sm:text-sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.302.952-.14.579.192l-8.533 7.706h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.787l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"/></svg>
@@ -892,9 +900,10 @@
     </div>
   </header>
   <div id="clientStatsContent" class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8"></div>
-  <!-- Bottom nav app-style (móvil) — elemento estático, su contenido se actualiza por JS -->
-  <nav id="clientBottomNav" class="cli-bottom-nav sm:hidden" aria-label="Navegación"></nav>
 </div>
+<!-- Bottom nav app-style (móvil) — FUERA del clientPanel para que iOS PWA no
+     se confunda con position: fixed cuando el contenido es corto -->
+<nav id="clientBottomNav" class="cli-bottom-nav hidden" aria-label="Navegación"></nav>
 
 <!-- ================================================================
      MODALES
@@ -1185,7 +1194,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-bottom-nav-pwa';
+const APP_VERSION = '2026-05-06-nav-out-of-panel';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1748,6 +1757,9 @@ function showClientView(clientId) {
   publicSite.classList.add('hidden'); adminPanel.classList.add('hidden'); clientPanel.classList.remove('hidden');
   // Marca el body para que en móvil reserve hueco inferior por el bottom nav
   document.body.classList.add('client-active');
+  // Mostrar la barra inferior (la mantenemos fuera del clientPanel para evitar el bug
+  // de position:fixed en iOS PWA cuando el contenedor es corto)
+  document.getElementById('clientBottomNav')?.classList.remove('hidden');
   // Botón "Mejorar suscripción": solo visible para Basic y Pro (Exclusive ya está en lo más alto)
   const upgradeBtn = document.getElementById('upgradeBtn');
   if (upgradeBtn) {
@@ -1837,7 +1849,8 @@ function hideClientView() {
   clientPanel.classList.add('hidden');
   publicSite.classList.remove('hidden');
   document.body.classList.remove('client-active');
-  const nav = document.getElementById('clientBottomNav'); if (nav) nav.innerHTML = '';
+  const nav = document.getElementById('clientBottomNav');
+  if (nav) { nav.innerHTML = ''; nav.classList.add('hidden'); }
   window.scrollTo(0, 0);
 }
 
