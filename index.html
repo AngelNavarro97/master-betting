@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" style="background:#000;">
 <head>
+<!-- Background inline para evitar flash blanco al navegar entre páginas -->
+<style>html, body { background-color: #000 !important; }</style>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#000000" />
@@ -82,8 +84,48 @@
      iOS hace zoom cuando la fuente del input es < 16px. Forzamos 16px en TODOS
      los inputs/textarea/select del sitio para prevenir el zoom + reflow molesto. */
   input, textarea, select { font-size: 16px !important; }
-  /* Recuperamos el aspecto compacto manteniendo legibilidad: padding y altura igual,
-     solo el tamaño de fuente cambia (apenas se nota visualmente). */
+
+  /* === Fix iOS: inputs de tipo date se descentran y cortan ===
+     iOS añade un padding interno propio al input date y al text-day/month/year
+     placeholder, lo que hace que la fecha se salga por la derecha.
+     Forzamos: text-align centrado, sin appearance nativa, box-sizing explícito. */
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: center;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 48px;
+    line-height: 1.2;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  /* Color del icono de calendario que iOS añade a la derecha */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+    cursor: pointer;
+  }
+  /* Aspecto del placeholder "dd/mm/aaaa" que iOS muestra cuando no hay valor */
+  input[type="date"]::-webkit-datetime-edit {
+    text-align: center;
+    color: #fff;
+  }
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    text-align: center;
+  }
+
+  /* === Animación de entrada de la página (sin flash blanco al navegar) === */
+  @keyframes pageFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes glowSweep {
+    0%   { opacity: 0; }
+    35%  { opacity: 1; }
+    100% { opacity: 1; }
+  }
+  body { animation: pageFadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  body::before { animation: glowSweep 0.9s ease-out both; }
 
   /* Fondo global con degradado verde "ambient".
      Lo aplicamos en un pseudo-elemento ::before con position:fixed:
@@ -774,8 +816,8 @@
         <a href="#sobre-nosotros" class="hover:text-white">Sobre nosotros</a>
         <a href="#" class="hover:text-white">Telegram</a>
         <a href="#" class="hover:text-white">Contacto</a>
-        <a href="privacidad.html" target="_blank" rel="noopener" class="hover:text-white">Política de privacidad</a>
-        <a href="juego-responsable.html" target="_blank" rel="noopener" class="hover:text-white">Juego responsable</a>
+        <a href="privacidad.html" class="hover:text-white">Política de privacidad</a>
+        <a href="juego-responsable.html" class="hover:text-white">Juego responsable</a>
       </div>
     </div>
     <div class="mt-12 flex flex-col items-start justify-between gap-4 border-t border-white/5 pt-6 text-xs text-ink-500 md:flex-row md:items-center">
@@ -1163,7 +1205,7 @@
       </p>
       <div class="mt-6">
         <label class="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Fecha de nacimiento</label>
-        <input id="ageBirthInput" type="date" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-white/30 focus:bg-black/60"/>
+        <input id="ageBirthInput" type="date" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 py-3 text-sm text-white outline-none focus:border-white/30 focus:bg-black/60"/>
         <p id="ageError" class="hidden mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 text-center"></p>
       </div>
       <p class="mt-4 text-center text-[11px] text-ink-500">
@@ -1392,7 +1434,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-no-ios-zoom';
+const APP_VERSION = '2026-05-06-date-input-fix';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
