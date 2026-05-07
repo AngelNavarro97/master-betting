@@ -23,6 +23,40 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- OneSignal Web Push (notificaciones a móvil/PWA) -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    try {
+      await OneSignal.init({
+        appId: "4af6531e-0cf2-4f7d-824b-f2c07d1996a7",
+        // Permite probar en localhost si haces pruebas locales
+        allowLocalhostAsSecureOrigin: true,
+        // Modo Slidedown: aparece un banner suave en lugar del popup nativo del navegador
+        notifyButton: { enable: false },
+        promptOptions: {
+          slidedown: {
+            prompts: [{
+              type: "push",
+              autoPrompt: false, // Lo activaremos manualmente al loguear cliente
+              text: {
+                actionMessage: "Recibe avisos cuando publiquemos un pick nuevo o se cierre tu apuesta seguida.",
+                acceptButton: "Activar",
+                cancelButton: "Ahora no"
+              }
+            }]
+          }
+        }
+      });
+      window.__oneSignalReady = true;
+      console.log('[OneSignal] inicializado');
+    } catch (err) {
+      console.error('[OneSignal] error init:', err);
+    }
+  });
+</script>
 <script>
   tailwind.config = {
     theme: {
@@ -837,9 +871,15 @@
           <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Pronósticos del mes</h2>
           <p class="mt-1 text-sm text-ink-500">Crea, edita el resultado o elimina pronósticos. Los cambios se reflejan en el panel de cada cliente al instante.</p>
         </div>
-        <button id="newPickBtn" class="inline-flex items-center justify-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-ink-200">
-          <span class="text-lg leading-none">+</span> Nuevo pronóstico
-        </button>
+        <div class="flex flex-wrap gap-2 self-start">
+          <button id="sendPushBtn" class="inline-flex items-center justify-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-300 transition hover:bg-amber-400/20" title="Enviar notificación push">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Enviar push
+          </button>
+          <button id="newPickBtn" class="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-ink-200">
+            <span class="text-lg leading-none">+</span> Nuevo pronóstico
+          </button>
+        </div>
       </div>
       <div class="mt-6 flex flex-wrap gap-2 text-xs">
         <button data-pickfilter="all" class="pf-tab pf-active rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-medium text-white">Todos</button>
@@ -1232,7 +1272,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-pick-analysis';
+const APP_VERSION = '2026-05-06-onesignal-push';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1831,6 +1871,8 @@ function showClientView(clientId) {
   // Mostrar la barra inferior (la mantenemos fuera del clientPanel para evitar el bug
   // de position:fixed en iOS PWA cuando el contenedor es corto)
   document.getElementById('clientBottomNav')?.classList.remove('hidden');
+  // Identificar al cliente en OneSignal (etiquetar plan + email)
+  identifyClientInOneSignal(c);
   // Botón "Mejorar suscripción": solo visible para Basic y Pro (Exclusive ya está en lo más alto)
   const upgradeBtn = document.getElementById('upgradeBtn');
   if (upgradeBtn) {
@@ -1922,8 +1964,54 @@ function hideClientView() {
   document.body.classList.remove('client-active');
   const nav = document.getElementById('clientBottomNav');
   if (nav) { nav.innerHTML = ''; nav.classList.add('hidden'); }
+  // Cerrar sesión también en OneSignal
+  logoutFromOneSignal();
   window.scrollTo(0, 0);
 }
+
+/* ============================================================
+   ONESIGNAL — notificaciones push
+============================================================ */
+// Identifica al cliente en OneSignal y le pide permiso si aún no lo dio.
+async function identifyClientInOneSignal(c) {
+  if (!window.OneSignalDeferred) return;
+  window.OneSignalDeferred.push(async (OneSignal) => {
+    try {
+      // Vincular usuario a OneSignal por su ID de Supabase (para enviarle pushes individuales)
+      await OneSignal.login(String(c.id));
+      // Etiquetar con su plan, email y nombre (para enviar pushes filtrados por plan)
+      await OneSignal.User.addTags({
+        plan: c.plan,
+        email: c.email,
+        name: c.name,
+      });
+      // Si todavía no ha dado permiso, mostramos el banner suave (1ª vez)
+      const permission = OneSignal.Notifications.permission;
+      const optedIn = OneSignal.User.PushSubscription.optedIn;
+      if (!optedIn && permission !== 'denied') {
+        // Esperamos un par de segundos para no agobiar al cliente nada más entrar
+        setTimeout(() => {
+          OneSignal.Slidedown.promptPush({ force: true }).catch(()=>{});
+        }, 1500);
+      }
+    } catch (err) {
+      console.error('[OneSignal] identify error:', err);
+    }
+  });
+}
+
+async function logoutFromOneSignal() {
+  if (!window.OneSignalDeferred) return;
+  window.OneSignalDeferred.push(async (OneSignal) => {
+    try { await OneSignal.logout(); } catch(e) { /* ignorar */ }
+  });
+}
+
+// Botón "Enviar push" del admin: abre el dashboard de OneSignal en una pestaña nueva
+document.getElementById('sendPushBtn')?.addEventListener('click', () => {
+  // Abre el dashboard de OneSignal directamente en la pantalla de "Nueva notificación"
+  window.open('https://dashboard.onesignal.com/apps/4af6531e-0cf2-4f7d-824b-f2c07d1996a7/notifications/new', '_blank', 'noopener');
+});
 
 document.querySelectorAll('[data-action="open-login"]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }));
 document.querySelectorAll('[data-action="close-login"]').forEach(el => el.addEventListener('click', closeLogin));
