@@ -130,6 +130,56 @@
   body { animation: pageFadeIn 0.45s ease-out both; }
   body::before { animation: glowSweep 0.9s ease-out both; }
 
+  /* === Misiones e insignias (panel cliente) === */
+  .mbc-pill { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; }
+  .diff-easy   { background: rgba(0,230,150,0.10); color: #00e696; border-color: rgba(0,230,150,0.35); }
+  .diff-medium { background: rgba(245,158,11,0.10); color: #fcd34d; border-color: rgba(245,158,11,0.35); }
+  .diff-hard   { background: rgba(239,68,68,0.10); color: #fca5a5; border-color: rgba(239,68,68,0.35); }
+
+  /* Barra de progreso */
+  .progress-track {
+    height: 8px; border-radius: 9999px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 9999px;
+    background: linear-gradient(90deg, #00e696, #22c55e);
+    transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+  }
+  .progress-fill.amber { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+  .progress-fill.red { background: linear-gradient(90deg, #f87171, #ef4444); }
+
+  /* Insignias circulares estilo medalla */
+  .badge-medal {
+    position: relative;
+    width: 88px; height: 88px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+  .badge-medal:hover { transform: scale(1.05); }
+  .badge-medal::before {
+    content: ""; position: absolute; inset: -4px;
+    border-radius: 50%; padding: 4px;
+    background: var(--badge-ring, conic-gradient(from 0deg, #00e696, #22c55e, #10b981, #00e696));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+  }
+  .badge-medal-inner {
+    width: 100%; height: 100%; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--badge-bg, radial-gradient(circle at 30% 30%, rgba(0,230,150,0.45), rgba(6,78,59,0.55)));
+    box-shadow: 0 6px 20px rgba(0,230,150,0.25), inset 0 -2px 8px rgba(0,0,0,0.4);
+  }
+  .badge-medal.locked { filter: grayscale(1) brightness(0.55); opacity: 0.55; }
+  .badge-medal.locked::before { background: rgba(255,255,255,0.12); }
+  .badge-medal.locked .badge-medal-inner { background: rgba(40,40,45,0.7); box-shadow: none; }
+  .badge-medal.amber { --badge-ring: conic-gradient(from 0deg, #fbbf24, #f59e0b, #d97706, #fbbf24); --badge-bg: radial-gradient(circle at 30% 30%, rgba(252,211,77,0.45), rgba(120,53,15,0.55)); }
+  .badge-medal.red   { --badge-ring: conic-gradient(from 0deg, #f87171, #ef4444, #b91c1c, #f87171); --badge-bg: radial-gradient(circle at 30% 30%, rgba(248,113,113,0.45), rgba(127,29,29,0.55)); }
+  .badge-medal svg { width: 36px; height: 36px; color: #fff; }
+
   /* === Banner de cookies (RGPD) === */
   .cookie-banner {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
@@ -1522,7 +1572,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-fix-double-arrow';
+const APP_VERSION = '2026-05-06-missions-panel';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2800,6 +2850,7 @@ function statsPanelHTML(c, forAdmin) {
     mybets:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
     team:     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>',
     mystats:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    missions: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15L2.66 7.14a2 2 0 0 1 0-2L4.81 1.5a2 2 0 0 1 1.73-1h10.92a2 2 0 0 1 1.73 1l2.15 3.64a2 2 0 0 1 0 2L16.79 15"/><circle cx="12" cy="17" r="5"/><path d="M12 14v6"/></svg>',
   };
 
   // Pills de arriba (desktop) — ocultos en móvil
@@ -2812,6 +2863,7 @@ function statsPanelHTML(c, forAdmin) {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
           Exclusive</button>` : ''}
         <button data-ctab="mybets"   class="cli-tab ${tab==='mybets'?'active':''}">Mis apuestas${pendingCount>0?`<span class="cli-badge">${pendingCount}</span>`:''}</button>
+        <button data-ctab="missions" class="cli-tab ${tab==='missions'?'active':''}">Misiones</button>
         <button data-ctab="team"     class="cli-tab ${tab==='team'?'active':''}">Resultados generales</button>
         <button data-ctab="mystats"  class="cli-tab ${tab==='mystats'?'active':''}">Mis estadísticas</button>
       </div>
@@ -2833,6 +2885,8 @@ function statsPanelHTML(c, forAdmin) {
     panel = lockedPicksOnlyHTML(c);
   } else if (tab === 'mybets') {
     panel = followedBetsClientHTML(c);
+  } else if (tab === 'missions') {
+    panel = missionsTabHTML(c);
   } else if (tab === 'team') {
     panel = monthlyResultsHTML('global', null);
   } else if (tab === 'mystats') {
@@ -2865,8 +2919,9 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount) {
     ${bnavBtn('picks',    'Apuestas')}
     ${showPremium ? bnavBtn('premium', 'Exclusive', true) : ''}
     ${bnavBtn('mybets',   'Mis apuestas')}
+    ${bnavBtn('missions', 'Misiones')}
     ${bnavBtn('team',     'Resultados')}
-    ${bnavBtn('mystats',  'Estadísticas')}
+    ${bnavBtn('mystats',  'Stats')}
   </div>`;
 }
 
@@ -2877,6 +2932,217 @@ function countPendingFollowedBets(clientId) {
     const p = picksById[b.pickId];
     return p && pickResult(p) === 'pending';
   }).length;
+}
+
+/* ============================================================
+   MISIONES — sistema de retos, MBCoins e insignias
+============================================================ */
+const COINS_BY_DIFFICULTY = { easy: 10, medium: 25, hard: 50 };
+
+// Iconos SVG para las insignias (lucide-style)
+const MISSION_ICONS = {
+  star:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  compass:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+  trophy:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>',
+  bell:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  shield:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  target:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+  sparkles: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>',
+  coins:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="M16.71 13.88l.71.71-2.82 2.82"/></svg>',
+  crown:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zM5 21h14"/></svg>',
+  medal:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15L2.66 7.14a2 2 0 0 1 0-2L4.81 1.5a2 2 0 0 1 1.73-1h10.92a2 2 0 0 1 1.73 1l2.15 3.64a2 2 0 0 1 0 2L16.79 15"/><circle cx="12" cy="17" r="5"/><path d="M12 14v6"/></svg>',
+  fire:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+};
+
+// Calcula stats agregados del cliente para evaluar progreso de misiones
+function computeClientMissionStats(client) {
+  const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+  const followed = getFollowed(client.id);
+  let won = 0, lost = 0, voided = 0, pending = 0;
+  let funbetFollowed = false;
+  let totalInvested = 0, totalReturned = 0;
+  followed.forEach(b => {
+    const p = picksById[b.pickId];
+    if (!p) return;
+    const r = pickResult(p);
+    if (r === 'win') won++;
+    else if (r === 'loss') lost++;
+    else if (r === 'void') voided++;
+    else pending++;
+    if (p.tier === 'funbet') funbetFollowed = true;
+    totalInvested += b.amount;
+    const odds = pickTotalOdds(p);
+    if (r === 'win') totalReturned += b.amount * odds;
+    else if (r === 'void') totalReturned += b.amount;
+  });
+  const profit = totalReturned - totalInvested;
+  return {
+    totalFollowed: followed.length,
+    won, lost, voided, pending,
+    funbetFollowed,
+    totalInvested, totalReturned, profit,
+    notificationsActive: localStorage.getItem('mb-notif-shown-' + client.id) === '1',
+  };
+}
+
+// Definición de misiones — orden importa para mostrarlas
+const MISSIONS = [
+  // FÁCILES (10 MBC)
+  { id: 'first_step', title: 'Primer paso', desc: 'Sigue tu primera apuesta', difficulty: 'easy', target: 1, icon: 'star',
+    progress: s => Math.min(s.totalFollowed, 1) },
+  { id: 'first_win', title: 'Primera victoria', desc: 'Acierta tu primera apuesta', difficulty: 'easy', target: 1, icon: 'trophy',
+    progress: s => Math.min(s.won, 1) },
+  { id: 'apprentice', title: 'Aprendiz', desc: 'Sigue 5 apuestas en total', difficulty: 'easy', target: 5, icon: 'compass',
+    progress: s => Math.min(s.totalFollowed, 5) },
+  { id: 'connected', title: 'Conectado', desc: 'Activa las notificaciones de la app', difficulty: 'easy', target: 1, icon: 'bell',
+    progress: s => s.notificationsActive ? 1 : 0 },
+  // MEDIAS (25 MBC)
+  { id: 'collector', title: 'Coleccionista', desc: 'Sigue 10 apuestas en total', difficulty: 'medium', target: 10, icon: 'shield',
+    progress: s => Math.min(s.totalFollowed, 10) },
+  { id: 'sharpshooter', title: 'Tirador certero', desc: 'Acierta 5 apuestas', difficulty: 'medium', target: 5, icon: 'target',
+    progress: s => Math.min(s.won, 5) },
+  { id: 'funbet_master', title: 'Funbet Master', desc: 'Sigue una apuesta combinada (funbet)', difficulty: 'medium', target: 1, icon: 'sparkles',
+    progress: s => s.funbetFollowed ? 1 : 0 },
+  { id: 'investor', title: 'Inversor', desc: 'Apuesta 100€ acumulados', difficulty: 'medium', target: 100, icon: 'coins',
+    progress: s => Math.min(s.totalInvested, 100), formatProgress: v => v.toFixed(0) + '€' },
+  // DIFÍCILES (50 MBC)
+  { id: 'champion', title: 'Campeón', desc: 'Sigue 25 apuestas', difficulty: 'hard', target: 25, icon: 'crown',
+    progress: s => Math.min(s.totalFollowed, 25) },
+  { id: 'master', title: 'Maestro', desc: 'Acierta 15 apuestas', difficulty: 'hard', target: 15, icon: 'medal',
+    progress: s => Math.min(s.won, 15) },
+  { id: 'big_winner', title: 'Gran ganador', desc: 'Acumula 50€ de beneficio', difficulty: 'hard', target: 50, icon: 'fire',
+    progress: s => Math.min(Math.max(s.profit, 0), 50), formatProgress: v => v.toFixed(0) + '€' },
+];
+
+// Devuelve el array de misiones con su progreso evaluado
+function evaluateMissions(client) {
+  const stats = computeClientMissionStats(client);
+  return MISSIONS.map(m => {
+    const current = m.progress(stats);
+    const completed = current >= m.target;
+    return { ...m, current, completed, coins: COINS_BY_DIFFICULTY[m.difficulty] };
+  });
+}
+
+// Total MBCoins acumulados (suma de las recompensas de misiones completadas)
+function getTotalMBCoins(client) {
+  return evaluateMissions(client)
+    .filter(m => m.completed)
+    .reduce((sum, m) => sum + m.coins, 0);
+}
+
+// HTML de una insignia individual (medalla circular)
+function badgeMedalHTML(mission, unlocked) {
+  const diffClass = mission.difficulty === 'medium' ? 'amber' : mission.difficulty === 'hard' ? 'red' : '';
+  const icon = MISSION_ICONS[mission.icon] || MISSION_ICONS.star;
+  return `<div class="flex flex-col items-center text-center" title="${mission.title}">
+    <div class="badge-medal ${diffClass} ${unlocked ? '' : 'locked'}">
+      <div class="badge-medal-inner">${icon}</div>
+    </div>
+    <span class="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] ${unlocked ? 'text-white' : 'text-ink-500'}">${mission.title}</span>
+  </div>`;
+}
+
+// HTML de una tarjeta de misión
+function missionCardHTML(mission) {
+  const pct = Math.min(100, (mission.current / mission.target) * 100);
+  const diffLabel = mission.difficulty === 'easy' ? 'Fácil' : mission.difficulty === 'medium' ? 'Media' : 'Difícil';
+  const diffClass = `diff-${mission.difficulty}`;
+  const fillClass = mission.difficulty === 'medium' ? 'amber' : mission.difficulty === 'hard' ? 'red' : '';
+  const fmt = mission.formatProgress || (v => Math.floor(v));
+  const icon = MISSION_ICONS[mission.icon] || MISSION_ICONS.star;
+  return `<article class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5 ${mission.completed ? 'opacity-100' : ''}">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-start gap-3 min-w-0 flex-1">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${diffClass}">
+          ${icon.replace('<svg', '<svg width="18" height="18"')}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h4 class="font-display text-sm font-semibold text-white">${mission.title}</h4>
+            <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ${diffClass}">${diffLabel}</span>
+            ${mission.completed ? `<span class="inline-flex items-center rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">✓ Completada</span>` : ''}
+          </div>
+          <p class="mt-1 text-xs text-ink-200/75">${mission.desc}</p>
+        </div>
+      </div>
+      <div class="text-right shrink-0">
+        <div class="font-display text-lg font-bold ${mission.completed ? 'text-accent-neon' : 'text-white'}">+${mission.coins}</div>
+        <div class="text-[10px] uppercase tracking-[0.16em] text-ink-500">MBCoins</div>
+      </div>
+    </div>
+    <div class="mt-3">
+      <div class="progress-track">
+        <div class="progress-fill ${fillClass}" style="width: ${pct}%;"></div>
+      </div>
+      <div class="mt-1.5 flex items-center justify-between text-[11px] text-ink-500">
+        <span>${fmt(mission.current)} / ${fmt(mission.target)}</span>
+        <span>${pct.toFixed(0)}%</span>
+      </div>
+    </div>
+  </article>`;
+}
+
+// Panel completo de misiones
+function missionsTabHTML(client) {
+  const evaluated = evaluateMissions(client);
+  const completed = evaluated.filter(m => m.completed);
+  const totalCoins = completed.reduce((s, m) => s + m.coins, 0);
+  const totalAvailableCoins = evaluated.reduce((s, m) => s + m.coins, 0);
+
+  // Agrupar por dificultad para la lista
+  const byDiff = { easy: [], medium: [], hard: [] };
+  evaluated.forEach(m => byDiff[m.difficulty].push(m));
+
+  const renderGroup = (label, list) => `<div class="mt-6">
+    <h4 class="font-display text-base font-semibold text-white mb-3">${label}</h4>
+    <div class="grid gap-3 md:grid-cols-2">${list.map(missionCardHTML).join('')}</div>
+  </div>`;
+
+  return `<div>
+    <!-- Header con MBCoins totales -->
+    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Misiones</span></div>
+    <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">Tu progreso</h3>
+    <p class="mt-1 text-sm text-ink-500">Completa misiones para ganar MBCoins y desbloquear insignias.</p>
+
+    <div class="mt-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+      <div class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5">
+        <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">MBCoins</div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span class="font-display text-3xl font-bold text-accent-neon sm:text-4xl">${totalCoins}</span>
+          <span class="text-sm text-ink-500">/ ${totalAvailableCoins}</span>
+        </div>
+      </div>
+      <div class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5">
+        <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">Insignias</div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span class="font-display text-3xl font-bold text-white sm:text-4xl">${completed.length}</span>
+          <span class="text-sm text-ink-500">/ ${evaluated.length}</span>
+        </div>
+      </div>
+      <div class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5 md:col-span-1 col-span-2">
+        <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">Próximamente</div>
+        <p class="mt-2 text-xs text-ink-200/80 leading-relaxed">Podrás canjear tus MBCoins por <span class="text-amber-300">recompensas exclusivas</span>: picks gratis, descuentos en suscripción, merchandising y más.</p>
+      </div>
+    </div>
+
+    <!-- Galería de insignias -->
+    <div class="mt-10">
+      <h4 class="font-display text-xl font-semibold tracking-tight text-white">Galería de insignias</h4>
+      <p class="mt-1 text-sm text-ink-500">Desbloquéalas completando misiones. Las grises todavía están bloqueadas.</p>
+      <div class="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+        ${evaluated.map(m => badgeMedalHTML(m, m.completed)).join('')}
+      </div>
+    </div>
+
+    <!-- Lista de misiones agrupadas por dificultad -->
+    <div class="mt-10">
+      <h4 class="font-display text-xl font-semibold tracking-tight text-white">Lista de misiones</h4>
+      ${renderGroup('Fáciles · 10 MBC', byDiff.easy)}
+      ${renderGroup('Medias · 25 MBC', byDiff.medium)}
+      ${renderGroup('Difíciles · 50 MBC', byDiff.hard)}
+    </div>
+  </div>`;
 }
 
 /* === Panel "Apuestas" del cliente (solo las disponibles, sin la sección Premium) === */
