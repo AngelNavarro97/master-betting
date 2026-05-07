@@ -1707,7 +1707,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-remove-team-stats';
+const APP_VERSION = '2026-05-06-bookmaker-logos';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -3128,16 +3128,18 @@ const BOOKMAKERS = [
   {
     id: 'bet365',
     name: 'Bet365',
+    logoUrl: 'https://logo.clearbit.com/bet365.com',
     color: '#FFD700',
     textColor: '#0d0d0d',
     short: 'BET365',
     tagline: 'La casa más completa del mercado',
     features: ['Streaming gratis con depósito', 'Cash Out parcial', 'Mercados muy amplios'],
-    url: '#tracker-pendiente', // TODO: pegar aquí el enlace de afiliado
+    url: '#tracker-pendiente',
   },
   {
     id: 'bwin',
     name: 'Bwin',
+    logoUrl: 'https://logo.clearbit.com/bwin.es',
     color: '#FFCC00',
     textColor: '#0d0d0d',
     short: 'BWIN',
@@ -3148,6 +3150,7 @@ const BOOKMAKERS = [
   {
     id: '888sport',
     name: '888sport',
+    logoUrl: 'https://logo.clearbit.com/888sport.es',
     color: '#F97316',
     textColor: '#ffffff',
     short: '888SPORT',
@@ -3158,6 +3161,7 @@ const BOOKMAKERS = [
   {
     id: 'williamhill',
     name: 'William Hill',
+    logoUrl: 'https://logo.clearbit.com/williamhill.es',
     color: '#1B428A',
     textColor: '#ffffff',
     short: 'WILLIAM HILL',
@@ -3168,6 +3172,7 @@ const BOOKMAKERS = [
   {
     id: 'codere',
     name: 'Codere',
+    logoUrl: 'https://logo.clearbit.com/codere.es',
     color: '#E30613',
     textColor: '#ffffff',
     short: 'CODERE',
@@ -3178,6 +3183,7 @@ const BOOKMAKERS = [
   {
     id: 'sportium',
     name: 'Sportium',
+    logoUrl: 'https://logo.clearbit.com/sportium.es',
     color: '#00A859',
     textColor: '#ffffff',
     short: 'SPORTIUM',
@@ -3192,8 +3198,17 @@ function bookmakerCardHTML(b) {
   const btnText = hasTracker ? `Visitar ${b.name}` : 'Próximamente';
   const btnDisabled = hasTracker ? '' : 'opacity-60 cursor-not-allowed';
   const btnAttrs = hasTracker ? `href="${b.url}" target="_blank" rel="noopener nofollow sponsored"` : 'href="#" onclick="event.preventDefault();"';
+
+  // Banner con logo: el div coloreado siempre está como fondo (fallback);
+  // encima va la imagen del logo. Si la imagen falla, se elimina y queda visible
+  // el banner de respaldo con el nombre estilizado.
+  const logoBanner = `<div class="relative h-20 w-full overflow-hidden rounded-xl" style="background:${b.color};">
+    <div class="absolute inset-0 flex items-center justify-center text-center font-display text-xl font-bold tracking-wide" style="color:${b.textColor};">${b.short}</div>
+    ${b.logoUrl ? `<img src="${b.logoUrl}" alt="${b.name}" onerror="this.remove()" class="relative z-10 h-full w-full bg-white object-contain p-3"/>` : ''}
+  </div>`;
+
   return `<article class="gradient-border rounded-2xl bg-white/[0.02] p-5 flex flex-col">
-    <div class="flex items-center justify-center rounded-xl px-4 py-5 text-center font-display text-xl font-bold tracking-wide" style="background:${b.color};color:${b.textColor};">${b.short}</div>
+    ${logoBanner}
     <h4 class="mt-4 font-display text-lg font-semibold text-white">${b.name}</h4>
     <p class="mt-1 text-xs text-ink-200/70">${b.tagline}</p>
     <ul class="mt-3 space-y-1.5 text-xs text-ink-200/85">
