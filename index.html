@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#000000" />
 <title>Master Betting</title>
 <link rel="icon" type="image/png" href="Recurso%201.png" />
@@ -77,6 +77,13 @@
      Sin esto, en iOS PWA, cuando el contenido es corto, position:fixed se calcula
      contra el alto del body (que sería corto) y la barra inferior "flota" arriba. */
   html, body { min-height: 100vh; min-height: 100dvh; }
+
+  /* === Evitar zoom automático de iOS al enfocar inputs ===
+     iOS hace zoom cuando la fuente del input es < 16px. Forzamos 16px en TODOS
+     los inputs/textarea/select del sitio para prevenir el zoom + reflow molesto. */
+  input, textarea, select { font-size: 16px !important; }
+  /* Recuperamos el aspecto compacto manteniendo legibilidad: padding y altura igual,
+     solo el tamaño de fuente cambia (apenas se nota visualmente). */
 
   /* Fondo global con degradado verde "ambient".
      Lo aplicamos en un pseudo-elemento ::before con position:fixed:
@@ -1385,7 +1392,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-legal-age-verify';
+const APP_VERSION = '2026-05-06-no-ios-zoom';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
