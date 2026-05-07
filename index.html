@@ -1138,7 +1138,8 @@
         </svg>
       </div>
       <h2 class="font-display text-2xl font-semibold tracking-tight text-white text-center">¿Activar <span class="text-accent-neon">Face ID</span>?</h2>
-      <p class="mt-3 text-center text-sm text-ink-200/80">Entra a tu cuenta más rápido y de forma segura. La próxima vez que abras la app, te pediremos tu Face ID en lugar de la contraseña.</p>
+      <p class="mt-3 text-center text-sm text-ink-200/80">Entra más rápido y de forma segura. iOS te pedirá guardar una <span class="text-white">llave de acceso</span> con Face ID — esto es lo mismo que tu Face ID.</p>
+      <p class="mt-2 text-center text-[12px] text-ink-500">A partir de la próxima vez, solo necesitarás mostrar tu cara para entrar.</p>
       <div class="mt-6 flex flex-col gap-2 sm:flex-row">
         <button type="button" data-action="close-bio-offer" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">Ahora no</button>
         <button type="button" id="bioOfferAcceptBtn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-accent-neon py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">Activar</button>
@@ -1592,7 +1593,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-faceid-lock';
+const APP_VERSION = '2026-05-06-faceid-pwa-only';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2501,8 +2502,19 @@ const REMEMBER_DAYS = 10;
 
 /* ============================================================
    BIOMETRÍA (Face ID / Touch ID) — vía Web Authentication API
+   IMPORTANTE: solo se ofrece en modo PWA (añadida a pantalla de inicio).
+   En navegador normal, no aparece la opción ni el lock screen.
 ============================================================ */
 const BIO_KEY_PREFIX = 'mb-bio-cred-';
+
+// ¿Estamos en modo PWA (standalone)? Solo entonces ofrecemos Face ID.
+function isStandaloneApp() {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.navigator.standalone === true // Safari iOS legacy
+  );
+}
 
 // ¿El navegador soporta WebAuthn con autenticador biométrico de plataforma?
 async function isBiometricAvailable() {
@@ -2631,13 +2643,12 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     localStorage.removeItem(REMEMBER_KEY);
   }
 
-  // Si marcó "Mantener 10 días" Y el dispositivo tiene biometría Y aún no la ha
-  // configurado para esta cuenta → ofrecérselo
-  if (remember && !isAdmin(data.user.email)) {
+  // Ofrecer Face ID SOLO en modo PWA (app añadida a pantalla de inicio).
+  // En navegador normal no aparece ni la opción ni el lock screen.
+  if (isStandaloneApp() && !isAdmin(data.user.email)) {
     const userId = data.user.id;
     const userName = data.user.user_metadata?.name || data.user.email;
     if (await isBiometricAvailable() && !hasBiometricCredentialFor(userId)) {
-      // Mostrar modal de propuesta
       window.__pendingBioRegister = { userId, userName };
       document.getElementById('bioOfferModal')?.classList.remove('hidden');
     }
@@ -2737,10 +2748,9 @@ function isSessionStillValid() {
     }
   };
 
-  // Si tiene credencial biométrica registrada, mostrar lock screen primero
-  // (solo aplica a sesiones persistentes con remember-me, donde tiene sentido)
-  const hasRememberMe = !!localStorage.getItem(REMEMBER_KEY);
-  if (hasRememberMe && hasBiometricCredentialFor(userId) && (await isBiometricAvailable())) {
+  // Lock screen biométrico SOLO en modo PWA (app instalada).
+  // En navegador normal entra directamente al panel como antes.
+  if (isStandaloneApp() && hasBiometricCredentialFor(userId) && (await isBiometricAvailable())) {
     window.__bioLockResume = proceedToPanel;
     showBioLockScreen(userId, userName);
     return;
@@ -4516,7 +4526,13 @@ document.getElementById('bioOfferAcceptBtn')?.addEventListener('click', async ()
   document.getElementById('bioOfferModal')?.classList.add('hidden');
   const ok = await registerBiometricCredential(pending.userId, pending.userName);
   if (ok) {
-    showToast('🔒 Face ID activado. La próxima vez te pediremos solo Face ID.', 'ok');
+    // Al activar Face ID, prolongamos la sesión a 60 días automáticamente
+    // (Supabase refresca el token al usarse, así la sesión se mantiene viva
+    // mientras el cliente entre regularmente).
+    const longExpiresAt = Date.now() + 60 * 24 * 60 * 60 * 1000;
+    localStorage.setItem(REMEMBER_KEY, String(longExpiresAt));
+    sessionStorage.removeItem(REMEMBER_KEY);
+    showToast('🔒 Face ID activado. A partir de ahora entrarás solo con Face ID.', 'ok');
   } else {
     showToast('No se pudo activar Face ID. Puedes seguir entrando con tu contraseña.', 'error');
   }
