@@ -130,6 +130,23 @@
   body { animation: pageFadeIn 0.45s ease-out both; }
   body::before { animation: glowSweep 0.9s ease-out both; }
 
+  /* === Menú móvil de la home — animación con GPU (sin lag) ===
+     Antes usábamos transition-all + max-height que provocaba repintados completos.
+     Ahora usamos transform + opacity que se animan en compositing layer. */
+  .mobile-menu {
+    transform: scaleY(0);
+    transform-origin: top;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), opacity 0.18s ease-out;
+    will-change: transform, opacity;
+  }
+  .mobile-menu.open {
+    transform: scaleY(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   /* === Misiones e insignias (panel cliente) === */
   .mbc-pill { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; }
   .diff-easy   { background: rgba(0,230,150,0.10); color: #00e696; border-color: rgba(0,230,150,0.35); }
@@ -500,7 +517,7 @@
       </button>
     </div>
   </div>
-  <div id="mobileMenu" class="mx-auto mt-2 max-w-6xl overflow-hidden transition-all duration-300 md:hidden" style="max-height:0; opacity:0;">
+  <div id="mobileMenu" class="mx-auto mt-2 max-w-6xl overflow-hidden md:hidden mobile-menu">
     <div class="glass mx-3 rounded-3xl px-5 py-5">
       <nav class="flex flex-col divide-y divide-white/5 text-base text-white">
         <a href="#planes" class="py-3 transition hover:text-accent-neon">Planes</a>
@@ -1584,7 +1601,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-notif-sync-supabase';
+const APP_VERSION = '2026-05-06-missions-refresh-mobile-menu';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1614,11 +1631,11 @@ const bar1 = document.getElementById('bar1'), bar2 = document.getElementById('ba
 let menuOpen = false;
 menuBtn.addEventListener('click', () => {
   menuOpen = !menuOpen;
+  // Toggle con clase: usa transform + opacity (GPU), sin lag.
+  mobileMenu.classList.toggle('open', menuOpen);
   if (menuOpen) {
-    mobileMenu.style.maxHeight = '24rem'; mobileMenu.style.opacity = '1';
     bar1.style.transform = 'translateY(6px) rotate(45deg)'; bar2.style.opacity = '0'; bar3.style.transform = 'translateY(-6px) rotate(-45deg)';
   } else {
-    mobileMenu.style.maxHeight = '0'; mobileMenu.style.opacity = '0';
     bar1.style.transform = ''; bar2.style.opacity = '1'; bar3.style.transform = '';
   }
 });
@@ -4431,10 +4448,14 @@ document.addEventListener('click', async (e) => {
   const newTab = btn.dataset.ctab;
   if (currentClientTab === newTab) return;
   currentClientTab = newTab;
-  // Si vamos a una pestaña de stats, refrescamos picks desde Supabase
-  // para que los cambios de resultado del admin se vean al instante
-  if (newTab === 'team' || newTab === 'mystats' || newTab === 'mybets' || newTab === 'summary') {
-    try { await loadPicksFromSupabase(); } catch(err) { console.error(err); }
+  // Pestañas que dependen de datos frescos (picks + followed_bets)
+  // Si el admin borra/cierra picks, las misiones y stats deben actualizarse al instante.
+  const dataTabs = ['team', 'mystats', 'mybets', 'summary', 'missions'];
+  if (dataTabs.includes(newTab)) {
+    try {
+      await loadPicksFromSupabase();
+      if (activeClientId) await loadFollowedBetsForUser(activeClientId);
+    } catch(err) { console.error(err); }
   }
   rerenderCurrentClientPanel();
 });
