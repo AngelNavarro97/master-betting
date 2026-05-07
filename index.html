@@ -32,23 +32,9 @@
     try {
       await OneSignal.init({
         appId: "4af6531e-0cf2-4f7d-824b-f2c07d1996a7",
-        // Permite probar en localhost si haces pruebas locales
         allowLocalhostAsSecureOrigin: true,
-        // Modo Slidedown: aparece un banner suave en lugar del popup nativo del navegador
+        // Sin botón flotante ni slidedown automático: usamos nuestro propio modal
         notifyButton: { enable: false },
-        promptOptions: {
-          slidedown: {
-            prompts: [{
-              type: "push",
-              autoPrompt: false, // Lo activaremos manualmente al loguear cliente
-              text: {
-                actionMessage: "Recibe avisos cuando publiquemos un pick nuevo o se cierre tu apuesta seguida.",
-                acceptButton: "Activar",
-                cancelButton: "Ahora no"
-              }
-            }]
-          }
-        }
       });
       window.__oneSignalReady = true;
       console.log('[OneSignal] inicializado');
@@ -1127,6 +1113,63 @@
   </div>
 </div>
 
+<!-- NOTIFICATIONS OPT-IN MODAL -->
+<div id="notifModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-notif"></div>
+  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
+    <!-- Halo de fondo -->
+    <div class="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
+    <div class="relative">
+      <!-- Icono campana -->
+      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-accent-neon/40 bg-accent-neon/10">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00e696" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </div>
+      <h2 class="font-display text-2xl font-semibold tracking-tight text-white text-center">
+        ¿Quieres recibir nuestras <span class="text-accent-neon">notificaciones</span>?
+      </h2>
+      <p class="mt-3 text-center text-sm text-ink-200/80">
+        Te avisaremos al instante cuando publiquemos un <span class="text-white">nuevo pick</span>, cuando una de tus apuestas seguidas se cierre y de promociones especiales.
+      </p>
+
+      <!-- Píldoras informativas (mismo estilo de pills del resto) -->
+      <div class="mt-5 flex flex-wrap justify-center gap-2">
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-accent-neon/30 bg-accent-neon/5 px-3 py-1 text-[11px] font-medium text-accent-neon">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Picks al instante
+        </span>
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-accent-neon/30 bg-accent-neon/5 px-3 py-1 text-[11px] font-medium text-accent-neon">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Resultados
+        </span>
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-300">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Ofertas exclusivas
+        </span>
+      </div>
+
+      <p class="mt-4 text-center text-[11px] text-ink-500">
+        Podrás desactivarlas cuando quieras desde los ajustes de tu navegador.
+      </p>
+
+      <div class="mt-6 flex flex-col gap-2 sm:flex-row">
+        <button type="button" data-action="close-notif" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+          Ahora no
+        </button>
+        <button type="button" id="notifAcceptBtn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-accent-neon py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          Activar notificaciones
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- UPGRADE PLAN MODAL -->
 <div id="upgradeModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-upgrade"></div>
@@ -1281,7 +1324,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-live-tracking';
+const APP_VERSION = '2026-05-06-custom-notif-modal';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2066,7 +2109,7 @@ function hideClientView() {
 /* ============================================================
    ONESIGNAL — notificaciones push
 ============================================================ */
-// Identifica al cliente en OneSignal y le pide permiso si aún no lo dio.
+// Identifica al cliente en OneSignal y muestra nuestro modal personalizado si aún no aceptó.
 async function identifyClientInOneSignal(c) {
   if (!window.OneSignalDeferred) return;
   window.OneSignalDeferred.push(async (OneSignal) => {
@@ -2079,20 +2122,53 @@ async function identifyClientInOneSignal(c) {
         email: c.email,
         name: c.name,
       });
-      // Si todavía no ha dado permiso, mostramos el banner suave (1ª vez)
+      // Si todavía no ha dado permiso, mostramos NUESTRO modal personalizado tras 1.5s
       const permission = OneSignal.Notifications.permission;
       const optedIn = OneSignal.User.PushSubscription.optedIn;
-      if (!optedIn && permission !== 'denied') {
-        // Esperamos un par de segundos para no agobiar al cliente nada más entrar
-        setTimeout(() => {
-          OneSignal.Slidedown.promptPush({ force: true }).catch(()=>{});
-        }, 1500);
+      // Usamos localStorage para no agobiar: si ya pulsó "Ahora no" hace poco, no lo mostramos
+      const dismissedAt = parseInt(localStorage.getItem('mb-notif-dismissed') || '0', 10);
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const recentlyDismissed = (Date.now() - dismissedAt) < oneDayMs;
+      if (!optedIn && permission !== 'denied' && !recentlyDismissed) {
+        setTimeout(() => openNotifModal(), 1500);
       }
     } catch (err) {
       console.error('[OneSignal] identify error:', err);
     }
   });
 }
+
+function openNotifModal() {
+  document.getElementById('notifModal')?.classList.remove('hidden');
+}
+function closeNotifModal() {
+  document.getElementById('notifModal')?.classList.add('hidden');
+}
+
+// Listeners del modal de notificaciones
+document.querySelectorAll('[data-action="close-notif"]').forEach(el => {
+  el.addEventListener('click', () => {
+    // Marcamos que el cliente lo cerró: no se lo mostraremos otra vez en 24h
+    localStorage.setItem('mb-notif-dismissed', String(Date.now()));
+    closeNotifModal();
+  });
+});
+
+document.getElementById('notifAcceptBtn')?.addEventListener('click', async () => {
+  closeNotifModal();
+  if (!window.OneSignalDeferred) return;
+  window.OneSignalDeferred.push(async (OneSignal) => {
+    try {
+      // Disparamos el permiso nativo del navegador / iOS (no se puede personalizar este).
+      await OneSignal.Notifications.requestPermission();
+      // Si el usuario aceptó, OneSignal ya lo suscribe automáticamente.
+      // Limpiamos el dismissed por si lo había puesto antes.
+      localStorage.removeItem('mb-notif-dismissed');
+    } catch (err) {
+      console.error('[OneSignal] requestPermission error:', err);
+    }
+  });
+});
 
 async function logoutFromOneSignal() {
   if (!window.OneSignalDeferred) return;
