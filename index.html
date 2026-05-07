@@ -1707,7 +1707,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-recover-password';
+const APP_VERSION = '2026-05-06-recover-fix';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2667,6 +2667,12 @@ function isSessionStillValid() {
 // Auto-login al cargar la página: comprueba si hay sesión Supabase activa
 // Y además respeta la elección del usuario sobre "Mantener 10 días"
 (async () => {
+  // Si el usuario está en flujo de recuperación de contraseña, no entrar al panel.
+  // El modal de "Define nueva contraseña" se mostrará por el flujo de recovery.
+  const isRecoveryFlow = (window.location.hash || '').includes('type=recovery')
+    || (window.location.hash || '').includes('recovery_token=');
+  if (isRecoveryFlow) return;
+
   const { data: { session } } = await sb.auth.getSession();
   if (!session || !session.user) return;
 
@@ -4740,23 +4746,47 @@ document.getElementById('recoverySendBtn')?.addEventListener('click', async () =
   }
   const btn = document.getElementById('recoverySendBtn');
   btn.disabled = true; btn.textContent = 'Enviando...';
-  // Supabase manda el email con un enlace que al pulsarse devuelve al usuario aquí
-  // con el evento onAuthStateChange tipo PASSWORD_RECOVERY
-  const redirectTo = window.location.origin + window.location.pathname + '#recovery';
+  // Supabase manda el email con un enlace. Al pulsarlo, vuelve a esta URL
+  // con un hash tipo #access_token=...&type=recovery=...
+  // IMPORTANTE: no añadir hash propio ni query, Supabase añade su propio hash.
+  const redirectTo = window.location.origin + window.location.pathname;
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
   btn.disabled = false; btn.textContent = 'Enviar enlace';
   if (error) return showRecoveryMsg('Error: ' + error.message, 'error');
   showRecoveryMsg('✓ Si esa cuenta existe, te hemos enviado un email con instrucciones. Revisa tu bandeja de entrada (y spam por si acaso).', 'ok');
 });
 
-// === Cuando el usuario pulsa el enlace del email, Supabase dispara
-// el evento PASSWORD_RECOVERY. Mostramos un modal para que defina la nueva contraseña.
-sb.auth.onAuthStateChange((event, session) => {
-  if (event === 'PASSWORD_RECOVERY') {
-    document.getElementById('newPasswordModal').classList.remove('hidden');
-    document.getElementById('newPasswordMsg').classList.add('hidden');
+// === Detectar si el usuario viene del enlace de recuperación de contraseña ===
+// Hay 2 formas en que llegamos a saberlo:
+//   A) Evento onAuthStateChange con tipo PASSWORD_RECOVERY (nuevo Supabase)
+//   B) URL hash con type=recovery (legacy o cuando el evento no se dispara)
+function openRecoveryFlow() {
+  const modal = document.getElementById('newPasswordModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  document.getElementById('newPasswordMsg')?.classList.add('hidden');
+  // Limpiar el hash de la URL para que se vea limpia
+  if (window.location.hash) {
+    history.replaceState(null, '', window.location.pathname);
   }
+}
+
+// Listener Supabase oficial
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') openRecoveryFlow();
 });
+
+// Detección manual al cargar la página: si la URL tiene type=recovery en el hash
+// abrimos el modal aunque el evento no se haya disparado.
+(function detectRecoveryFromUrl() {
+  try {
+    const hash = window.location.hash || '';
+    if (hash.includes('type=recovery') || hash.includes('recovery_token=')) {
+      // Esperamos un poco a que Supabase procese el hash y establezca la sesión
+      setTimeout(openRecoveryFlow, 400);
+    }
+  } catch (err) { console.error('[recovery] detect error:', err); }
+})();
 
 function showNewPwMsg(text, type='ok') {
   const el = document.getElementById('newPasswordMsg');
