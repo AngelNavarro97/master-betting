@@ -124,7 +124,44 @@
   .pills-scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior-x: contain; touch-action: pan-x; }
   .pills-scroller::-webkit-scrollbar { display: none; height: 0; width: 0; }
 
-  /* Pills del panel cliente */
+  /* Bottom nav app-style (móvil) — visible solo bajo el breakpoint sm */
+  .cli-bottom-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: rgba(8,8,10,0.92);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: saturate(160%) blur(16px);
+    -webkit-backdrop-filter: saturate(160%) blur(16px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .cli-bnav-grid { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 0.45rem 0.25rem 0.4rem; gap: 0.15rem; }
+  .cli-bnav-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0.2rem; padding: 0.45rem 0.2rem;
+    border-radius: 0.85rem;
+    font-size: 0.625rem; font-weight: 600; line-height: 1.1;
+    color: rgba(245,245,247,0.6);
+    transition: color 0.15s, background 0.15s;
+    position: relative; min-width: 0;
+  }
+  .cli-bnav-btn:hover { color: #fff; }
+  .cli-bnav-btn.active { color: #00e696; background: rgba(0,230,150,0.10); }
+  .cli-bnav-btn.amber { color: rgba(252,211,77,0.85); }
+  .cli-bnav-btn.amber.active { color: #fcd34d; background: rgba(245,158,11,0.16); }
+  .cli-bnav-btn .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  /* Badge verde sobre el icono "Mis apuestas" */
+  .cli-bnav-badge {
+    position: absolute; top: 0.15rem; right: calc(50% - 1.4rem);
+    min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9999px;
+    background: #00e696; color: #0a0a0a;
+    font-size: 9px; font-weight: 800; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  /* En modo PWA standalone, deja hueco encima del notch inferior */
+  @media (max-width: 639px) {
+    body.client-active { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  }
+
+  /* Pills del panel cliente (desktop) */
   .cli-tab { color: rgba(245,245,247,0.7); padding: 0.45rem 1.05rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; position: relative; white-space: nowrap; flex-shrink: 0; }
   .cli-tab:hover { color: #fff; }
   .cli-tab.active { background: rgba(255,255,255,0.08); color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset; }
@@ -1132,7 +1169,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-login-eye-remember';
+const APP_VERSION = '2026-05-06-bottom-nav';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1693,6 +1730,8 @@ function showClientView(clientId) {
   const c = clients.find(x => x.id === clientId);
   if (!c) return;
   publicSite.classList.add('hidden'); adminPanel.classList.add('hidden'); clientPanel.classList.remove('hidden');
+  // Marca el body para que en móvil reserve hueco inferior por el bottom nav
+  document.body.classList.add('client-active');
   // Botón "Mejorar suscripción": solo visible para Basic y Pro (Exclusive ya está en lo más alto)
   const upgradeBtn = document.getElementById('upgradeBtn');
   if (upgradeBtn) {
@@ -1777,7 +1816,7 @@ document.addEventListener('click', (e) => {
   const plan = btn.dataset.upgradePlan;
   alert(`Para mejorar al plan ${plan}, contacta con el equipo a través del chat de Telegram. La compra automática estará disponible cuando se active la pasarela de pago.`);
 });
-function hideClientView() { activeClientId = null; clientPanel.classList.add('hidden'); publicSite.classList.remove('hidden'); window.scrollTo(0, 0); }
+function hideClientView() { activeClientId = null; clientPanel.classList.add('hidden'); publicSite.classList.remove('hidden'); document.body.classList.remove('client-active'); window.scrollTo(0, 0); }
 
 document.querySelectorAll('[data-action="open-login"]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }));
 document.querySelectorAll('[data-action="close-login"]').forEach(el => el.addEventListener('click', closeLogin));
@@ -2241,8 +2280,19 @@ function statsPanelHTML(c, forAdmin) {
   const pendingCount = countPendingFollowedBets(c.id);
   const tab = currentClientTab;
 
-  const pills = `
-    <div class="mb-6 pills-scroller">
+  // Iconos SVG para cada pestaña (mismo set, para usar arriba y abajo)
+  const ICON = {
+    summary:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+    picks:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 8a3 3 0 0 0 3-3V4a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1a3 3 0 0 0 3 3v8a3 3 0 0 0-3 3v1a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-1a3 3 0 0 0-3-3V8z"/><path d="M9 8v8M14 8v3M14 14v2"/></svg>',
+    premium:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+    mybets:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+    team:     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>',
+    mystats:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  };
+
+  // Pills de arriba (desktop) — ocultos en móvil
+  const pillsTop = `
+    <div class="mb-6 pills-scroller hidden sm:block">
       <div class="inline-flex flex-nowrap whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] p-1">
         <button data-ctab="summary"  class="cli-tab ${tab==='summary'?'active':''}">Resumen</button>
         <button data-ctab="picks"    class="cli-tab ${tab==='picks'?'active':''}">Apuestas</button>
@@ -2254,6 +2304,27 @@ function statsPanelHTML(c, forAdmin) {
         <button data-ctab="mystats"  class="cli-tab ${tab==='mystats'?'active':''}">Mis estadísticas</button>
       </div>
     </div>`;
+
+  // Bottom nav app-style (móvil)
+  const bnavBtn = (key, label, opts = {}) => {
+    const cls = `cli-bnav-btn${opts.amber ? ' amber' : ''}${tab===key ? ' active' : ''}`;
+    const badge = (key === 'mybets' && pendingCount > 0)
+      ? `<span class="cli-bnav-badge">${pendingCount}</span>` : '';
+    return `<button data-ctab="${key}" class="${cls}">${ICON[key]}${badge}<span class="label">${label}</span></button>`;
+  };
+  const pillsBottom = `
+    <nav class="cli-bottom-nav sm:hidden" aria-label="Navegación">
+      <div class="cli-bnav-grid">
+        ${bnavBtn('summary',  'Resumen')}
+        ${bnavBtn('picks',    'Apuestas')}
+        ${showPremium ? bnavBtn('premium', 'Exclusive', { amber: true }) : ''}
+        ${bnavBtn('mybets',   'Mis apuestas')}
+        ${bnavBtn('team',     'Resultados')}
+        ${bnavBtn('mystats',  'Estadísticas')}
+      </div>
+    </nav>`;
+
+  const pills = pillsTop + pillsBottom;
 
   // Renderizar el panel activo
   let panel = '';
