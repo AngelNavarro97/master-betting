@@ -370,7 +370,7 @@
             <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Basic</h3></div>
             <p class="mt-2 text-sm text-ink-200/70">Empieza con la disciplina correcta.</p>
             <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">9,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <button type="button" data-action="signup-closed" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white/70 backdrop-blur transition hover:border-white/30 hover:bg-white/10">Próximamente</button>
+            <button type="button" data-stripe-plan="Basic" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>8 pronósticos mensuales</span></li>
@@ -396,7 +396,7 @@
             </div>
             <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
             <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">19,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <button type="button" data-action="signup-closed" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white/90 px-5 py-3 text-sm font-semibold text-black/80 transition hover:bg-white">Próximamente</button>
+            <button type="button" data-stripe-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>16 pronósticos mensuales</span></li>
@@ -421,7 +421,7 @@
             <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Exclusive</h3></div>
             <p class="mt-2 text-sm text-ink-200/70">El círculo cerrado. Reembolso garantizado.</p>
             <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">34,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <button type="button" data-action="signup-closed" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white/70 backdrop-blur transition hover:border-white/30 hover:bg-white/10">Próximamente</button>
+            <button type="button" data-stripe-plan="Exclusive" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>25 pronósticos mensuales</span></li>
@@ -1108,7 +1108,7 @@
         <button type="button" data-action="close-login" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">Cancelar</button>
         <button type="submit" class="flex-1 rounded-full bg-white py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Acceder</button>
       </div>
-      <p class="pt-2 text-center text-xs text-ink-200/70">¿No tienes cuenta? Las suscripciones se activarán muy pronto.</p>
+      <p class="pt-2 text-center text-xs text-ink-200/70">¿No tienes cuenta? <a href="#planes" data-action="close-login" class="font-semibold text-accent-neon hover:underline">Suscríbete a un plan</a></p>
     </form>
   </div>
 </div>
@@ -1324,7 +1324,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-custom-notif-modal';
+const APP_VERSION = '2026-05-06-stripe-live';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2062,7 +2062,7 @@ function planCardHTML(plan) {
     </div>
     <p class="mt-2 text-sm text-ink-200/70">${data.tagline}</p>
     <div class="mt-6 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">${data.price}</span><span class="text-sm text-ink-500">€/mes</span></div>
-    <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">Próximamente · Contacta para upgrade</button>
+    <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">Cambiar a ${data.name}</button>
     <div class="my-6 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
     <ul class="space-y-3 text-sm text-ink-200/85">
       ${data.features.map(f => `<li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>${f}</span></li>`).join('')}
@@ -2089,11 +2089,7 @@ function closeUpgradeModal() {
 
 document.getElementById('upgradeBtn')?.addEventListener('click', openUpgradeModal);
 document.querySelectorAll('[data-action="close-upgrade"]').forEach(el => el.addEventListener('click', closeUpgradeModal));
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-upgrade-plan]'); if (!btn) return;
-  const plan = btn.dataset.upgradePlan;
-  alert(`Para mejorar al plan ${plan}, contacta con el equipo a través del chat de Telegram. La compra automática estará disponible cuando se active la pasarela de pago.`);
-});
+// El handler real de upgrade vía Stripe está más abajo (en la sección STRIPE CHECKOUT)
 function hideClientView() {
   activeClientId = null;
   clientPanel.classList.add('hidden');
@@ -3935,7 +3931,7 @@ function openSignup(plan) {
 }
 function closeSignup() { signupModal.classList.add('hidden'); }
 
-// Botones que abren signup (de los planes y del modal de login)
+// Botones que abren signup (de los planes y del modal de login) — legacy, ya no se usan tras Stripe
 document.querySelectorAll('[data-action="open-signup"]').forEach(el => {
   el.addEventListener('click', (e) => {
     e.preventDefault();
@@ -3943,13 +3939,81 @@ document.querySelectorAll('[data-action="open-signup"]').forEach(el => {
     openSignup(el.dataset.plan);
   });
 });
-// Botón "Próximamente" en los planes (mientras Stripe no está activo)
-document.querySelectorAll('[data-action="signup-closed"]').forEach(el => {
-  el.addEventListener('click', (e) => {
+
+/* ============================================================
+   STRIPE CHECKOUT — flujo de suscripción
+============================================================ */
+async function startStripeCheckout(plan, prefilledEmail = null) {
+  // Pequeño feedback visual
+  const banner = document.createElement('div');
+  banner.id = 'stripeLoadingBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#00e696;color:#000;padding:12px;text-align:center;font-weight:600;font-size:14px;';
+  banner.textContent = 'Conectando con Stripe...';
+  document.body.appendChild(banner);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ plan, email: prefilledEmail }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.url) {
+      banner.remove();
+      alert('Error iniciando el pago: ' + (json.error || 'desconocido'));
+      return;
+    }
+    // Redirigir a la pantalla de pago de Stripe
+    window.location.href = json.url;
+  } catch (err) {
+    banner.remove();
+    alert('Error de red iniciando el pago: ' + String(err));
+  }
+}
+
+// Botones "Suscribirme" en la home (cards de planes)
+document.querySelectorAll('[data-stripe-plan]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
     e.preventDefault();
-    alert('Las suscripciones todavía no están abiertas al público. Estamos terminando de configurar la pasarela de pago. Si quieres acceso anticipado, contacta con nosotros.');
+    startStripeCheckout(btn.dataset.stripePlan);
   });
 });
+
+// Listener delegado: para botones que aparezcan dinámicamente (modal de upgrade)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-upgrade-plan]'); if (!btn) return;
+  e.preventDefault();
+  // Si es un cliente ya logueado, pasamos su email para que Stripe lo prefille
+  let email = null;
+  if (activeClientId) {
+    const c = clients.find(x => x.id === activeClientId);
+    if (c) email = c.email;
+  }
+  closeUpgradeModal();
+  startStripeCheckout(btn.dataset.upgradePlan, email);
+}, true);
+
+// Mensaje al volver de Stripe (success / cancelled)
+(function handleStripeReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('stripe');
+  if (!status) return;
+  // Limpiar la URL para que no se quede el query param tras refrescar
+  const cleanUrl = window.location.origin + window.location.pathname + '#planes';
+  window.history.replaceState({}, document.title, window.location.pathname);
+  if (status === 'success') {
+    setTimeout(() => {
+      alert('¡Pago completado! Te hemos enviado un email para que configures tu contraseña. Revisa tu bandeja de entrada (y la carpeta de spam por si acaso). Una vez la pongas, ya puedes iniciar sesión.');
+    }, 200);
+  } else if (status === 'cancelled') {
+    setTimeout(() => {
+      alert('Pago cancelado. No se ha cobrado nada. Puedes volver a intentarlo cuando quieras.');
+    }, 200);
+  }
+})();
 document.querySelectorAll('[data-action="close-signup"]').forEach(el => el.addEventListener('click', closeSignup));
 const _toLoginFromSignup = document.querySelector('[data-action="open-login-from-signup"]');
 if (_toLoginFromSignup) _toLoginFromSignup.addEventListener('click', (e) => {
