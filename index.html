@@ -370,8 +370,10 @@
   details.month-group { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; }
   details.month-group + details.month-group { margin-top: 0.75rem; }
   details.month-group summary { padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; user-select: none; }
-  details.month-group summary::after { content: "▾"; transition: transform 0.2s ease; color: rgba(245,245,247,0.6); }
-  details.month-group[open] summary::after { transform: rotate(180deg); }
+  /* Flechita ▾ del bloque mensual: usamos > (hijo directo) para que NO se cuele
+     dentro de los <details> anidados (como el bloque "Ver análisis"). */
+  details.month-group > summary::after { content: "▾"; transition: transform 0.2s ease; color: rgba(245,245,247,0.6); }
+  details.month-group[open] > summary::after { transform: rotate(180deg); }
   details.month-group .group-body { padding: 0 1.25rem 1.25rem; }
   /* Flecha del bloque "Ver análisis" rota al abrir */
   details > summary .analysis-arrow { transition: transform 0.2s ease; }
@@ -1520,7 +1522,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-cleanup-faceid-arrow';
+const APP_VERSION = '2026-05-06-fix-double-arrow';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
