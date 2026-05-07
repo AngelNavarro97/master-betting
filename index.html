@@ -235,6 +235,11 @@
   details.month-group summary::after { content: "▾"; transition: transform 0.2s ease; color: rgba(245,245,247,0.6); }
   details.month-group[open] summary::after { transform: rotate(180deg); }
   details.month-group .group-body { padding: 0 1.25rem 1.25rem; }
+  /* Flecha del bloque "Ver análisis" rota al abrir */
+  details > summary .analysis-arrow { transition: transform 0.2s ease; }
+  details[open] > summary .analysis-arrow { transform: rotate(180deg); }
+  details > summary { list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
 
   /* Logos */
   .badge-img { position: relative; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; overflow: hidden; flex-shrink: 0; ring: 1px solid rgba(255,255,255,0.20); }
@@ -1174,6 +1179,12 @@
 
       <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Stake (unidades) — para todo el pronóstico</span><input type="number" id="npStake" step="0.5" min="0.5" max="10" required placeholder="3" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
 
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Análisis (opcional)</span>
+        <textarea id="npAnalysis" rows="4" placeholder="Razonamiento del pronóstico: lesiones, racha, estadísticas, momento del equipo..." class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 resize-y"></textarea>
+        <span class="mt-1.5 block text-[11px] text-ink-500">Visible al cliente al desplegar la tarjeta. Justifica el precio del plan y aporta valor.</span>
+      </label>
+
       <datalist id="npCompetitions"></datalist>
       <datalist id="npTeams"></datalist>
 
@@ -1221,7 +1232,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-admin-bottom-nav';
+const APP_VERSION = '2026-05-06-pick-analysis';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1635,6 +1646,7 @@ function pickFromDb(row) {
     totalOdds: parseFloat(row.total_odds),
     result: row.result,
     events,
+    analysis: row.analysis || null,
     // Compat con código que mira al primer evento
     sport: first.sport,
     match: matchStr,
@@ -2086,6 +2098,21 @@ function tierBadge(p) {
   if (p.tier === 'exclusive') return `<span class="rounded-full border border-amber-400/60 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Exclusive</span>`;
   if (p.tier === 'funbet') return `<span class="rounded-full border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Funbet</span>`;
   return '';
+}
+
+// Bloque desplegable con el análisis del pronóstico (si existe)
+function analysisBlockHTML(p) {
+  if (!p.analysis) return '';
+  return `<details class="mt-3 rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+    <summary class="flex items-center justify-between gap-2 cursor-pointer px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-neon hover:bg-white/[0.03]">
+      <span class="inline-flex items-center gap-1.5">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        Ver análisis
+      </span>
+      <svg class="analysis-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+    <div class="px-3 pb-3 pt-1 text-sm text-ink-200/85 whitespace-pre-line">${escapeHTML(p.analysis)}</div>
+  </details>`;
 }
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -2647,6 +2674,7 @@ function followedBetCardClient(b) {
       </div>
       ${badge}
     </div>
+    ${analysisBlockHTML(p)}
     <div class="mt-3 flex items-center justify-between gap-3 text-xs border-t border-white/5 pt-3">
       <div><span class="text-ink-500">Apostado</span> <span class="ml-1 font-semibold text-white">${fmtEuro(b.amount)}</span></div>
       <div><span class="text-ink-500">Cuota</span> <span class="ml-1 font-semibold text-white">${odds.toFixed(2)}</span></div>
@@ -2865,6 +2893,7 @@ function availablePickCard(p, c, forAdmin) {
     ${eventVisual ? `<div class="mt-3">${eventVisual}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
     ${isCombined ? '' : `<p class="mt-2.5 text-sm text-ink-200/85">${fe.pickType}</p>`}
     ${isCombined ? `<div class="mt-3 flex items-center justify-between rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Cuota total combinada</span><span class="font-display text-lg font-bold text-amber-200">${totalOdds.toFixed(2)}</span></div>` : ''}
+    ${analysisBlockHTML(p)}
     <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-white/5 pt-3 text-xs">
       <div><span class="text-ink-500">Cuota${isCombined ? ' total' : ''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
       <div><span class="text-ink-500">Stake recom.</span> <span class="ml-1 font-semibold text-white">${p.recommendedStake} u</span></div>
@@ -3128,6 +3157,7 @@ function pickAdminCard(p) {
         </div>
         ${eventBlock(p, true) ? `<div class="mt-3">${eventBlock(p, true)}</div>` : `<h4 class="mt-2 font-display text-base font-semibold text-white break-words">${p.match || ''}</h4>`}
         ${isCombined ? '' : `<p class="mt-2 text-sm text-ink-200/80">${fe.pickType}</p>`}
+        ${analysisBlockHTML(p)}
         <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
           <div><span class="text-ink-500">Cuota${isCombined ? ' total' : ''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
           <div><span class="text-ink-500">Stake</span> <span class="ml-1 font-semibold text-white">${p.recommendedStake} u</span></div>
@@ -3366,6 +3396,7 @@ document.getElementById('newPickForm').addEventListener('submit', async (e) => {
   const time = document.getElementById('npTime').value;
   const stake = parseFloat(document.getElementById('npStake').value);
   const tier = document.getElementById('npTier').value;
+  const analysis = document.getElementById('npAnalysis').value.trim() || null;
   const plans = Array.from(document.querySelectorAll('input[name="np-plan"]:checked')).map(cb => cb.value);
   if (!date || !time) return fail('Rellena fecha y hora.');
   if (!stake || stake <= 0) return fail('El stake debe ser mayor que 0.');
@@ -3404,6 +3435,7 @@ document.getElementById('newPickForm').addEventListener('submit', async (e) => {
     recommended_stake: stake,
     total_odds: totalOdds,
     events,
+    analysis,
   }).select().single();
 
   submitBtn.disabled = false; submitBtn.textContent = oldText;
