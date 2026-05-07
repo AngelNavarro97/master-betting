@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" style="background:#000;">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#000000" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Master Betting" />
 <title>Política de privacidad — Master Betting</title>
 <link rel="icon" type="image/png" href="Recurso%201.png" />
+<link rel="apple-touch-icon" href="logo_masterbetting_app.png" />
+
+<!-- Fondo negro inline para evitar flash blanco al navegar -->
+<style>html, body { background-color: #000 !important; }</style>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -23,8 +32,8 @@
   }
 </script>
 <style>
-  html, body { background: #000; color: #f5f5f7; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; min-height: 100vh; min-height: 100dvh; }
-  body { background-color: transparent; position: relative; z-index: 0; }
+  html, body { color: #f5f5f7; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; min-height: 100vh; min-height: 100dvh; }
+  body { background-color: transparent; position: relative; z-index: 0; font-family: 'Inter', system-ui, sans-serif; }
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background:
@@ -34,7 +43,32 @@
       radial-gradient(1000px 800px at 80% 95%, rgba(0,230,150,0.22),  transparent 60%),
       #000;
   }
-  body { font-family: 'Inter', system-ui, sans-serif; }
+
+  /* Soporte iPhone con Dynamic Island / notch */
+  body { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  /* Header sticky pegado al borde superior, debajo del Dynamic Island.
+     Con max(...) garantizamos un mínimo aunque iOS no calcule el inset. */
+  header.legal-header {
+    position: sticky; top: 0;
+    padding-top: max(env(safe-area-inset-top, 0px), 12px);
+    z-index: 50;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  @media (display-mode: standalone) {
+    header.legal-header { padding-top: max(env(safe-area-inset-top), 50px); }
+  }
+  /* Forzar font-size 16px en inputs (anti-zoom iOS) */
+  input, textarea, select { font-size: 16px !important; }
+
+  /* === Animación de entrada de la página (solo opacity, sin transform) === */
+  @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes glowSweep { 0%{opacity:0;} 35%{opacity:1;} 100%{opacity:1;} }
+  body { animation: pageFadeIn 0.45s ease-out both; }
+  body::before { animation: glowSweep 0.9s ease-out both; }
+
+  /* Estilos del cuerpo legal */
   .legal h2 { font-size: 1.4rem; font-weight: 600; color: #fff; margin-top: 2rem; margin-bottom: 0.75rem; letter-spacing: -0.02em; }
   .legal h3 { font-size: 1.1rem; font-weight: 600; color: #fff; margin-top: 1.5rem; margin-bottom: 0.5rem; }
   .legal p { color: rgba(245,245,247,0.78); line-height: 1.7; margin-bottom: 1rem; }
@@ -45,8 +79,8 @@
 </style>
 </head>
 <body>
-<header class="bg-transparent">
-  <div class="mx-auto flex max-w-4xl items-center justify-between gap-3 px-5 py-5 sm:px-8 sm:py-6">
+<header class="legal-header">
+  <div class="mx-auto flex max-w-4xl items-center justify-between gap-3 px-5 py-4 sm:px-8 sm:py-5">
     <a href="index.html" class="flex items-center gap-3">
       <img src="Recurso%201.png" alt="Master Betting" class="h-9 w-auto sm:h-11"/>
     </a>

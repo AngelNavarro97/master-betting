@@ -114,17 +114,20 @@
     text-align: center;
   }
 
-  /* === Animación de entrada de la página (sin flash blanco al navegar) === */
-  @keyframes pageFadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
+  /* === Animación de entrada de la página (sin flash blanco al navegar) ===
+     IMPORTANTE: solo animamos opacity, NO transform.
+     Cualquier transform en body crea un "containing block" que rompe
+     position:fixed de modales hijos. */
+  @keyframes pageFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
   @keyframes glowSweep {
     0%   { opacity: 0; }
     35%  { opacity: 1; }
     100% { opacity: 1; }
   }
-  body { animation: pageFadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  body { animation: pageFadeIn 0.45s ease-out both; }
   body::before { animation: glowSweep 0.9s ease-out both; }
 
   /* Fondo global con degradado verde "ambient".
@@ -1434,7 +1437,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-date-input-fix';
+const APP_VERSION = '2026-05-06-modal-fix-sticky-header';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
