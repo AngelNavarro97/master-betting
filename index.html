@@ -130,51 +130,6 @@
   body { animation: pageFadeIn 0.45s ease-out both; }
   body::before { animation: glowSweep 0.9s ease-out both; }
 
-  /* === Lock screen biométrico (Face ID / Touch ID) === */
-  .biolock-overlay {
-    position: fixed; inset: 0; z-index: 300;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.92);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    animation: pageFadeIn 0.3s ease-out;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  .biolock-card {
-    max-width: 380px; width: calc(100% - 2rem);
-    background: rgba(8,8,10,0.95);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 28px;
-    padding: 2rem 1.75rem;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
-  .biolock-icon {
-    width: 80px; height: 80px;
-    margin: 0 auto 1.25rem;
-    border-radius: 24px;
-    background: linear-gradient(135deg, rgba(0,230,150,0.18), rgba(16,185,129,0.08));
-    border: 1px solid rgba(0,230,150,0.35);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .biolock-card h2 { font-size: 22px; font-weight: 600; color: #fff; margin: 0; letter-spacing: -0.02em; }
-  .biolock-card p { font-size: 14px; color: rgba(245,245,247,0.72); line-height: 1.5; margin-top: 0.5rem; margin-bottom: 0; }
-  .biolock-unlock-btn {
-    margin-top: 1.5rem; width: 100%;
-    background: #00e696; color: #000; border: none;
-    padding: 0.85rem 1.5rem; border-radius: 9999px;
-    font-weight: 600; font-size: 15px; cursor: pointer;
-    transition: background 0.15s;
-    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-  }
-  .biolock-unlock-btn:hover { background: #34d399; }
-  .biolock-logout-btn {
-    margin-top: 0.5rem; width: 100%;
-    background: transparent; color: rgba(245,245,247,0.65); border: none;
-    padding: 0.65rem 1rem; font-size: 13px; cursor: pointer;
-  }
-  .biolock-logout-btn:hover { color: #fff; }
-
   /* === Banner de cookies (RGPD) === */
   .cookie-banner {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
@@ -1099,55 +1054,6 @@
 <!-- Bottom nav app-style del admin (móvil) -->
 <nav id="adminBottomNav" class="adm-bottom-nav hidden" aria-label="Navegación admin"></nav>
 
-<!-- Lock screen biométrico (Face ID / Touch ID) — solo se muestra si hay credencial guardada -->
-<div id="biolockOverlay" class="biolock-overlay" style="display:none;" role="dialog" aria-label="Desbloqueo biométrico">
-  <div class="biolock-card">
-    <div class="biolock-icon">
-      <!-- Icono Face ID estilizado -->
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#00e696" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
-        <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
-        <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
-        <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
-        <path d="M9 9v.5"/>
-        <path d="M15 9v.5"/>
-        <path d="M12 8v4l-1 1"/>
-        <path d="M9 15c1 1 4 1 6 0"/>
-      </svg>
-    </div>
-    <img src="Recurso%201.png" alt="Master Betting" style="height:28px;width:auto;margin:0 auto 0.75rem;display:block;"/>
-    <h2 id="biolockTitle">Bienvenido de nuevo</h2>
-    <p id="biolockSubtitle">Desbloquea con Face ID para acceder a tu cuenta.</p>
-    <button id="biolockUnlockBtn" class="biolock-unlock-btn" type="button">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M12 16v2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-      Desbloquear con Face ID
-    </button>
-    <button id="biolockLogoutBtn" class="biolock-logout-btn" type="button">Cerrar sesión y entrar con contraseña</button>
-  </div>
-</div>
-
-<!-- Modal de propuesta para activar Face ID tras primer login con remember-me -->
-<div id="bioOfferModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
-  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-bio-offer"></div>
-  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
-    <div class="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
-    <div class="relative">
-      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-accent-neon/40 bg-accent-neon/10">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00e696" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M9 9v.5"/><path d="M15 9v.5"/><path d="M12 8v4l-1 1"/><path d="M9 15c1 1 4 1 6 0"/>
-        </svg>
-      </div>
-      <h2 class="font-display text-2xl font-semibold tracking-tight text-white text-center">¿Activar <span class="text-accent-neon">Face ID</span>?</h2>
-      <p class="mt-3 text-center text-sm text-ink-200/80">Entra más rápido y de forma segura. iOS te pedirá guardar una <span class="text-white">llave de acceso</span> con Face ID — esto es lo mismo que tu Face ID.</p>
-      <p class="mt-2 text-center text-[12px] text-ink-500">A partir de la próxima vez, solo necesitarás mostrar tu cara para entrar.</p>
-      <div class="mt-6 flex flex-col gap-2 sm:flex-row">
-        <button type="button" data-action="close-bio-offer" class="flex-1 rounded-full border border-white/15 bg-white/5 py-3 text-sm font-medium text-white transition hover:bg-white/10">Ahora no</button>
-        <button type="button" id="bioOfferAcceptBtn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-accent-neon py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">Activar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Cookie banner (RGPD) — se muestra solo si el visitante no lo ha aceptado -->
 <div id="cookieBanner" class="cookie-banner" style="display:none;" role="dialog" aria-label="Aviso de cookies">
   <div class="cookie-banner-inner">
@@ -1593,7 +1499,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-faceid-pwa-only';
+const APP_VERSION = '2026-05-06-faceid-removed';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2500,108 +2406,6 @@ document.getElementById('togglePwBtn')?.addEventListener('click', () => {
 const REMEMBER_KEY = 'mb-session-expires';
 const REMEMBER_DAYS = 10;
 
-/* ============================================================
-   BIOMETRÍA (Face ID / Touch ID) — vía Web Authentication API
-   IMPORTANTE: solo se ofrece en modo PWA (añadida a pantalla de inicio).
-   En navegador normal, no aparece la opción ni el lock screen.
-============================================================ */
-const BIO_KEY_PREFIX = 'mb-bio-cred-';
-
-// ¿Estamos en modo PWA (standalone)? Solo entonces ofrecemos Face ID.
-function isStandaloneApp() {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.matchMedia('(display-mode: fullscreen)').matches ||
-    window.navigator.standalone === true // Safari iOS legacy
-  );
-}
-
-// ¿El navegador soporta WebAuthn con autenticador biométrico de plataforma?
-async function isBiometricAvailable() {
-  if (!window.PublicKeyCredential) return false;
-  try {
-    const has = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    return !!has;
-  } catch { return false; }
-}
-
-function hasBiometricCredentialFor(userId) {
-  return !!localStorage.getItem(BIO_KEY_PREFIX + userId);
-}
-
-function removeBiometricCredentialFor(userId) {
-  localStorage.removeItem(BIO_KEY_PREFIX + userId);
-}
-
-// Codifica/decodifica binario a base64 (URL-safe)
-function _b64u(buf) {
-  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-function _ub64(s) {
-  s = s.replace(/-/g,'+').replace(/_/g,'/');
-  const pad = s.length % 4; if (pad) s += '='.repeat(4 - pad);
-  return Uint8Array.from(atob(s), c => c.charCodeAt(0));
-}
-
-// Registra una credencial biométrica para este usuario.
-// Disparada por gesto de usuario (botón). Devuelve true si se guardó.
-async function registerBiometricCredential(userId, userName) {
-  if (!(await isBiometricAvailable())) return false;
-  try {
-    const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
-    const cred = await navigator.credentials.create({
-      publicKey: {
-        challenge,
-        rp: { name: 'Master Betting' },
-        user: {
-          id: new TextEncoder().encode(String(userId)),
-          name: userName || String(userId),
-          displayName: userName || String(userId),
-        },
-        pubKeyCredParams: [
-          { alg: -7, type: 'public-key' },   // ES256
-          { alg: -257, type: 'public-key' }, // RS256
-        ],
-        authenticatorSelection: {
-          authenticatorAttachment: 'platform', // Face ID / Touch ID, no llaves USB
-          userVerification: 'required',
-          residentKey: 'preferred',
-        },
-        timeout: 60000,
-        attestation: 'none',
-      }
-    });
-    if (!cred) return false;
-    localStorage.setItem(BIO_KEY_PREFIX + userId, _b64u(cred.rawId));
-    return true;
-  } catch (err) {
-    console.warn('[bio] registro fallido:', err);
-    return false;
-  }
-}
-
-// Verifica con Face ID / Touch ID. Devuelve true si la verificación tuvo éxito.
-async function verifyBiometricCredential(userId) {
-  const credIdB64 = localStorage.getItem(BIO_KEY_PREFIX + userId);
-  if (!credIdB64) return false;
-  if (!(await isBiometricAvailable())) return false;
-  try {
-    const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
-    await navigator.credentials.get({
-      publicKey: {
-        challenge,
-        allowCredentials: [{ type: 'public-key', id: _ub64(credIdB64) }],
-        userVerification: 'required',
-        timeout: 60000,
-      }
-    });
-    return true;
-  } catch (err) {
-    console.warn('[bio] verificación fallida:', err);
-    return false;
-  }
-}
-
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
@@ -2641,17 +2445,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     // Solo mientras la pestaña/PWA esté abierta
     sessionStorage.setItem(REMEMBER_KEY, 'session');
     localStorage.removeItem(REMEMBER_KEY);
-  }
-
-  // Ofrecer Face ID SOLO en modo PWA (app añadida a pantalla de inicio).
-  // En navegador normal no aparece ni la opción ni el lock screen.
-  if (isStandaloneApp() && !isAdmin(data.user.email)) {
-    const userId = data.user.id;
-    const userName = data.user.user_metadata?.name || data.user.email;
-    if (await isBiometricAvailable() && !hasBiometricCredentialFor(userId)) {
-      window.__pendingBioRegister = { userId, userName };
-      document.getElementById('bioOfferModal')?.classList.remove('hidden');
-    }
   }
 
   // Asegurar fila en clients (por si es un usuario antiguo sin perfil aún)
@@ -2733,31 +2526,14 @@ function isSessionStillValid() {
   }
 
   await ensureClientRow(session.user);
-  const userId = session.user.id;
-  const userName = session.user.user_metadata?.name || session.user.email;
-
-  // Función que continúa con el flujo de login normal
-  const proceedToPanel = async () => {
-    if (isAdmin(session.user.email)) {
-      sessionStorage.setItem('tipster-admin', 'true');
-      sessionStorage.removeItem('tipster-client');
-      await Promise.all([loadClientsFromSupabase(), loadPicksFromSupabase(), loadAllFollowedBets()]);
-      showAdmin();
-    } else {
-      await showClientFromSupabaseUser(session.user);
-    }
-  };
-
-  // Lock screen biométrico SOLO en modo PWA (app instalada).
-  // En navegador normal entra directamente al panel como antes.
-  if (isStandaloneApp() && hasBiometricCredentialFor(userId) && (await isBiometricAvailable())) {
-    window.__bioLockResume = proceedToPanel;
-    showBioLockScreen(userId, userName);
-    return;
+  if (isAdmin(session.user.email)) {
+    sessionStorage.setItem('tipster-admin', 'true');
+    sessionStorage.removeItem('tipster-client');
+    await Promise.all([loadClientsFromSupabase(), loadPicksFromSupabase(), loadAllFollowedBets()]);
+    showAdmin();
+  } else {
+    await showClientFromSupabaseUser(session.user);
   }
-
-  // Si no, entrar directamente
-  await proceedToPanel();
 })();
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -2768,9 +2544,6 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   hideAdmin();
 });
 document.getElementById('clientLogoutBtn').addEventListener('click', async () => {
-  // Borrar credencial biométrica del cliente actual (si la tiene)
-  const sess = (await sb.auth.getSession()).data.session;
-  if (sess?.user?.id) removeBiometricCredentialFor(sess.user.id);
   await sb.auth.signOut();
   sessionStorage.removeItem('tipster-client');
   localStorage.removeItem(REMEMBER_KEY);
@@ -4512,74 +4285,6 @@ async function openCustomerPortal() {
   }
 }
 document.getElementById('manageBillingBtn')?.addEventListener('click', openCustomerPortal);
-
-// === Modal de oferta para activar Face ID tras primer login con "Mantener 10 días" ===
-document.querySelectorAll('[data-action="close-bio-offer"]').forEach(el => {
-  el.addEventListener('click', () => {
-    document.getElementById('bioOfferModal')?.classList.add('hidden');
-    window.__pendingBioRegister = null;
-  });
-});
-document.getElementById('bioOfferAcceptBtn')?.addEventListener('click', async () => {
-  const pending = window.__pendingBioRegister;
-  if (!pending) return;
-  document.getElementById('bioOfferModal')?.classList.add('hidden');
-  const ok = await registerBiometricCredential(pending.userId, pending.userName);
-  if (ok) {
-    // Al activar Face ID, prolongamos la sesión a 60 días automáticamente
-    // (Supabase refresca el token al usarse, así la sesión se mantiene viva
-    // mientras el cliente entre regularmente).
-    const longExpiresAt = Date.now() + 60 * 24 * 60 * 60 * 1000;
-    localStorage.setItem(REMEMBER_KEY, String(longExpiresAt));
-    sessionStorage.removeItem(REMEMBER_KEY);
-    showToast('🔒 Face ID activado. A partir de ahora entrarás solo con Face ID.', 'ok');
-  } else {
-    showToast('No se pudo activar Face ID. Puedes seguir entrando con tu contraseña.', 'error');
-  }
-  window.__pendingBioRegister = null;
-});
-
-// === Lock screen biométrico al volver con sesión activa ===
-function showBioLockScreen(userId, userName) {
-  const overlay = document.getElementById('biolockOverlay');
-  if (!overlay) return;
-  document.getElementById('biolockTitle').textContent = userName ? `Hola, ${userName.split(' ')[0]}` : 'Bienvenido de nuevo';
-  // Detectar dispositivo para personalizar el texto
-  const isApple = /iPhone|iPad|Mac/.test(navigator.userAgent);
-  const bioName = isApple ? 'Face ID' : 'tu huella o reconocimiento facial';
-  document.getElementById('biolockSubtitle').textContent = `Desbloquea con ${bioName} para acceder a tu cuenta.`;
-  document.getElementById('biolockUnlockBtn').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M12 16v2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Desbloquear con ${bioName}`;
-  overlay.style.display = 'flex';
-  // Guardamos el userId actual para los handlers
-  window.__bioLockUserId = userId;
-}
-function hideBioLockScreen() {
-  const overlay = document.getElementById('biolockOverlay');
-  if (overlay) overlay.style.display = 'none';
-}
-
-document.getElementById('biolockUnlockBtn')?.addEventListener('click', async () => {
-  const userId = window.__bioLockUserId;
-  if (!userId) return;
-  const ok = await verifyBiometricCredential(userId);
-  if (ok) {
-    hideBioLockScreen();
-    // Continuar con el flujo de login que estaba en pausa
-    if (window.__bioLockResume) { window.__bioLockResume(); window.__bioLockResume = null; }
-  } else {
-    showToast('Verificación cancelada. Intenta de nuevo o usa contraseña.', 'error');
-  }
-});
-document.getElementById('biolockLogoutBtn')?.addEventListener('click', async () => {
-  hideBioLockScreen();
-  // Borrar credencial biométrica del usuario actual y forzar logout
-  const userId = window.__bioLockUserId;
-  if (userId) removeBiometricCredentialFor(userId);
-  await sb.auth.signOut();
-  localStorage.removeItem(REMEMBER_KEY);
-  sessionStorage.removeItem(REMEMBER_KEY);
-  location.reload();
-});
 
 // === Cookie banner (RGPD) ===
 (function() {
