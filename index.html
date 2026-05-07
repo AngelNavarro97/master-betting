@@ -1707,7 +1707,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-bookmaker-local-banners';
+const APP_VERSION = '2026-05-06-bookmaker-paths-fix';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -3128,7 +3128,7 @@ const BOOKMAKERS = [
   {
     id: 'bet365',
     name: 'Bet365',
-    logoUrl: 'bookmakers/bet365.png',
+    logoUrl: 'bet365.png',
     color: '#FFD700', textColor: '#0d0d0d', short: 'BET365',
     tagline: 'La casa más completa del mercado',
     features: ['Streaming gratis con depósito', 'Cash Out parcial', 'Mercados muy amplios'],
@@ -3137,7 +3137,7 @@ const BOOKMAKERS = [
   {
     id: 'bwin',
     name: 'Bwin',
-    logoUrl: 'bookmakers/bwin.png',
+    logoUrl: 'bwin.png',
     color: '#FFCC00', textColor: '#0d0d0d', short: 'BWIN',
     tagline: 'Patrocinador oficial de LaLiga',
     features: ['Cuotas mejoradas LaLiga', 'Apuestas en directo', 'App muy intuitiva'],
@@ -3146,7 +3146,7 @@ const BOOKMAKERS = [
   {
     id: '888sport',
     name: '888sport',
-    logoUrl: 'bookmakers/888sport.webp',
+    logoUrl: '888sport.webp',
     logoBg: '#ffffff', // Su banner es transparente, le ponemos fondo blanco
     color: '#F97316', textColor: '#ffffff', short: '888SPORT',
     tagline: 'Mejores cuotas en fútbol europeo',
@@ -3156,7 +3156,7 @@ const BOOKMAKERS = [
   {
     id: 'williamhill',
     name: 'William Hill',
-    logoUrl: 'bookmakers/williamhill.png',
+    logoUrl: 'williamhill.png',
     color: '#1B428A', textColor: '#ffffff', short: 'WILLIAM HILL',
     tagline: 'Casa histórica con licencia española',
     features: ['Apuestas en directo fluidas', 'Cobertura mundial', 'Soporte 24/7'],
@@ -3165,7 +3165,7 @@ const BOOKMAKERS = [
   {
     id: 'codere',
     name: 'Codere',
-    logoUrl: 'bookmakers/codere.jpg',
+    logoUrl: 'codere.jpg',
     color: '#E30613', textColor: '#ffffff', short: 'CODERE',
     tagline: 'Casa española con tradición',
     features: ['Mucho mercado nacional', 'Combinadas exclusivas', 'Promos para LaLiga'],
@@ -3174,7 +3174,7 @@ const BOOKMAKERS = [
   {
     id: 'sportium',
     name: 'Sportium',
-    logoUrl: 'bookmakers/sportium.jpg',
+    logoUrl: 'sportium.jpg',
     color: '#00A859', textColor: '#ffffff', short: 'SPORTIUM',
     tagline: 'Operador de Cirsa, fuerte en España',
     features: ['Cuotas competitivas', 'Apuestas mejoradas', 'Programa fidelidad'],
