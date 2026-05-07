@@ -78,19 +78,25 @@
      contra el alto del body (que sería corto) y la barra inferior "flota" arriba. */
   html, body { min-height: 100vh; min-height: 100dvh; }
 
-  /* Fondo global con degradado verde suave (fijo: no se mueve al hacer scroll).
-     Crea 4 halos verdes distribuidos por la pantalla que dan la estética de
-     todo el sitio, no solo de la sección hero. */
+  /* Fondo global con degradado verde "ambient".
+     Lo aplicamos en un pseudo-elemento ::before con position:fixed:
+     - Cubre toda la pantalla siempre.
+     - Funciona bien en iOS PWA (donde background-attachment:fixed falla).
+     - Es un único lienzo continuo sin cortes entre secciones. */
   html { background: #000; }
-  body {
-    background-color: transparent;
-    background-image:
-      radial-gradient(900px 700px at 18% 8%,  rgba(0,230,150,0.20),  transparent 60%),
-      radial-gradient(900px 700px at 82% 28%, rgba(16,185,129,0.16), transparent 60%),
-      radial-gradient(800px 600px at 25% 72%, rgba(34,197,94,0.14),  transparent 60%),
-      radial-gradient(900px 700px at 78% 92%, rgba(0,230,150,0.18),  transparent 60%);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+  body { background-color: transparent; position: relative; z-index: 0; }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(1000px 800px at 15% 10%, rgba(0,230,150,0.28),  transparent 60%),
+      radial-gradient(1100px 850px at 85% 30%, rgba(16,185,129,0.22), transparent 60%),
+      radial-gradient(900px 700px at 25% 75%,  rgba(34,197,94,0.18),  transparent 60%),
+      radial-gradient(1000px 800px at 80% 95%, rgba(0,230,150,0.22),  transparent 60%),
+      #000;
   }
   html { scroll-behavior: smooth; }
 
@@ -337,7 +343,7 @@
 <main id="top">
   <!-- HERO -->
   <section class="relative overflow-hidden">
-    <div class="absolute inset-0 -z-10 bg-gradient-hero"></div>
+    <!-- (degradado del hero eliminado: ahora usamos solo el fondo global del body) -->
     <div class="pointer-events-none absolute left-1/2 top-40 -z-10 h-[520px] w-[520px] -translate-x-1/2 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(0,230,150,0.25) 0%, rgba(16,185,129,0.15) 50%, transparent 80%);"></div>
     <div class="relative mx-auto flex max-w-6xl flex-col items-center px-5 pb-20 pt-32 text-center sm:px-6 sm:pb-28 sm:pt-52">
       <span class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-ink-200/80 backdrop-blur animate-fade-in sm:mb-6 sm:px-4 sm:text-xs">
@@ -365,7 +371,7 @@
 
   <!-- PLANES -->
   <section id="planes" class="relative section overflow-hidden">
-    <div class="pointer-events-none absolute inset-0 -z-10" style="background: radial-gradient(800px 500px at 50% 0%, rgba(34,197,94,0.10), transparent 60%);"></div>
+    <!-- (overlay de la sección eliminado para no crear bloques visibles) -->
     <div class="mx-auto max-w-6xl px-5 sm:px-6">
       <div class="mb-10 text-center sm:mb-16">
         <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">Planes</span>
@@ -738,7 +744,7 @@
 
   <!-- FINAL CTA -->
   <section class="relative section">
-    <div class="pointer-events-none absolute inset-0 -z-10 bg-gradient-hero opacity-70"></div>
+    <!-- (overlay del CTA final eliminado) -->
     <div class="mx-auto max-w-4xl px-5 text-center sm:px-6">
       <h2 class="font-display text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">Empieza hoy. <span class="text-gradient">El próximo pronóstico no espera.</span></h2>
       <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Únete a más de 1.200 suscriptores que ya forman parte de la comunidad.</p>
@@ -776,7 +782,7 @@
      ADMIN PANEL
      ================================================================ -->
 <div id="adminPanel" class="hidden">
-  <header class="border-b border-white/5 bg-black/30 backdrop-blur-md">
+  <header class="bg-transparent">
     <div class="mx-auto flex max-w-[1600px] flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
       <div class="flex items-center gap-4">
         <img src="Recurso%201.png" alt="Master Betting" class="h-10 w-auto sm:h-12 shrink-0"/>
@@ -953,7 +959,7 @@
      CLIENT PANEL
      ================================================================ -->
 <div id="clientPanel" class="hidden">
-  <header class="border-b border-white/5 bg-black/30 backdrop-blur-md">
+  <header class="bg-transparent">
     <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-4 sm:gap-4 sm:px-8 sm:py-5">
       <img src="Recurso%201.png" alt="Master Betting" class="h-9 w-auto sm:h-11 shrink-0"/>
       <div class="flex flex-nowrap items-center gap-1.5 sm:gap-2">
@@ -1339,7 +1345,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-unified-bg';
+const APP_VERSION = '2026-05-06-truly-unified';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
