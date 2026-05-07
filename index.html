@@ -1225,6 +1225,15 @@
         <span class="mt-1.5 block text-[11px] text-ink-500">Visible al cliente al desplegar la tarjeta. Justifica el precio del plan y aporta valor.</span>
       </label>
 
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Fixture ID — Live tracking (opcional)</span>
+        <input type="number" id="npFixtureId" placeholder="Ej: 1234567" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30"/>
+        <span class="mt-1.5 block text-[11px] text-ink-500">
+          Si lo rellenas, los clientes verán el marcador del partido en tiempo real durante el directo.
+          <a href="https://dashboard.api-football.com/soccer/fixtures" target="_blank" rel="noopener" class="text-accent-neon underline">Buscar fixture ID en API-Football →</a>
+        </span>
+      </label>
+
       <datalist id="npCompetitions"></datalist>
       <datalist id="npTeams"></datalist>
 
@@ -1272,7 +1281,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-onesignal-push';
+const APP_VERSION = '2026-05-06-live-tracking';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1687,6 +1696,11 @@ function pickFromDb(row) {
     result: row.result,
     events,
     analysis: row.analysis || null,
+    fixture_id: row.fixture_id || null,
+    live_status: row.live_status || null,
+    live_minute: row.live_minute || null,
+    live_score: row.live_score || null,
+    live_updated_at: row.live_updated_at || null,
     // Compat con código que mira al primer evento
     sport: first.sport,
     match: matchStr,
@@ -1709,6 +1723,84 @@ async function loadPicksFromSupabase() {
 }
 
 function pickWhen(p) { return `${p.date} ${p.time}`; }
+
+/* ============================================================
+   LIVE TRACKING — API-Football vía Edge Function
+============================================================ */
+// Estados que se consideran "el partido está en curso"
+const LIVE_STATUSES_IN_PLAY = new Set(['1H','2H','HT','ET','BT','P','LIVE']);
+// Estado "terminado"
+const LIVE_STATUSES_FINISHED = new Set(['FT','AET','PEN','AWD','WO','CANC']);
+
+function isFixtureLive(p) { return p.live_status && LIVE_STATUSES_IN_PLAY.has(p.live_status); }
+function isFixtureFinished(p) { return p.live_status && LIVE_STATUSES_FINISHED.has(p.live_status); }
+
+// Llama a la Edge Function api-football-proxy para obtener datos del fixture
+async function fetchFixtureFromAPI(fixtureId) {
+  const { data, error } = await sb.functions.invoke('api-football-proxy', {
+    body: null,
+    method: 'GET',
+    headers: {},
+  }).catch(err => ({ data: null, error: err }));
+  // sb.functions.invoke no soporta query params bien, hacemos fetch manual
+  const url = `${SUPABASE_URL}/functions/v1/api-football-proxy?fixture=${fixtureId}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (!json.response || !json.response[0]) return null;
+    return json.response[0];
+  } catch (err) {
+    console.error('[live] error fetch fixture', fixtureId, err);
+    return null;
+  }
+}
+
+// Actualiza un pick en la BD con los datos en vivo del fixture
+async function updatePickLiveData(pickId, fixture) {
+  const homeGoals = fixture.goals?.home;
+  const awayGoals = fixture.goals?.away;
+  const score = (homeGoals != null && awayGoals != null) ? `${homeGoals}-${awayGoals}` : null;
+  const update = {
+    live_status: fixture.fixture?.status?.short || null,
+    live_minute: fixture.fixture?.status?.elapsed || null,
+    live_score: score,
+    live_updated_at: new Date().toISOString(),
+  };
+  // Actualizar también el pool local
+  const p = monthlyPicksPool.find(x => x.id === pickId);
+  if (p) Object.assign(p, update);
+  await sb.from('picks').update(update).eq('id', pickId);
+}
+
+// Polling: cada 60s, busca picks con fixture_id que aún no han terminado y los actualiza
+let livePollingInterval = null;
+async function pollAllLiveFixtures() {
+  const candidates = monthlyPicksPool.filter(p => p.fixture_id && !isFixtureFinished(p));
+  if (candidates.length === 0) return;
+  for (const p of candidates) {
+    const lastUpdate = p.live_updated_at ? new Date(p.live_updated_at).getTime() : 0;
+    if (Date.now() - lastUpdate < 50000) continue; // cooldown de 50s
+    const fixture = await fetchFixtureFromAPI(p.fixture_id);
+    if (fixture) await updatePickLiveData(p.id, fixture);
+  }
+  // Re-renderizar la lista de picks del admin si la pestaña está activa
+  if (!document.getElementById('picksTab').classList.contains('hidden')) renderPicksAdmin();
+}
+
+function startLivePolling() {
+  if (livePollingInterval) return;
+  pollAllLiveFixtures(); // primer barrido inmediato
+  livePollingInterval = setInterval(pollAllLiveFixtures, 60000);
+}
+function stopLivePolling() {
+  if (livePollingInterval) { clearInterval(livePollingInterval); livePollingInterval = null; }
+}
 function availablePicksFor(client) {
   return monthlyPicksPool.filter(p => p.plans.includes(client.plan) && p.result === 'pending');
 }
@@ -1873,6 +1965,8 @@ function showClientView(clientId) {
   document.getElementById('clientBottomNav')?.classList.remove('hidden');
   // Identificar al cliente en OneSignal (etiquetar plan + email)
   identifyClientInOneSignal(c);
+  // Suscribirse a Realtime para recibir actualizaciones de live tracking en directo
+  subscribeToPicksRealtime();
   // Botón "Mejorar suscripción": solo visible para Basic y Pro (Exclusive ya está en lo más alto)
   const upgradeBtn = document.getElementById('upgradeBtn');
   if (upgradeBtn) {
@@ -2005,6 +2099,21 @@ async function logoutFromOneSignal() {
   window.OneSignalDeferred.push(async (OneSignal) => {
     try { await OneSignal.logout(); } catch(e) { /* ignorar */ }
   });
+}
+
+// Realtime: cuando un pick se actualiza (incluido el marcador en vivo), repintamos el panel
+let picksRealtimeChannel = null;
+function subscribeToPicksRealtime() {
+  if (picksRealtimeChannel) return;
+  picksRealtimeChannel = sb.channel('picks-live')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'picks' }, (payload) => {
+      const updated = pickFromDb(payload.new);
+      const idx = monthlyPicksPool.findIndex(p => p.id === updated.id);
+      if (idx >= 0) monthlyPicksPool[idx] = updated;
+      // Si estamos en la vista cliente, repintar el panel
+      if (activeClientId) rerenderCurrentClientPanel();
+    })
+    .subscribe();
 }
 
 // Botón "Enviar push" del admin: abre el dashboard de OneSignal en una pestaña nueva
@@ -2186,6 +2295,33 @@ function tierBadge(p) {
   if (p.tier === 'exclusive') return `<span class="rounded-full border border-amber-400/60 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Exclusive</span>`;
   if (p.tier === 'funbet') return `<span class="rounded-full border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Funbet</span>`;
   return '';
+}
+
+// Bloque LIVE — marcador en vivo del partido (si hay fixture_id y datos)
+function liveBlockHTML(p) {
+  if (!p.fixture_id || !p.live_status) return '';
+  const inPlay = isFixtureLive(p);
+  const finished = isFixtureFinished(p);
+  const score = p.live_score || '-';
+  let label, dotClass, boxClass;
+  if (inPlay) {
+    label = `EN VIVO${p.live_minute ? ` · ${p.live_minute}'` : ''}${p.live_status==='HT' ? ' · DESCANSO' : ''}`;
+    dotClass = 'bg-red-400 animate-pulse';
+    boxClass = 'border-red-400/40 bg-red-400/10 text-red-300';
+  } else if (finished) {
+    label = 'FINAL';
+    dotClass = 'bg-ink-400';
+    boxClass = 'border-white/15 bg-white/5 text-ink-200';
+  } else {
+    label = p.live_status;
+    dotClass = 'bg-amber-300';
+    boxClass = 'border-amber-400/30 bg-amber-400/5 text-amber-300';
+  }
+  return `<div class="mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${boxClass}">
+    <span class="inline-block h-2 w-2 rounded-full ${dotClass}"></span>
+    <span>${label}</span>
+    <span class="text-white font-display text-sm tracking-tight">${score}</span>
+  </div>`;
 }
 
 // Bloque desplegable con el análisis del pronóstico (si existe)
@@ -2759,6 +2895,7 @@ function followedBetCardClient(b) {
         </div>
         ${eventVisual ? `<div class="mt-2.5">${eventVisual}</div>` : `<h4 class="mt-1.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
         ${isCombined ? '' : `<p class="mt-2 text-xs text-ink-200/85">${fe.pickType||''}</p>`}
+        ${liveBlockHTML(p)}
       </div>
       ${badge}
     </div>
@@ -2980,6 +3117,7 @@ function availablePickCard(p, c, forAdmin) {
     ${headerLineHTML}
     ${eventVisual ? `<div class="mt-3">${eventVisual}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
     ${isCombined ? '' : `<p class="mt-2.5 text-sm text-ink-200/85">${fe.pickType}</p>`}
+    ${liveBlockHTML(p)}
     ${isCombined ? `<div class="mt-3 flex items-center justify-between rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Cuota total combinada</span><span class="font-display text-lg font-bold text-amber-200">${totalOdds.toFixed(2)}</span></div>` : ''}
     ${analysisBlockHTML(p)}
     <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-white/5 pt-3 text-xs">
@@ -3172,6 +3310,8 @@ function switchTab(tab) {
   else if (tab === 'rankings') { document.getElementById('rankingsTab').classList.remove('hidden'); renderRankings(); }
   else if (tab === 'results') { document.getElementById('resultsTab').classList.remove('hidden'); renderResultsAdmin(); }
   else if (tab === 'chat') { document.getElementById('chatTab').classList.remove('hidden'); openChat(); }
+  // Live polling: solo activo cuando admin está en la pestaña Pronósticos
+  if (tab === 'picks') startLivePolling(); else stopLivePolling();
   // Mantener sincronizada la barra inferior del admin
   renderAdminBottomNav(tab);
 }
@@ -3245,6 +3385,7 @@ function pickAdminCard(p) {
         </div>
         ${eventBlock(p, true) ? `<div class="mt-3">${eventBlock(p, true)}</div>` : `<h4 class="mt-2 font-display text-base font-semibold text-white break-words">${p.match || ''}</h4>`}
         ${isCombined ? '' : `<p class="mt-2 text-sm text-ink-200/80">${fe.pickType}</p>`}
+        ${liveBlockHTML(p)}
         ${analysisBlockHTML(p)}
         <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
           <div><span class="text-ink-500">Cuota${isCombined ? ' total' : ''}</span> <span class="ml-1 font-semibold text-white">${totalOdds.toFixed(2)}</span></div>
@@ -3485,6 +3626,8 @@ document.getElementById('newPickForm').addEventListener('submit', async (e) => {
   const stake = parseFloat(document.getElementById('npStake').value);
   const tier = document.getElementById('npTier').value;
   const analysis = document.getElementById('npAnalysis').value.trim() || null;
+  const fixtureIdRaw = document.getElementById('npFixtureId').value.trim();
+  const fixture_id = fixtureIdRaw ? parseInt(fixtureIdRaw, 10) : null;
   const plans = Array.from(document.querySelectorAll('input[name="np-plan"]:checked')).map(cb => cb.value);
   if (!date || !time) return fail('Rellena fecha y hora.');
   if (!stake || stake <= 0) return fail('El stake debe ser mayor que 0.');
@@ -3524,6 +3667,7 @@ document.getElementById('newPickForm').addEventListener('submit', async (e) => {
     total_odds: totalOdds,
     events,
     analysis,
+    fixture_id,
   }).select().single();
 
   submitBtn.disabled = false; submitBtn.textContent = oldText;
