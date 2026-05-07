@@ -126,12 +126,26 @@
 
   /* Bottom nav app-style (móvil) — visible solo bajo el breakpoint sm */
   .cli-bottom-nav {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-    background: rgba(8,8,10,0.92);
+    position: fixed !important;
+    left: 0; right: 0; bottom: 0;
+    /* Doble por compatibilidad: iOS PWA a veces ignora bottom:0 */
+    inset-block-end: 0;
+    z-index: 60;
+    background: rgba(8,8,10,0.95);
     border-top: 1px solid rgba(255,255,255,0.08);
     backdrop-filter: saturate(160%) blur(16px);
     -webkit-backdrop-filter: saturate(160%) blur(16px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Forzar compositing layer (estabiliza fixed en iOS PWA) */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+    /* Evita rebote raro al deslizar */
+    touch-action: pan-y;
+  }
+  /* En PWA standalone, asegurar que la barra nunca queda detrás del notch inferior */
+  @media (display-mode: standalone) {
+    .cli-bottom-nav { bottom: 0 !important; padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.6rem); }
   }
   .cli-bnav-grid { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 0.45rem 0.25rem 0.4rem; gap: 0.15rem; }
   .cli-bnav-btn {
@@ -1171,7 +1185,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-bottom-nav-stable';
+const APP_VERSION = '2026-05-06-bottom-nav-pwa';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2336,7 +2350,9 @@ function statsPanelHTML(c, forAdmin) {
     panel = monthlyResultsHTML('personal', c);
   }
 
-  return `${headerHTML}${pills}<div data-client-panel-body data-client-id="${c.id}">${panel}</div>`;
+  // El saludo "Mi cuenta · Hola, [nombre]" solo lo mostramos en la pestaña Resumen
+  const headerVisible = tab === 'summary' ? headerHTML : '';
+  return `${headerVisible}${pills}<div data-client-panel-body data-client-id="${c.id}">${panel}</div>`;
 }
 
 // Estado del tab cliente activo
