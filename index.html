@@ -878,6 +878,8 @@
     </div>
   </header>
   <div id="clientStatsContent" class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8"></div>
+  <!-- Bottom nav app-style (móvil) — elemento estático, su contenido se actualiza por JS -->
+  <nav id="clientBottomNav" class="cli-bottom-nav sm:hidden" aria-label="Navegación"></nav>
 </div>
 
 <!-- ================================================================
@@ -1169,7 +1171,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-bottom-nav';
+const APP_VERSION = '2026-05-06-bottom-nav-stable';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -1816,7 +1818,14 @@ document.addEventListener('click', (e) => {
   const plan = btn.dataset.upgradePlan;
   alert(`Para mejorar al plan ${plan}, contacta con el equipo a través del chat de Telegram. La compra automática estará disponible cuando se active la pasarela de pago.`);
 });
-function hideClientView() { activeClientId = null; clientPanel.classList.add('hidden'); publicSite.classList.remove('hidden'); document.body.classList.remove('client-active'); window.scrollTo(0, 0); }
+function hideClientView() {
+  activeClientId = null;
+  clientPanel.classList.add('hidden');
+  publicSite.classList.remove('hidden');
+  document.body.classList.remove('client-active');
+  const nav = document.getElementById('clientBottomNav'); if (nav) nav.innerHTML = '';
+  window.scrollTo(0, 0);
+}
 
 document.querySelectorAll('[data-action="open-login"]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); openLogin(); }));
 document.querySelectorAll('[data-action="close-login"]').forEach(el => el.addEventListener('click', closeLogin));
@@ -2291,7 +2300,7 @@ function statsPanelHTML(c, forAdmin) {
   };
 
   // Pills de arriba (desktop) — ocultos en móvil
-  const pillsTop = `
+  const pills = `
     <div class="mb-6 pills-scroller hidden sm:block">
       <div class="inline-flex flex-nowrap whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] p-1">
         <button data-ctab="summary"  class="cli-tab ${tab==='summary'?'active':''}">Resumen</button>
@@ -2305,26 +2314,11 @@ function statsPanelHTML(c, forAdmin) {
       </div>
     </div>`;
 
-  // Bottom nav app-style (móvil)
-  const bnavBtn = (key, label, opts = {}) => {
-    const cls = `cli-bnav-btn${opts.amber ? ' amber' : ''}${tab===key ? ' active' : ''}`;
-    const badge = (key === 'mybets' && pendingCount > 0)
-      ? `<span class="cli-bnav-badge">${pendingCount}</span>` : '';
-    return `<button data-ctab="${key}" class="${cls}">${ICON[key]}${badge}<span class="label">${label}</span></button>`;
-  };
-  const pillsBottom = `
-    <nav class="cli-bottom-nav sm:hidden" aria-label="Navegación">
-      <div class="cli-bnav-grid">
-        ${bnavBtn('summary',  'Resumen')}
-        ${bnavBtn('picks',    'Apuestas')}
-        ${showPremium ? bnavBtn('premium', 'Exclusive', { amber: true }) : ''}
-        ${bnavBtn('mybets',   'Mis apuestas')}
-        ${bnavBtn('team',     'Resultados')}
-        ${bnavBtn('mystats',  'Estadísticas')}
-      </div>
-    </nav>`;
-
-  const pills = pillsTop + pillsBottom;
+  // Actualizamos la barra inferior estática (móvil) cada vez que cambia el render
+  // Lo hacemos en un microtask para que el DOM ya esté inserto cuando pintemos.
+  setTimeout(() => updateClientBottomNav(c, tab, showPremium, pendingCount), 0);
+  // Iconos accesibles desde la función externa también
+  window.__cliIconSet = ICON;
 
   // Renderizar el panel activo
   let panel = '';
@@ -2347,6 +2341,29 @@ function statsPanelHTML(c, forAdmin) {
 
 // Estado del tab cliente activo
 let currentClientTab = 'summary';
+
+// Actualiza el contenido de la barra inferior estática (móvil)
+// Se llama tras cada render del panel cliente
+function updateClientBottomNav(c, activeTab, showPremium, pendingCount) {
+  const nav = document.getElementById('clientBottomNav');
+  if (!nav) return;
+  const ICON = window.__cliIconSet;
+  if (!ICON) return;
+  const bnavBtn = (key, label, amber=false) => {
+    const cls = `cli-bnav-btn${amber ? ' amber' : ''}${activeTab===key ? ' active' : ''}`;
+    const badge = (key === 'mybets' && pendingCount > 0)
+      ? `<span class="cli-bnav-badge">${pendingCount}</span>` : '';
+    return `<button data-ctab="${key}" class="${cls}">${ICON[key]}${badge}<span class="label">${label}</span></button>`;
+  };
+  nav.innerHTML = `<div class="cli-bnav-grid">
+    ${bnavBtn('summary',  'Resumen')}
+    ${bnavBtn('picks',    'Apuestas')}
+    ${showPremium ? bnavBtn('premium', 'Exclusive', true) : ''}
+    ${bnavBtn('mybets',   'Mis apuestas')}
+    ${bnavBtn('team',     'Resultados')}
+    ${bnavBtn('mystats',  'Estadísticas')}
+  </div>`;
+}
 
 // Cuenta apuestas seguidas del cliente cuyo pick está aún pendiente
 function countPendingFollowedBets(clientId) {
