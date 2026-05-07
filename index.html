@@ -1707,7 +1707,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-recover-session-fix';
+const APP_VERSION = '2026-05-06-remove-team-stats';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -3033,9 +3033,9 @@ function statsPanelHTML(c, forAdmin) {
     picks:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 8a3 3 0 0 0 3-3V4a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1a3 3 0 0 0 3 3v8a3 3 0 0 0-3 3v1a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-1a3 3 0 0 0-3-3V8z"/><path d="M9 8v8M14 8v3M14 14v2"/></svg>',
     premium:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
     mybets:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
-    team:     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>',
-    mystats:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    mystats:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>',
     missions: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15L2.66 7.14a2 2 0 0 1 0-2L4.81 1.5a2 2 0 0 1 1.73-1h10.92a2 2 0 0 1 1.73 1l2.15 3.64a2 2 0 0 1 0 2L16.79 15"/><circle cx="12" cy="17" r="5"/><path d="M12 14v6"/></svg>',
+    bookies:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-9h6v9"/></svg>',
   };
 
   // Pills de arriba (desktop) — ocultos en móvil
@@ -3049,7 +3049,7 @@ function statsPanelHTML(c, forAdmin) {
           Exclusive</button>` : ''}
         <button data-ctab="mybets"   class="cli-tab ${tab==='mybets'?'active':''}">Mis apuestas${pendingCount>0?`<span class="cli-badge">${pendingCount}</span>`:''}</button>
         <button data-ctab="missions" class="cli-tab ${tab==='missions'?'active':''}">Misiones</button>
-        <button data-ctab="team"     class="cli-tab ${tab==='team'?'active':''}">Resultados generales</button>
+        <button data-ctab="bookies"  class="cli-tab ${tab==='bookies'?'active':''}">Casas</button>
         <button data-ctab="mystats"  class="cli-tab ${tab==='mystats'?'active':''}">Mis estadísticas</button>
       </div>
     </div>`;
@@ -3072,8 +3072,8 @@ function statsPanelHTML(c, forAdmin) {
     panel = followedBetsClientHTML(c);
   } else if (tab === 'missions') {
     panel = missionsTabHTML(c);
-  } else if (tab === 'team') {
-    panel = monthlyResultsHTML('global', null);
+  } else if (tab === 'bookies') {
+    panel = bookmakersTabHTML();
   } else if (tab === 'mystats') {
     panel = monthlyResultsHTML('personal', c);
   }
@@ -3105,7 +3105,7 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount) {
     ${showPremium ? bnavBtn('premium', 'Exclusive', true) : ''}
     ${bnavBtn('mybets',   'Mis apuestas')}
     ${bnavBtn('missions', 'Misiones')}
-    ${bnavBtn('team',     'Resultados')}
+    ${bnavBtn('bookies',  'Casas')}
     ${bnavBtn('mystats',  'Stats')}
   </div>`;
 }
@@ -3117,6 +3117,113 @@ function countPendingFollowedBets(clientId) {
     const p = picksById[b.pickId];
     return p && pickResult(p) === 'pending';
   }).length;
+}
+
+/* ============================================================
+   CASAS DE APUESTAS RECOMENDADAS — afiliación
+   Solo visible en el panel del cliente (área privada).
+   NO mostrar en home pública por la RD 958/2020.
+============================================================ */
+const BOOKMAKERS = [
+  {
+    id: 'bet365',
+    name: 'Bet365',
+    color: '#FFD700',
+    textColor: '#0d0d0d',
+    short: 'BET365',
+    tagline: 'La casa más completa del mercado',
+    features: ['Streaming gratis con depósito', 'Cash Out parcial', 'Mercados muy amplios'],
+    url: '#tracker-pendiente', // TODO: pegar aquí el enlace de afiliado
+  },
+  {
+    id: 'bwin',
+    name: 'Bwin',
+    color: '#FFCC00',
+    textColor: '#0d0d0d',
+    short: 'BWIN',
+    tagline: 'Patrocinador oficial de LaLiga',
+    features: ['Cuotas mejoradas LaLiga', 'Apuestas en directo', 'App muy intuitiva'],
+    url: '#tracker-pendiente',
+  },
+  {
+    id: '888sport',
+    name: '888sport',
+    color: '#F97316',
+    textColor: '#ffffff',
+    short: '888SPORT',
+    tagline: 'Mejores cuotas en fútbol europeo',
+    features: ['Cuotas top en Champions', 'Combinadas con boost', 'Estadísticas integradas'],
+    url: '#tracker-pendiente',
+  },
+  {
+    id: 'williamhill',
+    name: 'William Hill',
+    color: '#1B428A',
+    textColor: '#ffffff',
+    short: 'WILLIAM HILL',
+    tagline: 'Casa histórica con licencia española',
+    features: ['Apuestas en directo fluidas', 'Cobertura mundial', 'Soporte 24/7'],
+    url: '#tracker-pendiente',
+  },
+  {
+    id: 'codere',
+    name: 'Codere',
+    color: '#E30613',
+    textColor: '#ffffff',
+    short: 'CODERE',
+    tagline: 'Casa española con tradición',
+    features: ['Mucho mercado nacional', 'Combinadas exclusivas', 'Promos para LaLiga'],
+    url: '#tracker-pendiente',
+  },
+  {
+    id: 'sportium',
+    name: 'Sportium',
+    color: '#00A859',
+    textColor: '#ffffff',
+    short: 'SPORTIUM',
+    tagline: 'Operador de Cirsa, fuerte en España',
+    features: ['Cuotas competitivas', 'Apuestas mejoradas', 'Programa fidelidad'],
+    url: '#tracker-pendiente',
+  },
+];
+
+function bookmakerCardHTML(b) {
+  const hasTracker = b.url && b.url !== '#tracker-pendiente';
+  const btnText = hasTracker ? `Visitar ${b.name}` : 'Próximamente';
+  const btnDisabled = hasTracker ? '' : 'opacity-60 cursor-not-allowed';
+  const btnAttrs = hasTracker ? `href="${b.url}" target="_blank" rel="noopener nofollow sponsored"` : 'href="#" onclick="event.preventDefault();"';
+  return `<article class="gradient-border rounded-2xl bg-white/[0.02] p-5 flex flex-col">
+    <div class="flex items-center justify-center rounded-xl px-4 py-5 text-center font-display text-xl font-bold tracking-wide" style="background:${b.color};color:${b.textColor};">${b.short}</div>
+    <h4 class="mt-4 font-display text-lg font-semibold text-white">${b.name}</h4>
+    <p class="mt-1 text-xs text-ink-200/70">${b.tagline}</p>
+    <ul class="mt-3 space-y-1.5 text-xs text-ink-200/85">
+      ${b.features.map(f => `<li class="flex items-start gap-2"><span class="text-accent-neon mt-0.5">✓</span><span>${f}</span></li>`).join('')}
+    </ul>
+    <a ${btnAttrs} class="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-black hover:bg-ink-200 transition ${btnDisabled}">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      ${btnText}
+    </a>
+  </article>`;
+}
+
+function bookmakersTabHTML() {
+  return `<div>
+    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Afiliación</span></div>
+    <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">Casas recomendadas</h3>
+    <p class="mt-1 text-sm text-ink-500">Operadores con licencia española que recomendamos para complementar tus apuestas. Selección cuidada por nuestro equipo.</p>
+
+    <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      ${BOOKMAKERS.map(bookmakerCardHTML).join('')}
+    </div>
+
+    <!-- AVISO LEGAL OBLIGATORIO -->
+    <div class="mt-10 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+      <p class="text-sm text-amber-200/85 leading-relaxed">
+        <strong class="text-amber-300">Juega con responsabilidad.</strong> Las apuestas conllevan riesgo de perder dinero. Solo para mayores de 18 años. Apuesta solo lo que puedas permitirte perder. Si crees que tienes un problema con el juego, busca ayuda en <a href="https://www.jugarbien.es" target="_blank" rel="noopener" class="text-accent-neon underline">jugarbien.es</a> o llamando al <a href="tel:900200225" class="text-accent-neon underline">900 200 225</a> (gratuito).
+      </p>
+      <p class="mt-2 text-xs text-ink-500">Master Betting puede recibir una comisión por las personas que se registren en estas casas a través de nuestros enlaces. Esto no afecta a las opiniones ni recomendaciones de nuestro equipo.</p>
+    </div>
+  </div>`;
 }
 
 /* ============================================================
@@ -4566,7 +4673,7 @@ document.addEventListener('click', async (e) => {
   currentClientTab = newTab;
   // Pestañas que dependen de datos frescos (picks + followed_bets)
   // Si el admin borra/cierra picks, las misiones y stats deben actualizarse al instante.
-  const dataTabs = ['team', 'mystats', 'mybets', 'summary', 'missions'];
+  const dataTabs = ['mystats', 'mybets', 'summary', 'missions'];
   if (dataTabs.includes(newTab)) {
     try {
       await loadPicksFromSupabase();
