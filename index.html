@@ -1342,6 +1342,61 @@
   </div>
 </div>
 
+<!-- EDIT PROFILE MODAL (cliente) -->
+<div id="profileModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-profile"></div>
+  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
+    <div class="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
+    <div class="relative">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
+          <h2 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white">Editar perfil</h2>
+        </div>
+        <button data-action="close-profile" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button>
+      </div>
+      <p class="mt-2 text-sm text-ink-200/70">Cambia tu email o tu contraseña. Los cambios se sincronizan al instante.</p>
+
+      <!-- SECCIÓN EMAIL -->
+      <div class="mt-6">
+        <h3 class="font-display text-base font-semibold text-white">Email</h3>
+        <p id="profileCurrentEmail" class="mt-1 text-xs text-ink-500">Email actual: <span class="text-ink-200/85"></span></p>
+        <label class="mt-3 block">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Nuevo email</span>
+          <input id="profileNewEmail" type="email" autocomplete="email" placeholder="nuevo@email.com" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+        </label>
+        <p id="profileEmailMsg" class="hidden mt-2 rounded-xl border px-3 py-2 text-xs"></p>
+        <button type="button" id="profileEmailBtn" class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-ink-200">Actualizar email</button>
+        <p class="mt-2 text-[11px] text-ink-500">Recibirás un enlace de confirmación en el nuevo correo. El cambio se aplicará al pulsarlo.</p>
+      </div>
+
+      <div class="my-6 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+
+      <!-- SECCIÓN CONTRASEÑA -->
+      <div>
+        <h3 class="font-display text-base font-semibold text-white">Contraseña</h3>
+        <p class="mt-1 text-xs text-ink-500">Mínimo 6 caracteres.</p>
+        <label class="mt-3 block">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Nueva contraseña</span>
+          <div class="relative mt-2">
+            <input id="profileNewPw" type="password" autocomplete="new-password" placeholder="••••••••" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 pr-12 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+            <button type="button" id="profileTogglePw" aria-label="Mostrar contraseña" class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-white/5 hover:text-white">
+              <svg id="profileEyeShow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg id="profileEyeHide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+        </label>
+        <label class="mt-3 block">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Repetir contraseña</span>
+          <input id="profileNewPw2" type="password" autocomplete="new-password" placeholder="••••••••" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+        </label>
+        <p id="profilePwMsg" class="hidden mt-2 rounded-xl border px-3 py-2 text-xs"></p>
+        <button type="button" id="profilePwBtn" class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-ink-200">Actualizar contraseña</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- AGE VERIFICATION MODAL -->
 <div id="ageModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-age"></div>
@@ -1601,7 +1656,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-missions-refresh-mobile-menu';
+const APP_VERSION = '2026-05-06-edit-profile';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2876,6 +2931,10 @@ function statsPanelHTML(c, forAdmin) {
       <div class="flex flex-wrap items-center gap-3">
         <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${c.name}</h2>
         <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.cls}">${status.label}</span>
+        <button type="button" data-action="open-profile" class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-medium text-white transition hover:border-white/30 hover:bg-white/10">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar perfil
+        </button>
       </div>
       <p class="text-sm text-ink-500">Plan ${c.plan} · ${fmtEuro(c.price)}/mes · alta el ${c.joinedAt}</p>
     </div>`;
@@ -4595,6 +4654,88 @@ async function openCustomerPortal() {
   }
 }
 document.getElementById('manageBillingBtn')?.addEventListener('click', openCustomerPortal);
+
+// === Modal "Editar perfil" del cliente ===
+function openProfileModal() {
+  const c = clients.find(x => x.id === activeClientId);
+  if (!c) return;
+  document.querySelector('#profileCurrentEmail span').textContent = c.email;
+  document.getElementById('profileNewEmail').value = '';
+  document.getElementById('profileNewPw').value = '';
+  document.getElementById('profileNewPw2').value = '';
+  document.getElementById('profileEmailMsg').classList.add('hidden');
+  document.getElementById('profilePwMsg').classList.add('hidden');
+  document.getElementById('profileModal').classList.remove('hidden');
+}
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.add('hidden');
+}
+
+// Abrir desde la pill "Editar perfil"
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action="open-profile"]');
+  if (btn) { e.preventDefault(); openProfileModal(); }
+});
+document.querySelectorAll('[data-action="close-profile"]').forEach(el => el.addEventListener('click', closeProfileModal));
+
+// Mostrar / ocultar feedback en el modal
+function showProfileMsg(elId, text, type = 'ok') {
+  const el = document.getElementById(elId);
+  el.textContent = text;
+  el.className = 'mt-2 rounded-xl border px-3 py-2 text-xs ' +
+    (type === 'ok'
+      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+      : 'border-red-500/40 bg-red-500/10 text-red-300');
+}
+
+// Toggle ojo de la nueva contraseña
+document.getElementById('profileTogglePw')?.addEventListener('click', () => {
+  const input = document.getElementById('profileNewPw');
+  const show = document.getElementById('profileEyeShow');
+  const hide = document.getElementById('profileEyeHide');
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  show.classList.toggle('hidden', isHidden);
+  hide.classList.toggle('hidden', !isHidden);
+});
+
+// Actualizar EMAIL
+document.getElementById('profileEmailBtn')?.addEventListener('click', async () => {
+  const newEmail = document.getElementById('profileNewEmail').value.trim().toLowerCase();
+  if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+    return showProfileMsg('profileEmailMsg', 'Introduce un email válido.', 'error');
+  }
+  const c = clients.find(x => x.id === activeClientId);
+  if (c && c.email.toLowerCase() === newEmail) {
+    return showProfileMsg('profileEmailMsg', 'Ese ya es tu email actual.', 'error');
+  }
+  const btn = document.getElementById('profileEmailBtn');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  // 1) Cambia el email en Supabase Auth (envía email de confirmación al nuevo correo)
+  const { error: authErr } = await sb.auth.updateUser({ email: newEmail });
+  btn.disabled = false; btn.textContent = 'Actualizar email';
+  if (authErr) return showProfileMsg('profileEmailMsg', 'Error: ' + authErr.message, 'error');
+  // 2) También en la tabla clients (lo verá el admin actualizado)
+  await sb.from('clients').update({ email: newEmail }).eq('id', activeClientId);
+  if (c) c.email = newEmail; // memoria local
+  showProfileMsg('profileEmailMsg', '✓ Listo. Hemos enviado un email de confirmación al nuevo correo. Pulsa el enlace para confirmar el cambio.', 'ok');
+});
+
+// Actualizar CONTRASEÑA
+document.getElementById('profilePwBtn')?.addEventListener('click', async () => {
+  const pw1 = document.getElementById('profileNewPw').value;
+  const pw2 = document.getElementById('profileNewPw2').value;
+  if (pw1.length < 6) return showProfileMsg('profilePwMsg', 'La contraseña debe tener al menos 6 caracteres.', 'error');
+  if (pw1 !== pw2) return showProfileMsg('profilePwMsg', 'Las contraseñas no coinciden.', 'error');
+  const btn = document.getElementById('profilePwBtn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const { error } = await sb.auth.updateUser({ password: pw1 });
+  btn.disabled = false; btn.textContent = 'Actualizar contraseña';
+  if (error) return showProfileMsg('profilePwMsg', 'Error: ' + error.message, 'error');
+  document.getElementById('profileNewPw').value = '';
+  document.getElementById('profileNewPw2').value = '';
+  showProfileMsg('profilePwMsg', '✓ Contraseña actualizada correctamente. La próxima vez usa la nueva.', 'ok');
+});
 
 // === Cookie banner (RGPD) ===
 (function() {
