@@ -150,35 +150,47 @@
   .progress-fill.amber { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
   .progress-fill.red { background: linear-gradient(90deg, #f87171, #ef4444); }
 
-  /* Insignias circulares estilo medalla */
+  /* Insignias circulares estilo medalla — más pequeñas en móvil, grandes en desktop */
   .badge-medal {
     position: relative;
-    width: 88px; height: 88px;
+    width: 56px; height: 56px;
     display: flex; align-items: center; justify-content: center;
     border-radius: 50%;
     flex-shrink: 0;
     transition: transform 0.2s ease;
   }
+  @media (min-width: 640px) {
+    .badge-medal { width: 88px; height: 88px; }
+  }
   .badge-medal:hover { transform: scale(1.05); }
   .badge-medal::before {
-    content: ""; position: absolute; inset: -4px;
-    border-radius: 50%; padding: 4px;
+    content: ""; position: absolute; inset: -3px;
+    border-radius: 50%; padding: 3px;
     background: var(--badge-ring, conic-gradient(from 0deg, #00e696, #22c55e, #10b981, #00e696));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor; mask-composite: exclude;
+  }
+  @media (min-width: 640px) {
+    .badge-medal::before { inset: -4px; padding: 4px; }
   }
   .badge-medal-inner {
     width: 100%; height: 100%; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     background: var(--badge-bg, radial-gradient(circle at 30% 30%, rgba(0,230,150,0.45), rgba(6,78,59,0.55)));
-    box-shadow: 0 6px 20px rgba(0,230,150,0.25), inset 0 -2px 8px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 12px rgba(0,230,150,0.2), inset 0 -2px 6px rgba(0,0,0,0.4);
+  }
+  @media (min-width: 640px) {
+    .badge-medal-inner { box-shadow: 0 6px 20px rgba(0,230,150,0.25), inset 0 -2px 8px rgba(0,0,0,0.4); }
   }
   .badge-medal.locked { filter: grayscale(1) brightness(0.55); opacity: 0.55; }
   .badge-medal.locked::before { background: rgba(255,255,255,0.12); }
   .badge-medal.locked .badge-medal-inner { background: rgba(40,40,45,0.7); box-shadow: none; }
   .badge-medal.amber { --badge-ring: conic-gradient(from 0deg, #fbbf24, #f59e0b, #d97706, #fbbf24); --badge-bg: radial-gradient(circle at 30% 30%, rgba(252,211,77,0.45), rgba(120,53,15,0.55)); }
   .badge-medal.red   { --badge-ring: conic-gradient(from 0deg, #f87171, #ef4444, #b91c1c, #f87171); --badge-bg: radial-gradient(circle at 30% 30%, rgba(248,113,113,0.45), rgba(127,29,29,0.55)); }
-  .badge-medal svg { width: 36px; height: 36px; color: #fff; }
+  .badge-medal svg { width: 22px; height: 22px; color: #fff; }
+  @media (min-width: 640px) {
+    .badge-medal svg { width: 36px; height: 36px; }
+  }
 
   /* === Banner de cookies (RGPD) === */
   .cookie-banner {
@@ -1572,7 +1584,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-missions-panel';
+const APP_VERSION = '2026-05-06-mbcoin-logo-spinner';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
@@ -2396,11 +2408,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   const oldText = submitBtn.textContent;
   submitBtn.disabled = true; submitBtn.textContent = 'Comprobando...';
 
+  // Mostrar spinner overlay durante la autenticación + carga del panel
+  showStripeLoadingOverlay();
+
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
   submitBtn.disabled = false; submitBtn.textContent = oldText;
 
   if (error) {
+    hideStripeLoadingOverlay();
     const msg = (error.message || '').toLowerCase();
     if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
       return showErr('Tu cuenta aún no está verificada. Revisa tu email.');
@@ -2429,13 +2445,18 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   closeLogin();
 
   // Si es el admin, abrir panel admin; si no, panel cliente
-  if (isAdmin(data.user.email)) {
-    sessionStorage.setItem('tipster-admin', 'true');
-    sessionStorage.removeItem('tipster-client');
-    await Promise.all([loadClientsFromSupabase(), loadPicksFromSupabase(), loadAllFollowedBets()]);
-    showAdmin();
-  } else {
-    await showClientFromSupabaseUser(data.user);
+  try {
+    if (isAdmin(data.user.email)) {
+      sessionStorage.setItem('tipster-admin', 'true');
+      sessionStorage.removeItem('tipster-client');
+      await Promise.all([loadClientsFromSupabase(), loadPicksFromSupabase(), loadAllFollowedBets()]);
+      showAdmin();
+    } else {
+      await showClientFromSupabaseUser(data.user);
+    }
+  } finally {
+    // Quitar el spinner una vez el panel está renderizado
+    hideStripeLoadingOverlay();
   }
 });
 
@@ -2939,6 +2960,34 @@ function countPendingFollowedBets(clientId) {
 ============================================================ */
 const COINS_BY_DIFFICULTY = { easy: 10, medium: 25, hard: 50 };
 
+// Logo SVG de un MBCoin (moneda verde con "MB" grabado)
+function mbCoinSVG(size = 24) {
+  const id = 'mbc-' + Math.random().toString(36).slice(2, 8);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <radialGradient id="${id}-face" cx="35%" cy="30%" r="80%">
+        <stop offset="0%" stop-color="#a7f3d0"/>
+        <stop offset="40%" stop-color="#00e696"/>
+        <stop offset="100%" stop-color="#047857"/>
+      </radialGradient>
+      <linearGradient id="${id}-rim" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#10b981"/>
+        <stop offset="100%" stop-color="#022c22"/>
+      </linearGradient>
+    </defs>
+    <!-- Borde exterior -->
+    <circle cx="16" cy="16" r="15" fill="url(#${id}-rim)"/>
+    <!-- Cara de la moneda -->
+    <circle cx="16" cy="16" r="13" fill="url(#${id}-face)"/>
+    <!-- Anillo interior -->
+    <circle cx="16" cy="16" r="11" fill="none" stroke="rgba(2,44,34,0.45)" stroke-width="0.6"/>
+    <!-- Texto MB -->
+    <text x="16" y="20.5" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#022c22" letter-spacing="-0.5">MB</text>
+    <!-- Brillo superior -->
+    <ellipse cx="11" cy="9.5" rx="5" ry="2" fill="rgba(255,255,255,0.45)" transform="rotate(-25 11 9.5)"/>
+  </svg>`;
+}
+
 // Iconos SVG para las insignias (lucide-style)
 const MISSION_ICONS = {
   star:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
@@ -3067,7 +3116,10 @@ function missionCardHTML(mission) {
         </div>
       </div>
       <div class="text-right shrink-0">
-        <div class="font-display text-lg font-bold ${mission.completed ? 'text-accent-neon' : 'text-white'}">+${mission.coins}</div>
+        <div class="flex items-center justify-end gap-1.5">
+          ${mbCoinSVG(20)}
+          <span class="font-display text-lg font-bold ${mission.completed ? 'text-accent-neon' : 'text-white'}">+${mission.coins}</span>
+        </div>
         <div class="text-[10px] uppercase tracking-[0.16em] text-ink-500">MBCoins</div>
       </div>
     </div>
@@ -3107,7 +3159,10 @@ function missionsTabHTML(client) {
 
     <div class="mt-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
       <div class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5">
-        <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">MBCoins</div>
+        <div class="flex items-center gap-2">
+          ${mbCoinSVG(20)}
+          <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">MBCoins</div>
+        </div>
         <div class="mt-2 flex items-baseline gap-1.5">
           <span class="font-display text-3xl font-bold text-accent-neon sm:text-4xl">${totalCoins}</span>
           <span class="text-sm text-ink-500">/ ${totalAvailableCoins}</span>
