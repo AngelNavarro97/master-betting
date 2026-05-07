@@ -72,11 +72,26 @@
 
 <style>
   :root { color-scheme: dark; }
-  html, body { background: #000; color: #f5f5f7; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+  html, body { color: #f5f5f7; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
   /* Forzar que el documento ocupe siempre el alto completo de la pantalla.
      Sin esto, en iOS PWA, cuando el contenido es corto, position:fixed se calcula
      contra el alto del body (que sería corto) y la barra inferior "flota" arriba. */
   html, body { min-height: 100vh; min-height: 100dvh; }
+
+  /* Fondo global con degradado verde suave (fijo: no se mueve al hacer scroll).
+     Crea 4 halos verdes distribuidos por la pantalla que dan la estética de
+     todo el sitio, no solo de la sección hero. */
+  html { background: #000; }
+  body {
+    background-color: transparent;
+    background-image:
+      radial-gradient(900px 700px at 18% 8%,  rgba(0,230,150,0.20),  transparent 60%),
+      radial-gradient(900px 700px at 82% 28%, rgba(16,185,129,0.16), transparent 60%),
+      radial-gradient(800px 600px at 25% 72%, rgba(34,197,94,0.14),  transparent 60%),
+      radial-gradient(900px 700px at 78% 92%, rgba(0,230,150,0.18),  transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
   html { scroll-behavior: smooth; }
 
   /* === Soporte iPhone con Dynamic Island / notch en modo PWA ===
@@ -1324,7 +1339,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-stripe-live';
+const APP_VERSION = '2026-05-06-green-bg-global';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
