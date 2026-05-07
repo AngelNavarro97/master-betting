@@ -376,8 +376,19 @@
   /* Flecha del bloque "Ver análisis" rota al abrir */
   details > summary .analysis-arrow { transition: transform 0.2s ease; }
   details[open] > summary .analysis-arrow { transform: rotate(180deg); }
-  details > summary { list-style: none; }
+  /* IMPORTANTE: iOS Safari da display:list-item por defecto al summary,
+     lo que ignora flex/justify-between de Tailwind. Forzamos display:flex
+     y ocultamos cualquier marker nativo (triangulito) en todos los navegadores. */
+  details > summary {
+    list-style: none;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
   details > summary::-webkit-details-marker { display: none; }
+  details > summary::marker { display: none; content: ''; }
+  details > summary .analysis-arrow { flex-shrink: 0; margin-left: auto; }
 
   /* Logos */
   .badge-img { position: relative; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; overflow: hidden; flex-shrink: 0; ring: 1px solid rgba(255,255,255,0.20); }
@@ -1509,7 +1520,7 @@ function saveJSON(key, value) {
    flags de sesión. NO toca los datos de localStorage para que
    los pronósticos y clientes que has creado se mantengan.
 ============================================================ */
-const APP_VERSION = '2026-05-06-scheduled-picks';
+const APP_VERSION = '2026-05-06-cleanup-faceid-arrow';
 if (localStorage.getItem('tipster-version') !== APP_VERSION) {
   // Datos antiguos de localStorage ya no se usan: la verdad ahora vive en Supabase.
   localStorage.removeItem(STORAGE.clients);
