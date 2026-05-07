@@ -1752,7 +1752,21 @@
         <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Fecha del partido</span><input id="sfBetDate" type="datetime-local" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
       </div>
 
-      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Partido</span><input id="sfMatch" type="text" required maxlength="120" placeholder="Real Madrid – Barcelona" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+      <fieldset>
+        <legend class="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-500">Deporte</legend>
+        <div id="sfSportGroup" class="grid grid-cols-3 gap-2">
+          <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Fútbol"><input type="radio" name="sf-sport" value="Fútbol" class="hidden" checked/><span class="ev-sport-icon"></span> Fútbol</label>
+          <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Tenis"><input type="radio" name="sf-sport" value="Tenis" class="hidden"/><span class="ev-sport-icon"></span> Tenis</label>
+          <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Baloncesto"><input type="radio" name="sf-sport" value="Baloncesto" class="hidden"/><span class="ev-sport-icon"></span> Baloncesto</label>
+        </div>
+      </fieldset>
+
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Competición</span><input id="sfCompetition" list="npCompetitions" type="text" placeholder="Competición (ej. Champions League)" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Local</span><input id="sfTeam1" list="npTeams" type="text" required maxlength="60" placeholder="Local" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+        <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Visitante</span><input id="sfTeam2" list="npTeams" type="text" required maxlength="60" placeholder="Visitante" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
+      </div>
 
       <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Apuesta</span><input id="sfBet" type="text" required maxlength="120" placeholder="Más de 2.5 goles" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
 
@@ -3157,6 +3171,7 @@ function statsPanelHTML(c, forAdmin) {
     mystats:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>',
     missions: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15L2.66 7.14a2 2 0 0 1 0-2L4.81 1.5a2 2 0 0 1 1.73-1h10.92a2 2 0 0 1 1.73 1l2.15 3.64a2 2 0 0 1 0 2L16.79 15"/><circle cx="12" cy="17" r="5"/><path d="M12 14v6"/></svg>',
     bookies:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-9h6v9"/></svg>',
+    retos:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-2 8 4 10H4l4-10z"/><path d="M9 11h6"/></svg>',
   };
 
   // Pills de arriba (desktop) — ocultos en móvil
@@ -3168,6 +3183,7 @@ function statsPanelHTML(c, forAdmin) {
         ${showPremium ? `<button data-ctab="premium" class="cli-tab amber ${tab==='premium'?'active':''}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
           Exclusive</button>` : ''}
+        <button data-ctab="retos"    class="cli-tab ${tab==='retos'?'active':''}">Retos</button>
         <button data-ctab="mybets"   class="cli-tab ${tab==='mybets'?'active':''}">Mis apuestas${pendingCount>0?`<span class="cli-badge">${pendingCount}</span>`:''}</button>
         <button data-ctab="missions" class="cli-tab ${tab==='missions'?'active':''}">Misiones</button>
         <button data-ctab="bookies"  class="cli-tab ${tab==='bookies'?'active':''}">Casas</button>
@@ -3189,6 +3205,8 @@ function statsPanelHTML(c, forAdmin) {
     panel = availablePicksOnlyHTML(c);
   } else if (tab === 'premium') {
     panel = lockedPicksOnlyHTML(c);
+  } else if (tab === 'retos') {
+    panel = retosClientHTML(c);
   } else if (tab === 'mybets') {
     panel = followedBetsClientHTML(c);
   } else if (tab === 'missions') {
@@ -3224,6 +3242,7 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount) {
     ${bnavBtn('summary',  'Resumen')}
     ${bnavBtn('picks',    'Apuestas')}
     ${showPremium ? bnavBtn('premium', 'Exclusive', true) : ''}
+    ${bnavBtn('retos',    'Retos')}
     ${bnavBtn('mybets',   'Mis apuestas')}
     ${bnavBtn('missions', 'Misiones')}
     ${bnavBtn('bookies',  'Casas')}
@@ -4796,6 +4815,10 @@ document.addEventListener('click', async (e) => {
       if (activeClientId) await loadFollowedBetsForUser(activeClientId);
     } catch(err) { console.error(err); }
   }
+  // Pestaña Retos: cargar retos + compras propias desde Supabase
+  if (newTab === 'retos') {
+    try { await loadClientRetosData(); } catch(err) { console.error('[retos cliente]', err); }
+  }
   rerenderCurrentClientPanel();
 });
 
@@ -5995,6 +6018,30 @@ async function deleteReto(id) {
 }
 
 /* ----- Modal "Añadir / Editar paso" ----- */
+// Pinta los iconos de los 3 deportes y aplica el estado activo según el radio elegido
+function paintStepSportPills() {
+  const group = document.getElementById('sfSportGroup');
+  if (!group) return;
+  group.querySelectorAll('.ev-sport[data-sport]').forEach(el => {
+    const span = el.querySelector('.ev-sport-icon');
+    if (span && typeof sportIcon === 'function') span.innerHTML = sportIcon(el.dataset.sport, 14);
+  });
+  const checked = group.querySelector('input[type="radio"]:checked');
+  group.querySelectorAll('.ev-sport').forEach(el => el.classList.toggle('active', !!checked && el.dataset.sport === checked.value));
+}
+// Cambio de pill → repinta el "active"
+document.querySelectorAll('#sfSportGroup input[type="radio"]').forEach(r => {
+  r.addEventListener('change', paintStepSportPills);
+});
+
+// Helper: parte un string "Local – Visitante" en {team1, team2}.
+// Acepta varios separadores: " – " (guión largo), " - " (guión normal) y " vs ".
+function splitTeams(matchText) {
+  if (!matchText) return { team1: '', team2: '' };
+  const parts = matchText.split(/\s+[–\-]\s+|\s+vs\s+/i);
+  return { team1: (parts[0]||'').trim(), team2: (parts[1]||'').trim() };
+}
+
 function openStepModal(stepId) {
   const m = document.getElementById('stepModal');
   const isEdit = !!stepId;
@@ -6009,20 +6056,27 @@ function openStepModal(stepId) {
     const s = (challengeSteps[cId]||[]).find(x => x.id === stepId);
     if (!s) return;
     document.getElementById('sfStepNumber').value = s.step_number;
-    document.getElementById('sfMatch').value      = s.match_text;
+    const { team1, team2 } = splitTeams(s.match_text);
+    document.getElementById('sfTeam1').value      = team1;
+    document.getElementById('sfTeam2').value      = team2;
+    document.getElementById('sfCompetition').value = s.competition || '';
     document.getElementById('sfBet').value        = s.bet_description;
     document.getElementById('sfOdd').value        = s.odd;
     document.getElementById('sfStake').value      = s.stake_amount;
     document.getElementById('sfBookmaker').value  = s.bookmaker || '';
     document.getElementById('sfBetDate').value    = s.bet_date ? new Date(s.bet_date).toISOString().slice(0,16) : '';
+    const sportRadio = document.querySelector(`#sfSportGroup input[type="radio"][value="${s.sport||'Fútbol'}"]`);
+    if (sportRadio) sportRadio.checked = true;
     document.querySelector(`input[name="sf-status"][value="${s.status||'pending'}"]`).checked = true;
     document.getElementById('sfReturn').value     = s.return_amount != null ? s.return_amount : '';
   } else {
     document.getElementById('stepForm').reset();
     const next = ((challengeSteps[cId]||[]).reduce((m,x)=>Math.max(m,x.step_number),0)) + 1;
     document.getElementById('sfStepNumber').value = next;
+    document.querySelector('#sfSportGroup input[type="radio"][value="Fútbol"]').checked = true;
     document.querySelector('input[name="sf-status"][value="pending"]').checked = true;
   }
+  paintStepSportPills();
   // Suggerir return_amount = stake * cuota
   updateReturnVisibility();
   m.classList.remove('hidden');
@@ -6065,10 +6119,15 @@ document.getElementById('stepForm').addEventListener('submit', async (e) => {
   const cId = document.getElementById('sfChallengeId').value;
   const status = document.querySelector('input[name="sf-status"]:checked')?.value || 'pending';
   const betDateRaw = document.getElementById('sfBetDate').value;
+  const team1 = document.getElementById('sfTeam1').value.trim();
+  const team2 = document.getElementById('sfTeam2').value.trim();
+  const matchText = (team1 && team2) ? `${team1} – ${team2}` : (team1 || team2);
   const payload = {
     challenge_id: cId,
     step_number: parseInt(document.getElementById('sfStepNumber').value, 10),
-    match_text: document.getElementById('sfMatch').value.trim(),
+    match_text: matchText,
+    sport: document.querySelector('#sfSportGroup input[type="radio"]:checked')?.value || 'Fútbol',
+    competition: document.getElementById('sfCompetition').value.trim() || null,
     bet_description: document.getElementById('sfBet').value.trim(),
     odd: Number(document.getElementById('sfOdd').value),
     stake_amount: Number(document.getElementById('sfStake').value),
@@ -6078,8 +6137,8 @@ document.getElementById('stepForm').addEventListener('submit', async (e) => {
     return_amount: status === 'won' ? Number(document.getElementById('sfReturn').value) : null,
   };
   const err = document.getElementById('sfError');
-  if (!payload.match_text || !payload.bet_description || isNaN(payload.odd) || isNaN(payload.stake_amount) || isNaN(payload.step_number)) {
-    err.textContent = 'Faltan datos del paso o tienen un formato incorrecto.';
+  if (!team1 || !team2 || !payload.bet_description || isNaN(payload.odd) || isNaN(payload.stake_amount) || isNaN(payload.step_number)) {
+    err.textContent = 'Faltan datos del paso o tienen un formato incorrecto. Revisa Local, Visitante, Apuesta, Cuota y Stake.';
     err.classList.remove('hidden');
     return;
   }
@@ -6125,6 +6184,262 @@ function escapeHtml(str) {
   if (str == null) return '';
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+/* ============================================================
+   RETOS — VISTA DEL CLIENTE
+   Carga retos activos + compras del usuario + pasos por reto
+   Muestra: locked card (con botón comprar / reclamar gratis)
+            unlocked card (paso pendiente arriba, barra de progreso, historial)
+============================================================ */
+let clientRetos = [];                    // retos activos visibles por el cliente (RLS deja ver los is_active = true)
+let clientPurchases = [];                // compras del usuario
+let clientStepsByChallenge = {};         // pasos por reto desbloqueado
+
+async function loadClientRetosData() {
+  if (!activeClientId) return;
+  // 1. Retos activos
+  const { data: chs, error: e1 } = await sb.from('challenges').select('*').eq('is_active', true).order('created_at', { ascending: false });
+  if (e1) console.error('[retos cliente] challenges', e1);
+  clientRetos = chs || [];
+  // 2. Compras del usuario
+  const { data: pur, error: e2 } = await sb.from('challenge_purchases').select('*').eq('user_id', activeClientId);
+  if (e2) console.error('[retos cliente] purchases', e2);
+  clientPurchases = pur || [];
+  // 3. Pasos de los retos que el usuario haya desbloqueado
+  clientStepsByChallenge = {};
+  const unlockedIds = clientPurchases.map(p => p.challenge_id);
+  if (unlockedIds.length) {
+    const { data: stps, error: e3 } = await sb.from('challenge_steps').select('*').in('challenge_id', unlockedIds).order('step_number', { ascending: true });
+    if (e3) console.error('[retos cliente] steps', e3);
+    (stps || []).forEach(s => {
+      if (!clientStepsByChallenge[s.challenge_id]) clientStepsByChallenge[s.challenge_id] = [];
+      clientStepsByChallenge[s.challenge_id].push(s);
+    });
+  }
+}
+
+// ¿Tiene el usuario una compra para este reto?
+function hasUnlocked(challengeId) {
+  return clientPurchases.some(p => p.challenge_id === challengeId);
+}
+// ¿El usuario Exclusive ya gastó su reto gratis?
+function exclusiveFreeClaimUsed() {
+  return clientPurchases.some(p => p.was_free_claim);
+}
+
+// HTML principal del tab Retos
+function retosClientHTML(c) {
+  const headerHTML = `<div>
+    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Retos</span></div>
+    <h3 class="mt-2 font-display text-xl font-semibold tracking-tight text-white">Retos activos</h3>
+    <p class="mt-1 text-sm text-ink-500">Desbloquea un reto y sigue paso a paso las apuestas hasta llegar a la meta. Basic y Pro pueden comprarlo. ${c.plan === 'Exclusive' ? 'Como Exclusive, tu suscripción incluye 1 reto gratis (los marcados como "Gratis Exclusive").' : 'Si subes al plan Exclusive, tendrás 1 reto gratis incluido.'}</p>
+  </div>`;
+
+  if (!clientRetos.length) {
+    return `${headerHTML}
+      <div class="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center text-sm text-ink-500">No hay retos activos en este momento. Vuelve pronto, publicaremos uno nuevo en breve.</div>`;
+  }
+
+  const cards = clientRetos.map(ch => {
+    if (hasUnlocked(ch.id)) return retosUnlockedCardHTML(ch, c);
+    return retosLockedCardHTML(ch, c);
+  }).join('');
+
+  return `<div data-retos-section data-client-id="${c.id}">${headerHTML}
+    <div class="mt-5 grid gap-4 md:grid-cols-2">${cards}</div>
+  </div>`;
+}
+
+// Card BLOQUEADA (cliente que aún no tiene desbloqueado el reto)
+function retosLockedCardHTML(ch, c) {
+  const start = Number(ch.starting_amount||0);
+  const goal  = Number(ch.goal_amount||0);
+  const isExclusive = c.plan === 'Exclusive';
+  const canClaimFree = isExclusive && ch.is_free_for_exclusive && !exclusiveFreeClaimUsed();
+  const priceTxt = `${Number(ch.price||25).toFixed(2).replace('.',',')}€`;
+
+  let cta = '';
+  if (canClaimFree) {
+    cta = `<button data-buy-reto="${ch.id}" data-free="1" class="inline-flex items-center gap-2 rounded-full bg-accent-neon px-4 py-2 text-[13px] font-semibold text-black transition hover:bg-emerald-300">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H4v4"/><path d="M12 4v16"/><path d="M4 16h16"/></svg>
+      Reclamar gratis (Exclusive)
+    </button>`;
+  } else if (isExclusive && ch.is_free_for_exclusive) {
+    // Exclusive pero ya gastó su reto gratis
+    cta = `<button data-buy-reto="${ch.id}" data-free="0" class="inline-flex items-center gap-2 rounded-full bg-accent-neon px-4 py-2 text-[13px] font-semibold text-black transition hover:bg-emerald-300">
+      Comprar reto · ${priceTxt}
+    </button>
+    <p class="text-[11px] text-ink-500 mt-1">Ya has reclamado tu reto gratis incluido.</p>`;
+  } else {
+    cta = `<button data-buy-reto="${ch.id}" data-free="0" class="inline-flex items-center gap-2 rounded-full bg-accent-neon px-4 py-2 text-[13px] font-semibold text-black transition hover:bg-emerald-300">
+      Comprar reto · ${priceTxt}
+    </button>`;
+  }
+
+  const tag = ch.is_free_for_exclusive
+    ? `<span class="rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Gratis Exclusive</span>`
+    : '';
+
+  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5">
+    <div class="flex items-start justify-between gap-2 flex-wrap">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
+          <span>RETO</span><span class="text-ink-500/60">·</span><span>${fmtMoneyShort(start)} → ${fmtMoneyShort(goal)}</span>
+        </div>
+        <h4 class="mt-2 font-display text-lg font-semibold text-white break-words">${escapeHtml(ch.title)}</h4>
+        ${ch.description ? `<p class="mt-1 text-sm text-ink-500">${escapeHtml(ch.description)}</p>` : ''}
+      </div>
+      ${tag}
+    </div>
+
+    <!-- Vista preview con candado -->
+    <div class="mt-5 rounded-xl border border-white/10 bg-black/40 p-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-white">Pasos del reto bloqueados</p>
+          <p class="text-xs text-ink-500">Desbloquea el reto y verás cada apuesta paso a paso, con cuota, casa y resultado.</p>
+        </div>
+      </div>
+      <div class="mt-3 grid grid-cols-3 gap-2">
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2 text-center">
+          <div class="text-[9px] uppercase tracking-[0.18em] text-ink-500">Inicio</div>
+          <div class="mt-1 text-sm font-semibold text-white">${fmtMoneyShort(start)}</div>
+        </div>
+        <div class="rounded-lg border border-accent-neon/30 bg-accent-neon/5 p-2 text-center">
+          <div class="text-[9px] uppercase tracking-[0.18em] text-accent-neon">Meta</div>
+          <div class="mt-1 text-sm font-semibold text-gradient">${fmtMoneyShort(goal)}</div>
+        </div>
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2 text-center">
+          <div class="text-[9px] uppercase tracking-[0.18em] text-ink-500">Precio</div>
+          <div class="mt-1 text-sm font-semibold text-white">${priceTxt}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 flex flex-wrap items-end justify-end gap-2">
+      ${cta}
+    </div>
+  </article>`;
+}
+
+// Card DESBLOQUEADA (cliente con compra registrada)
+function retosUnlockedCardHTML(ch, c) {
+  const start = Number(ch.starting_amount||0);
+  const goal  = Number(ch.goal_amount||0);
+  const now   = Number(ch.current_amount||0);
+  const denom = Math.max(0.01, goal - start);
+  const progress = Math.max(0, Math.min(100, ((now - start) / denom) * 100));
+
+  const steps = (clientStepsByChallenge[ch.id] || []).slice().sort((a,b) => a.step_number - b.step_number);
+  const pendingStep = steps.find(s => s.status === 'pending');
+  const history = steps.filter(s => s.status !== 'pending');
+
+  const pendingHTML = pendingStep ? `<div class="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4">
+    <div class="flex items-center justify-between gap-2 flex-wrap">
+      <span class="rounded-full border border-amber-400/50 bg-amber-400/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">PASO ${pendingStep.step_number}</span>
+      <span class="text-[11px] text-ink-500">${pendingStep.bet_date ? new Date(pendingStep.bet_date).toLocaleString('es-ES', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : 'Pendiente'}</span>
+    </div>
+    <p class="mt-2 text-sm font-semibold text-white">${escapeHtml(pendingStep.match_text)}</p>
+    <p class="mt-0.5 text-xs text-ink-200/80">${escapeHtml(pendingStep.bet_description)} · @${Number(pendingStep.odd).toFixed(2)} · Stake ${fmtMoneyShort(pendingStep.stake_amount)}${pendingStep.bookmaker?` · ${escapeHtml(pendingStep.bookmaker)}`:''}</p>
+  </div>` : `<div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-center text-xs text-ink-500">No hay paso pendiente. ${ch.status==='completed'?'¡Reto completado!':'Próxima apuesta en breve.'}</div>`;
+
+  const historyHTML = history.length ? `<div class="space-y-2">
+    ${history.map(s => {
+      const cls = s.status==='won' ? 'border-emerald-400/30 bg-emerald-400/5' : s.status==='lost' ? 'border-red-400/30 bg-red-400/5' : 'border-white/10 bg-white/[0.02]';
+      const txt = s.status==='won' ? `<span class="text-emerald-300 font-semibold">+${fmtMoneyShort(Number(s.return_amount||0) - Number(s.stake_amount||0))}</span>`
+        : s.status==='lost' ? `<span class="text-red-300 font-semibold">−${fmtMoneyShort(s.stake_amount)}</span>`
+        : `<span class="text-ink-500">Anulada</span>`;
+      return `<div class="rounded-lg border ${cls} p-3 text-xs">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Paso ${s.step_number}</span>
+          ${txt}
+        </div>
+        <p class="mt-1 text-sm text-white">${escapeHtml(s.match_text)}</p>
+        <p class="text-[11px] text-ink-500">${escapeHtml(s.bet_description)} · @${Number(s.odd).toFixed(2)}</p>
+      </div>`;
+    }).join('')}
+  </div>` : '';
+
+  const statusBadge = ch.status === 'completed'
+    ? `<span class="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">Completado</span>`
+    : ch.status === 'failed'
+    ? `<span class="rounded-full border border-red-400/40 bg-red-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-300">Fallido</span>`
+    : `<span class="rounded-full border border-accent-neon/40 bg-accent-neon/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">En curso</span>`;
+
+  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5">
+    <div class="flex items-start justify-between gap-2 flex-wrap">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
+          <span>RETO</span><span class="text-ink-500/60">·</span><span>${fmtMoneyShort(start)} → ${fmtMoneyShort(goal)}</span>
+        </div>
+        <h4 class="mt-2 font-display text-lg font-semibold text-white break-words">${escapeHtml(ch.title)}</h4>
+      </div>
+      ${statusBadge}
+    </div>
+
+    <!-- Paso pendiente arriba -->
+    <div class="mt-4">${pendingHTML}</div>
+
+    <!-- Barra de progreso -->
+    <div class="mt-5">
+      <div class="flex items-baseline justify-between text-xs">
+        <span class="text-ink-500">Bote actual</span>
+        <span><span class="font-display text-lg font-semibold text-white">${fmtMoneyShort(now)}</span> <span class="text-ink-500">/ ${fmtMoneyShort(goal)}</span></span>
+      </div>
+      <div class="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-white/5">
+        <div class="h-full rounded-full bg-gradient-to-r from-accent-neon to-emerald-400" style="width:${progress}%"></div>
+      </div>
+      <div class="mt-1 text-right text-[10px] text-ink-500">${progress.toFixed(1).replace('.',',')}%</div>
+    </div>
+
+    ${historyHTML ? `<div class="mt-5"><div class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Historial de apuestas</div><div class="mt-2">${historyHTML}</div></div>` : ''}
+  </article>`;
+}
+
+// Helper: formato corto de dinero (sin espacio antes del €)
+function fmtMoneyShort(v) {
+  return `${(Number(v||0)).toFixed(2).replace('.', ',')}€`;
+}
+
+// Click handler: comprar / reclamar reto
+// Por ahora es MOCK (sin pasarela): simplemente inserta una compra.
+// Cuando montemos Stripe (Fase 3), este botón abrirá el Checkout.
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-buy-reto]'); if (!btn) return;
+  if (!activeClientId) return;
+  const challengeId = btn.dataset.buyReto;
+  const isFree = btn.dataset.free === '1';
+  const ch = clientRetos.find(x => x.id === challengeId); if (!ch) return;
+  const c = clients.find(x => String(x.id) === String(activeClientId)); if (!c) return;
+
+  const confirmMsg = isFree
+    ? `¿Reclamar gratis "${ch.title}" como tu reto incluido del plan Exclusive? Solo puedes reclamar 1 reto gratis durante tu suscripción.`
+    : `¿Confirmar compra del reto "${ch.title}" por ${fmtMoneyShort(ch.price)}? (En esta fase de prueba aún no se cobra de verdad — la pasarela de pago se conecta en la siguiente fase.)`;
+  if (!confirm(confirmMsg)) return;
+
+  btn.disabled = true; btn.textContent = 'Procesando…';
+
+  const payload = {
+    user_id: activeClientId,
+    challenge_id: challengeId,
+    was_free_claim: isFree,
+    amount_paid: isFree ? null : Number(ch.price || 25),
+    stripe_session_id: null,
+  };
+  const { error } = await sb.from('challenge_purchases').insert(payload);
+  if (error) {
+    alert('No se ha podido completar la operación: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = isFree ? 'Reclamar gratis (Exclusive)' : `Comprar reto · ${fmtMoneyShort(ch.price)}`;
+    return;
+  }
+  // Recargar y volver a renderizar
+  await loadClientRetosData();
+  rerenderCurrentClientPanel();
+});
 </script>
 </body>
 </html>
