@@ -380,6 +380,135 @@
     }
   }
 
+  /* === FORO estilo Discord ================================================
+     Sidebar de canales + área de chat + composer abajo */
+  .forum-wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 0;
+    height: calc(100vh - 240px);
+    min-height: 480px;
+    max-height: 720px;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(6,18,12,0.6);
+    overflow: hidden;
+  }
+  @media (max-width: 768px) {
+    .forum-wrap { grid-template-columns: 1fr; height: calc(100vh - 220px); min-height: 480px; }
+    .forum-sidebar { display: none !important; }
+    .forum-sidebar.mobile-open { display: block !important; position: absolute; inset: 0; z-index: 5; background: rgba(6,18,12,0.96); }
+  }
+  .forum-sidebar { background: rgba(255,255,255,0.02); border-right: 1px solid rgba(255,255,255,0.06); overflow-y: auto; }
+  .forum-sidebar-header { padding: 0.85rem 1rem; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,245,247,0.5); border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .forum-channels-list { list-style: none; padding: 0.35rem; margin: 0; }
+  .forum-channel-item {
+    position: relative;
+    width: 100%;
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: 0.45rem;
+    color: rgba(245,245,247,0.55);
+    font-size: 0.86rem;
+    font-weight: 500;
+    text-align: left;
+    transition: background .15s, color .15s;
+    border: none; background: transparent; cursor: pointer;
+  }
+  .forum-channel-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
+  .forum-channel-item.active { color: #fff; background: rgba(0,230,150,0.10); box-shadow: inset 0 0 0 1px rgba(0,230,150,0.3); }
+  .forum-channel-item.joined { color: rgba(245,245,247,0.85); }
+  .forum-channel-emoji { width: 18px; text-align: center; opacity: 0.75; font-size: 0.95em; }
+  .forum-channel-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .forum-channel-lock { opacity: 0.5; }
+  .forum-channel-more { display: none; width: 22px; height: 22px; border-radius: 9999px; align-items: center; justify-content: center; border: none; background: rgba(255,255,255,0.05); color: rgba(245,245,247,0.6); cursor: pointer; }
+  .forum-channel-item:hover .forum-channel-more,
+  .forum-channel-item.active .forum-channel-more { display: inline-flex; }
+  .forum-channel-more:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .forum-loading { padding: 1rem; text-align: center; color: rgba(245,245,247,0.4); font-size: 0.8rem; }
+
+  .forum-main { display: flex; flex-direction: column; min-width: 0; }
+  .forum-header { padding: 0.85rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
+  .forum-header-title { display: flex; align-items: center; gap: 0.5rem; }
+  .forum-header-title h3 { margin: 0; font-family: Inter, sans-serif; font-size: 1rem; font-weight: 600; color: #fff; }
+  .forum-header-emoji { font-size: 1.1em; }
+  .forum-header-desc { margin: 0.2rem 0 0; font-size: 0.75rem; color: rgba(245,245,247,0.5); }
+
+  .forum-messages { flex: 1; overflow-y: auto; padding: 0.85rem 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
+  .forum-empty { text-align: center; padding: 2.5rem 1rem; color: rgba(245,245,247,0.5); font-size: 0.85rem; }
+
+  .forum-msg-group { display: flex; gap: 0.7rem; align-items: flex-start; }
+  .forum-msg-avatar { border: none; background: transparent; padding: 0; cursor: pointer; flex-shrink: 0; }
+  .forum-msg-avatar:hover { opacity: 0.85; }
+  .forum-msg-body { flex: 1; min-width: 0; }
+  .forum-msg-header { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+  .forum-msg-author { background: none; border: none; padding: 0; color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .forum-msg-author:hover { color: #00e696; text-decoration: underline; }
+  .forum-msg-plan { font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.3rem; border-radius: 0.25rem; letter-spacing: 0.05em; }
+  .forum-msg-plan.accent { background: rgba(0,230,150,0.15); color: #00e696; }
+  .forum-msg-plan.amber  { background: rgba(252,211,77,0.15); color: #fcd34d; }
+  .forum-msg-time { font-size: 0.65rem; color: rgba(245,245,247,0.4); }
+  .forum-msg-admin { display: inline-flex; align-items: center; justify-content: center; margin-left: auto; width: 22px; height: 22px; border: 1px solid rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); border-radius: 9999px; color: #f87171; cursor: pointer; opacity: 0.6; }
+  .forum-msg-admin:hover { opacity: 1; }
+  .forum-msg-line { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 0.18rem; group: msg-line; }
+  .forum-msg-text { color: rgba(245,245,247,0.92); font-size: 0.92rem; line-height: 1.45; word-break: break-word; white-space: pre-wrap; flex: 1; }
+  .forum-msg-deleted { font-style: italic; color: rgba(245,245,247,0.35); }
+  .forum-msg-delete { display: none; width: 22px; height: 22px; align-items: center; justify-content: center; border: 1px solid rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); border-radius: 9999px; color: #f87171; cursor: pointer; flex-shrink: 0; opacity: 0.7; }
+  .forum-msg-line:hover .forum-msg-delete { display: inline-flex; }
+  .forum-msg-delete:hover { opacity: 1; }
+  .forum-mention { color: #00e696; background: rgba(0,230,150,0.10); padding: 0 0.2rem; border-radius: 0.2rem; font-weight: 600; }
+
+  .forum-composer-wrap { border-top: 1px solid rgba(255,255,255,0.06); padding: 0.7rem 0.85rem; background: rgba(255,255,255,0.02); position: relative; }
+  .forum-composer { display: flex; align-items: flex-end; gap: 0.55rem; position: relative; }
+  .forum-composer textarea {
+    flex: 1; min-height: 38px; max-height: 140px; resize: none;
+    padding: 0.65rem 0.85rem; border-radius: 0.85rem;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(0,0,0,0.4); color: #fff;
+    font-size: 0.9rem; line-height: 1.4;
+    outline: none; transition: border-color .15s;
+    font-family: inherit;
+  }
+  .forum-composer textarea:focus { border-color: rgba(0,230,150,0.4); background: rgba(0,0,0,0.55); }
+  .forum-composer-send {
+    width: 38px; height: 38px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; border-radius: 9999px;
+    background: #00e696; color: #050707; cursor: pointer;
+    transition: background .15s;
+  }
+  .forum-composer-send:hover { background: #4ade80; }
+  .forum-composer-blocked {
+    padding: 0.85rem;
+    border-radius: 0.85rem;
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.25);
+    color: #fca5a5;
+    font-size: 0.82rem;
+    display: flex; align-items: center; gap: 0.5rem; justify-content: center;
+  }
+  .forum-mention-picker {
+    position: absolute; bottom: 100%; left: 0; right: 0;
+    margin-bottom: 0.5rem;
+    background: rgba(6,18,12,0.96);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 0.85rem;
+    box-shadow: 0 20px 50px -10px rgba(0,0,0,0.55);
+    backdrop-filter: blur(20px);
+    padding: 0.3rem;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 10;
+  }
+  .forum-mention-item {
+    display: flex; align-items: center; gap: 0.55rem;
+    width: 100%; padding: 0.4rem 0.55rem;
+    border: none; background: transparent; color: #fff;
+    border-radius: 0.55rem; cursor: pointer; font-size: 0.85rem;
+    text-align: left;
+  }
+  .forum-mention-item:hover, .forum-mention-item.active { background: rgba(0,230,150,0.12); }
+
   /* === PULL TO REFRESH (móvil, en panel cliente y admin) =================
      Indicador circular verde que aparece al arrastrar hacia abajo desde arriba.
      Añadimos overscroll-behavior-y: contain para evitar que el "rubber band"
@@ -5850,6 +5979,10 @@ document.addEventListener('click', async (e) => {
   if (newTab === 'missions') {
     setTimeout(checkForUnclaimedMissionsAndPrompt, 350);
   }
+  // Al entrar en "Foro" cargamos canales + mensajes + suscripción realtime
+  if (newTab === 'forum') {
+    setTimeout(() => renderForumPanel(), 100);
+  }
 });
 
 // Filtros de "Mis apuestas" (estado y mes) — ahora son <select>
@@ -7694,23 +7827,492 @@ function animateMBCoinsCounter(from, to) {
 }
 
 /* ============================================================
-   FORO — placeholder hasta la siguiente sesión (UI completa)
-   Cuando se construya el chat real, esta función se reemplazará.
+   FORO — UI completa estilo Discord
+   Sidebar de canales + chat con mensajes + composer con menciones.
+   Datos cargados desde Supabase + realtime para mensajes nuevos.
 ============================================================ */
+let forumChannels = [];           // todos los canales activos
+let forumMyChannelIds = new Set();// IDs de canales en los que estoy apuntado
+let forumCurrentChannelId = null; // canal abierto
+let forumMessages = [];           // mensajes del canal actual
+let forumUserInfoCache = {};      // userId → { nickname, plan, status }
+let forumMyBlocked = false;       // ¿estoy bloqueado del foro?
+let forumRealtimeChannel = null;  // suscripción de Supabase
+
+// Helper: ¿este usuario es admin?
+function _forumIsCurrentUserAdmin() {
+  const c = clients.find(x => x.id === activeClientId);
+  return !!(c && typeof isAdmin === 'function' && isAdmin(c.email));
+}
+// Helper: ¿este cliente tiene plan activo (Basic/Pro/Exclusive)?
+function _forumHasPlan(c) {
+  return c && ['Basic','Pro','Exclusive'].includes(c.plan);
+}
+
+// Render principal del tab "Foro"
 function forumTabHTML(c) {
-  return `<div>
-    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Foro</span></div>
-    <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">Comunidad Master Betting</h3>
-    <p class="mt-1 text-sm text-ink-500">El foro estilo Discord con canales y chat en vivo estará disponible muy pronto.</p>
-    <div class="mt-6 gradient-border rounded-2xl bg-white/[0.02] p-8 text-center">
-      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-neon/10 border border-accent-neon/30 text-accent-neon">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+  // Gate: solo suscriptores con plan activo
+  if (!_forumHasPlan(c) && !_forumIsCurrentUserAdmin()) {
+    return `<div>
+      <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Foro</span></div>
+      <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">Comunidad privada</h3>
+      <p class="mt-1 text-sm text-ink-500">El foro está disponible solo para suscriptores con plan activo.</p>
+      <div class="mt-6 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-8 text-center">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-400/15 border border-amber-400/40 text-amber-300">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </div>
+        <h4 class="mt-4 font-display text-base font-semibold text-white">Suscríbete para entrar al foro</h4>
+        <p class="mx-auto mt-2 max-w-md text-sm text-amber-200/80">Habla con otros apostadores en los canales privados: <span class="text-white">#general</span>, <span class="text-white">#fútbol</span>, <span class="text-white">#tenis</span>, <span class="text-white">#baloncesto</span>...</p>
+        <button type="button" data-ctab="picks" class="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-400 px-5 py-2.5 text-sm font-semibold text-black hover:bg-amber-300">Ver planes →</button>
       </div>
-      <h4 class="mt-4 font-display text-base font-semibold text-white">Foro próximamente</h4>
-      <p class="mx-auto mt-2 max-w-md text-sm text-ink-500">Estamos terminando el chat con canales (#general, #fútbol, #baloncesto, #tenis…), menciones y realtime. Te avisaremos cuando esté listo.</p>
+    </div>`;
+  }
+
+  // Layout: sidebar + chat. La función de relleno real es renderForumPanel(), que se
+  // llama una vez que el contenedor esté en el DOM (en el handler del tab).
+  return `<div>
+    <div class="flex items-center gap-2 mb-3">
+      <span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span>
+      <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Foro</span>
+    </div>
+    <div id="forumRoot" class="forum-wrap">
+      <aside id="forumSidebar" class="forum-sidebar">
+        <div class="forum-sidebar-header">
+          <span>Canales</span>
+        </div>
+        <ul id="forumChannelsList" class="forum-channels-list">
+          <li class="forum-loading">Cargando canales…</li>
+        </ul>
+      </aside>
+      <main class="forum-main">
+        <div id="forumHeader" class="forum-header">
+          <p class="text-ink-500">Cargando…</p>
+        </div>
+        <div id="forumMessages" class="forum-messages"></div>
+        <div id="forumComposerWrap" class="forum-composer-wrap"></div>
+      </main>
     </div>
   </div>`;
 }
+
+// Carga inicial de datos del foro (canales + mis miembros + bloqueo)
+async function loadForumData() {
+  // Canales activos
+  const { data: chs, error: chErr } = await sb.from('forum_channels')
+    .select('*').eq('is_active', true).order('position', { ascending: true });
+  if (chErr) console.warn('[forum] channels', chErr);
+  forumChannels = chs || [];
+  // Mis memberships
+  const { data: mems } = await sb.from('forum_memberships')
+    .select('channel_id').eq('user_id', activeClientId);
+  forumMyChannelIds = new Set((mems || []).map(m => m.channel_id));
+  // ¿Estoy bloqueado?
+  const { data: blk } = await sb.from('forum_blocks')
+    .select('id').eq('user_id', activeClientId).maybeSingle();
+  forumMyBlocked = !!blk;
+  // Canal por defecto: general
+  if (!forumCurrentChannelId) {
+    const general = forumChannels.find(c => c.is_default);
+    forumCurrentChannelId = general?.id || forumChannels[0]?.id || null;
+  }
+}
+
+// Renderiza el panel del foro DESPUÉS de que el DOM esté inyectado
+async function renderForumPanel() {
+  if (!document.getElementById('forumRoot')) return; // no estamos en el tab Foro
+  await loadForumData();
+  renderForumChannels();
+  await openForumChannel(forumCurrentChannelId, /*pushHistory=*/false);
+}
+
+function renderForumChannels() {
+  const list = document.getElementById('forumChannelsList');
+  if (!list) return;
+  list.innerHTML = forumChannels.map(c => {
+    const isActive = c.id === forumCurrentChannelId;
+    const isJoined = forumMyChannelIds.has(c.id) || c.is_default;
+    const cls = `forum-channel-item ${isActive ? 'active' : ''} ${isJoined ? 'joined' : ''}`;
+    const lockIcon = !isJoined ? '<svg class="forum-channel-lock" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' : '';
+    const moreBtn = (isJoined && !c.is_default) ?
+      `<button class="forum-channel-more" data-forum-channel-menu="${c.id}" aria-label="Opciones del canal">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+      </button>` : '';
+    return `<li>
+      <button class="${cls}" data-forum-channel="${c.id}">
+        <span class="forum-channel-emoji">${c.emoji || '#'}</span>
+        <span class="forum-channel-name">${(c.name || '').replace(/[<>]/g,'')}</span>
+        ${lockIcon}
+        ${moreBtn}
+      </button>
+    </li>`;
+  }).join('');
+}
+
+// Abrir un canal (consulta mensajes, suscribe realtime, pinta UI)
+async function openForumChannel(channelId, options = {}) {
+  if (!channelId) return;
+  const channel = forumChannels.find(c => c.id === channelId);
+  if (!channel) return;
+  // Si no estoy joined y NO es default → preguntar
+  const isJoined = forumMyChannelIds.has(channelId) || channel.is_default;
+  if (!isJoined) {
+    const ok = confirm(`¿Quieres unirte al canal #${channel.name}?`);
+    if (!ok) return;
+    // Unirse
+    const { error } = await sb.from('forum_memberships').insert({ user_id: activeClientId, channel_id: channelId });
+    if (error) { showToast('No se pudo unir al canal: ' + error.message, 'error'); return; }
+    forumMyChannelIds.add(channelId);
+    showToast(`Te has unido a #${channel.name}`, 'success');
+    renderForumChannels();
+  }
+  forumCurrentChannelId = channelId;
+  renderForumChannels(); // refresca activo
+  // Render header
+  const headerEl = document.getElementById('forumHeader');
+  if (headerEl) {
+    headerEl.innerHTML = `
+      <div class="forum-header-title">
+        <span class="forum-header-emoji">${channel.emoji || '#'}</span>
+        <h3>${(channel.name || '').replace(/[<>]/g,'')}</h3>
+      </div>
+      ${channel.description ? `<p class="forum-header-desc">${channel.description.replace(/[<>]/g,'')}</p>` : ''}
+    `;
+  }
+  // Carga mensajes
+  await loadForumMessages(channelId);
+  await renderForumMessages();
+  renderForumComposer();
+  // Realtime
+  subscribeForumChannelRealtime(channelId);
+  // Auto-scroll al fondo
+  scrollForumToBottom();
+}
+
+async function loadForumMessages(channelId) {
+  const { data, error } = await sb.from('forum_messages')
+    .select('id, channel_id, user_id, body, created_at, deleted_at, deleted_by')
+    .eq('channel_id', channelId)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) { console.warn('[forum] messages', error); forumMessages = []; return; }
+  forumMessages = (data || []).reverse();
+}
+
+// Pide info de varios usuarios del foro (RPC público)
+async function fetchForumUserInfo(userIds) {
+  const missing = userIds.filter(id => id && !forumUserInfoCache[id]);
+  if (!missing.length) return;
+  const { data, error } = await sb.rpc('get_forum_user_info', { target_user_ids: missing });
+  if (error) { console.warn('[forum] user info', error); return; }
+  (data || []).forEach(u => { forumUserInfoCache[u.id] = u; });
+}
+
+async function renderForumMessages() {
+  const wrap = document.getElementById('forumMessages');
+  if (!wrap) return;
+  // Asegurar info de usuarios
+  const uids = Array.from(new Set(forumMessages.map(m => m.user_id)));
+  await fetchForumUserInfo(uids);
+  if (!forumMessages.length) {
+    wrap.innerHTML = `<div class="forum-empty">
+      <p>Aún no hay mensajes en este canal.</p>
+      <p class="text-ink-500 text-xs mt-1">Sé el primero en escribir 👋</p>
+    </div>`;
+    return;
+  }
+  const isAdmn = _forumIsCurrentUserAdmin();
+  // Agrupar mensajes consecutivos del mismo autor
+  const groups = [];
+  forumMessages.forEach(m => {
+    const last = groups[groups.length - 1];
+    if (last && last.user_id === m.user_id && (new Date(m.created_at) - new Date(last.lastAt)) < 5*60*1000) {
+      last.items.push(m);
+      last.lastAt = m.created_at;
+    } else {
+      groups.push({ user_id: m.user_id, firstAt: m.created_at, lastAt: m.created_at, items: [m] });
+    }
+  });
+  wrap.innerHTML = groups.map(g => {
+    const u = forumUserInfoCache[g.user_id];
+    const nickname = (u && u.nickname) ? u.nickname : 'usuario';
+    const plan = u && u.plan;
+    const planBadge = plan === 'Exclusive'
+      ? '<span class="forum-msg-plan amber">EX</span>'
+      : plan === 'Pro' ? '<span class="forum-msg-plan accent">PRO</span>'
+      : '';
+    const avatar = mbAvatarSVG(g.user_id, nickname, 36);
+    const time = new Date(g.firstAt).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+    const itemsHTML = g.items.map(m => forumSingleMessageHTML(m, isAdmn)).join('');
+    return `<div class="forum-msg-group">
+      <button class="forum-msg-avatar" data-user-profile="${g.user_id}" aria-label="Ver perfil de ${nickname}">${avatar}</button>
+      <div class="forum-msg-body">
+        <div class="forum-msg-header">
+          <button class="forum-msg-author" data-user-profile="${g.user_id}">${(nickname||'').replace(/[<>]/g,'')}</button>
+          ${planBadge}
+          <span class="forum-msg-time">${time}</span>
+          ${isAdmn ? `<button class="forum-msg-admin" data-forum-block-user="${g.user_id}" title="Bloquear usuario">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          </button>` : ''}
+        </div>
+        ${itemsHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function forumSingleMessageHTML(m, isAdmn) {
+  const isDeleted = !!m.deleted_at;
+  const body = isDeleted
+    ? `<em class="forum-msg-deleted">— mensaje eliminado por moderación —</em>`
+    : forumFormatBody(m.body);
+  const deleteBtn = (isAdmn && !isDeleted)
+    ? `<button class="forum-msg-delete" data-forum-delete-msg="${m.id}" aria-label="Borrar mensaje">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+      </button>` : '';
+  return `<div class="forum-msg-line">
+    <span class="forum-msg-text">${body}</span>
+    ${deleteBtn}
+  </div>`;
+}
+
+// Escapa HTML y resalta menciones @nickname
+function forumFormatBody(text) {
+  if (!text) return '';
+  // Escape básico
+  const safe = String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Resaltar menciones
+  return safe.replace(/@([a-zA-Z0-9À-ÿ_\-]{3,20})/g, '<span class="forum-mention">@$1</span>');
+}
+
+function renderForumComposer() {
+  const wrap = document.getElementById('forumComposerWrap');
+  if (!wrap) return;
+  const channel = forumChannels.find(c => c.id === forumCurrentChannelId);
+  // Si estoy bloqueado no puedo escribir
+  if (forumMyBlocked) {
+    wrap.innerHTML = `<div class="forum-composer-blocked">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      Has sido bloqueado del foro por la moderación. Solo puedes leer.
+    </div>`;
+    return;
+  }
+  wrap.innerHTML = `<form id="forumComposerForm" class="forum-composer">
+    <textarea id="forumComposerInput" rows="1" maxlength="2000" placeholder="Mensaje en #${(channel?.name||'')}" autocomplete="off"></textarea>
+    <button type="submit" class="forum-composer-send" aria-label="Enviar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+    <div id="forumMentionPicker" class="forum-mention-picker hidden"></div>
+  </form>`;
+  setupForumComposerListeners();
+}
+
+let _forumMentionState = { open: false, anchor: 0, query: '', items: [], selected: 0 };
+
+function setupForumComposerListeners() {
+  const form = document.getElementById('forumComposerForm');
+  const ta = document.getElementById('forumComposerInput');
+  const picker = document.getElementById('forumMentionPicker');
+  if (!form || !ta) return;
+
+  // Auto-resize del textarea según contenido
+  function autosize() {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+  }
+  ta.addEventListener('input', () => { autosize(); detectMention(); });
+
+  // Detectar mención: si la palabra actual empieza por @, mostrar picker
+  function detectMention() {
+    const value = ta.value;
+    const cursor = ta.selectionStart;
+    const before = value.slice(0, cursor);
+    const match = before.match(/(?:^|\s)@([a-zA-Z0-9À-ÿ_\-]{0,20})$/);
+    if (!match) { hidePicker(); return; }
+    const q = (match[1] || '').toLowerCase();
+    // Construir lista de candidatos: usuarios del cache + el cliente actual + admins
+    const candidates = Object.values(forumUserInfoCache)
+      .filter(u => u && u.nickname && u.id !== activeClientId)
+      .filter(u => !q || (u.nickname || '').toLowerCase().includes(q))
+      .slice(0, 6);
+    if (!candidates.length) { hidePicker(); return; }
+    _forumMentionState = { open: true, anchor: cursor - (match[1] || '').length - 1, query: q, items: candidates, selected: 0 };
+    renderPicker();
+  }
+  function renderPicker() {
+    picker.classList.remove('hidden');
+    picker.innerHTML = _forumMentionState.items.map((u, i) => `
+      <button type="button" class="forum-mention-item ${i===_forumMentionState.selected?'active':''}" data-mention-pick="${u.nickname}">
+        ${mbAvatarSVG(u.id, u.nickname, 24)}
+        <span>${u.nickname.replace(/[<>]/g,'')}</span>
+      </button>
+    `).join('');
+  }
+  function hidePicker() {
+    _forumMentionState.open = false;
+    if (picker) picker.classList.add('hidden');
+  }
+  function insertMention(nickname) {
+    const value = ta.value;
+    const cursor = ta.selectionStart;
+    const before = value.slice(0, cursor);
+    const m = before.match(/(?:^|\s)@([a-zA-Z0-9À-ÿ_\-]{0,20})$/);
+    if (!m) { hidePicker(); return; }
+    const start = cursor - (m[1] || '').length - 1;
+    const newValue = value.slice(0, start) + '@' + nickname + ' ' + value.slice(cursor);
+    ta.value = newValue;
+    const newCursor = start + nickname.length + 2;
+    ta.setSelectionRange(newCursor, newCursor);
+    ta.focus();
+    hidePicker(); autosize();
+  }
+
+  // Navegación con teclado en el picker
+  ta.addEventListener('keydown', (e) => {
+    if (_forumMentionState.open) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _forumMentionState.selected = (_forumMentionState.selected + 1) % _forumMentionState.items.length;
+        renderPicker(); return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _forumMentionState.selected = (_forumMentionState.selected - 1 + _forumMentionState.items.length) % _forumMentionState.items.length;
+        renderPicker(); return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        const pick = _forumMentionState.items[_forumMentionState.selected];
+        if (pick) { e.preventDefault(); insertMention(pick.nickname); return; }
+      }
+      if (e.key === 'Escape') { hidePicker(); return; }
+    }
+    // Enter normal → enviar (sin shift)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.dispatchEvent(new Event('submit'));
+    }
+  });
+
+  // Picker: click en una sugerencia
+  picker.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-mention-pick]'); if (!btn) return;
+    insertMention(btn.dataset.mentionPick);
+  });
+
+  // Submit del form
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = (ta.value || '').trim();
+    if (!body) return;
+    if (!forumCurrentChannelId) return;
+    ta.value = ''; autosize();
+    const { error } = await sb.from('forum_messages').insert({
+      channel_id: forumCurrentChannelId,
+      user_id: activeClientId,
+      body: body,
+    });
+    if (error) {
+      showToast('No se pudo enviar el mensaje: ' + error.message, 'error');
+      ta.value = body; autosize(); return;
+    }
+    // El realtime hará el append, pero por si acaso, también lo añadimos optimista.
+    // (Si ya llegó por realtime, no se duplicará por el check del INSERT handler.)
+  });
+}
+
+function scrollForumToBottom() {
+  const wrap = document.getElementById('forumMessages');
+  if (wrap) wrap.scrollTop = wrap.scrollHeight;
+}
+
+// Realtime: suscribirse a inserts y updates en el canal actual
+function subscribeForumChannelRealtime(channelId) {
+  // Limpiar suscripción anterior
+  if (forumRealtimeChannel) {
+    try { sb.removeChannel(forumRealtimeChannel); } catch(e) {}
+    forumRealtimeChannel = null;
+  }
+  forumRealtimeChannel = sb.channel(`forum:${channelId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'forum_messages', filter: `channel_id=eq.${channelId}` },
+      async (payload) => {
+        const m = payload.new;
+        if (forumMessages.find(x => x.id === m.id)) return; // ya está
+        forumMessages.push(m);
+        await renderForumMessages();
+        scrollForumToBottom();
+      })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'forum_messages', filter: `channel_id=eq.${channelId}` },
+      async (payload) => {
+        const m = payload.new;
+        const idx = forumMessages.findIndex(x => x.id === m.id);
+        if (idx === -1) return;
+        forumMessages[idx] = m;
+        await renderForumMessages();
+      })
+    .subscribe();
+}
+
+// Click handlers globales del foro (delegated)
+document.addEventListener('click', async (e) => {
+  // Click en un canal
+  const chBtn = e.target.closest('[data-forum-channel]');
+  if (chBtn) {
+    // Si pulsó los "..." NO abrimos canal — eso es para el menú
+    if (e.target.closest('[data-forum-channel-menu]')) return;
+    openForumChannel(chBtn.dataset.forumChannel);
+    return;
+  }
+  // Click en los "..." de un canal → menú abandonar
+  const menuBtn = e.target.closest('[data-forum-channel-menu]');
+  if (menuBtn) {
+    e.stopPropagation();
+    const channelId = menuBtn.dataset.forumChannelMenu;
+    const ch = forumChannels.find(c => c.id === channelId);
+    if (!ch) return;
+    if (confirm(`¿Abandonar el canal #${ch.name}?`)) {
+      const { error } = await sb.from('forum_memberships').delete()
+        .match({ user_id: activeClientId, channel_id: channelId });
+      if (error) { showToast('Error al abandonar: ' + error.message, 'error'); return; }
+      forumMyChannelIds.delete(channelId);
+      showToast(`Has abandonado #${ch.name}`, 'info');
+      if (forumCurrentChannelId === channelId) {
+        const general = forumChannels.find(c => c.is_default);
+        forumCurrentChannelId = general?.id || forumChannels[0]?.id;
+        await openForumChannel(forumCurrentChannelId);
+      } else {
+        renderForumChannels();
+      }
+    }
+    return;
+  }
+  // Admin: borrar mensaje
+  const delBtn = e.target.closest('[data-forum-delete-msg]');
+  if (delBtn) {
+    if (!_forumIsCurrentUserAdmin()) return;
+    const msgId = delBtn.dataset.forumDeleteMsg;
+    if (!confirm('¿Borrar este mensaje?')) return;
+    const { error } = await sb.from('forum_messages').update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: activeClientId,
+    }).eq('id', msgId);
+    if (error) { showToast('Error al borrar: ' + error.message, 'error'); return; }
+    showToast('Mensaje eliminado', 'success', 1800);
+    return;
+  }
+  // Admin: bloquear usuario
+  const blkBtn = e.target.closest('[data-forum-block-user]');
+  if (blkBtn) {
+    if (!_forumIsCurrentUserAdmin()) return;
+    const uid = blkBtn.dataset.forumBlockUser;
+    if (uid === activeClientId) { showToast('No puedes bloquearte a ti mismo', 'error'); return; }
+    if (!confirm('¿Bloquear a este usuario del foro?')) return;
+    const { error } = await sb.from('forum_blocks').insert({
+      user_id: uid, blocked_by: activeClientId,
+    });
+    if (error) { showToast('Error al bloquear: ' + error.message, 'error'); return; }
+    showToast('Usuario bloqueado', 'success');
+    return;
+  }
+});
 
 /* ============================================================
    NICKNAME MODAL — pedir nickname obligatorio al cliente
