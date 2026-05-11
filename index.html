@@ -167,6 +167,7 @@
   .diff-easy   { background: rgba(0,230,150,0.10); color: #00e696; border-color: rgba(0,230,150,0.35); }
   .diff-medium { background: rgba(245,158,11,0.10); color: #fcd34d; border-color: rgba(245,158,11,0.35); }
   .diff-hard   { background: rgba(239,68,68,0.10); color: #fca5a5; border-color: rgba(239,68,68,0.35); }
+  .diff-special{ background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(244,114,182,0.16)); color: #f0abfc; border-color: rgba(168,85,247,0.45); box-shadow: 0 0 18px rgba(168,85,247,0.18) inset; }
 
   /* Barra de progreso */
   .progress-track {
@@ -181,6 +182,8 @@
   }
   .progress-fill.amber { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
   .progress-fill.red { background: linear-gradient(90deg, #f87171, #ef4444); }
+  .progress-fill.violet { background: linear-gradient(90deg, #c084fc, #a855f7, #f0abfc); background-size: 200% 100%; animation: mbShimmer 2.5s linear infinite; }
+  @keyframes mbShimmer { 0%{background-position: 0% 0%;} 100%{background-position: 200% 0%;} }
 
   /* Insignias circulares estilo medalla — más pequeñas en móvil, grandes en desktop */
   .badge-medal {
@@ -219,6 +222,12 @@
   .badge-medal.locked .badge-medal-inner { background: rgba(40,40,45,0.7); box-shadow: none; }
   .badge-medal.amber { --badge-ring: conic-gradient(from 0deg, #fbbf24, #f59e0b, #d97706, #fbbf24); --badge-bg: radial-gradient(circle at 30% 30%, rgba(252,211,77,0.45), rgba(120,53,15,0.55)); }
   .badge-medal.red   { --badge-ring: conic-gradient(from 0deg, #f87171, #ef4444, #b91c1c, #f87171); --badge-bg: radial-gradient(circle at 30% 30%, rgba(248,113,113,0.45), rgba(127,29,29,0.55)); }
+  .badge-medal.violet{ --badge-ring: conic-gradient(from 0deg, #f0abfc, #c084fc, #a855f7, #7e22ce, #f0abfc); --badge-bg: radial-gradient(circle at 30% 30%, rgba(244,114,182,0.55), rgba(76,29,149,0.65)); }
+  .badge-medal.violet:not(.locked) { animation: mbBadgePulse 2.6s ease-in-out infinite; }
+  @keyframes mbBadgePulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(168,85,247,0); }
+    50%      { box-shadow: 0 0 18px rgba(168,85,247,0.45), 0 0 32px rgba(244,114,182,0.25); }
+  }
   .badge-medal svg { width: 22px; height: 22px; color: #fff; }
   @media (min-width: 640px) {
     .badge-medal svg { width: 36px; height: 36px; }
@@ -4431,7 +4440,7 @@ function bookmakersTabHTML() {
 /* ============================================================
    MISIONES — sistema de retos, MBCoins e insignias
 ============================================================ */
-const COINS_BY_DIFFICULTY = { easy: 10, medium: 25, hard: 50 };
+const COINS_BY_DIFFICULTY = { easy: 10, medium: 25, hard: 50, special: 150 };
 
 // Logo SVG de un MBCoin (moneda verde con "MB" grabado)
 /* ============================================================
@@ -4582,6 +4591,24 @@ const MISSION_ICONS = {
   crown:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zM5 21h14"/></svg>',
   medal:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15L2.66 7.14a2 2 0 0 1 0-2L4.81 1.5a2 2 0 0 1 1.73-1h10.92a2 2 0 0 1 1.73 1l2.15 3.64a2 2 0 0 1 0 2L16.79 15"/><circle cx="12" cy="17" r="5"/><path d="M12 14v6"/></svg>',
   fire:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+  rocket:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+  bolt:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  diamond:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3L8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>',
+  gem:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><line x1="11" y1="3" x2="8" y2="9"/><line x1="13" y1="3" x2="16" y2="9"/><line x1="2" y1="9" x2="22" y2="9"/></svg>',
+  mountain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  heart:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  briefcase:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  dollar:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  users:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  camera:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+  chat:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  eye:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  infinity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.739-8z"/></svg>',
+  rosette:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>',
+  zap:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  graduate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
+  globe:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
 };
 
 // Calcula stats agregados del cliente para evaluar progreso de misiones
@@ -4589,8 +4616,17 @@ function computeClientMissionStats(client) {
   const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
   const followed = getFollowed(client.id);
   let won = 0, lost = 0, voided = 0, pending = 0;
-  let funbetFollowed = false;
+  let funbetFollowed = false, funbetWonCount = 0;
+  let exclusiveFollowed = 0, exclusiveWon = 0;
   let totalInvested = 0, totalReturned = 0;
+  let maxOddsWon = 0, bestSingleProfit = 0;
+  const sportsFollowed = new Set();
+  const competitionsFollowed = new Set();
+  const monthsActiveSet = new Set();
+
+  // Para racha más larga: ordenar por fecha y revisar
+  const resolved = [];
+
   followed.forEach(b => {
     const p = picksById[b.pickId];
     if (!p) return;
@@ -4599,25 +4635,76 @@ function computeClientMissionStats(client) {
     else if (r === 'loss') lost++;
     else if (r === 'void') voided++;
     else pending++;
-    if (p.tier === 'funbet') funbetFollowed = true;
+    if (p.tier === 'funbet') {
+      funbetFollowed = true;
+      if (r === 'win') funbetWonCount++;
+    }
+    if (p.tier === 'exclusive') {
+      exclusiveFollowed++;
+      if (r === 'win') exclusiveWon++;
+    }
     totalInvested += b.amount;
     const odds = pickTotalOdds(p);
-    if (r === 'win') totalReturned += b.amount * odds;
-    else if (r === 'void') totalReturned += b.amount;
+    if (r === 'win') {
+      totalReturned += b.amount * odds;
+      if (odds > maxOddsWon) maxOddsWon = odds;
+      const profit = b.amount * odds - b.amount;
+      if (profit > bestSingleProfit) bestSingleProfit = profit;
+    } else if (r === 'void') {
+      totalReturned += b.amount;
+    }
+    // Deportes / competiciones distintas
+    if (p.sport) sportsFollowed.add(String(p.sport).toLowerCase());
+    if (p.competition) competitionsFollowed.add(String(p.competition).toLowerCase());
+    // Meses activos (YYYY-MM del pick)
+    if (p.date) monthsActiveSet.add(String(p.date).slice(0, 7));
+    if (r !== 'pending') resolved.push({ p, r });
   });
   const profit = totalReturned - totalInvested;
+
+  // Racha consecutiva MÁS LARGA (no la actual)
+  resolved.sort((a, b) => (a.p.date + (a.p.time||'')).localeCompare(b.p.date + (b.p.time||'')));
+  let longestStreak = 0, curStreak = 0;
+  resolved.forEach(x => {
+    if (x.r === 'win') { curStreak++; if (curStreak > longestStreak) longestStreak = curStreak; }
+    else if (x.r === 'void') { /* no rompe */ }
+    else { curStreak = 0; }
+  });
+
+  // Días distintos conectados (de localStorage)
+  const loginDates = (typeof getLoginDates === 'function') ? getLoginDates(client.id) : [];
+
+  // ROI personal
+  const roi = totalInvested > 0 ? (profit / totalInvested) : 0;
+
   return {
     totalFollowed: followed.length,
     won, lost, voided, pending,
-    funbetFollowed,
-    totalInvested, totalReturned, profit,
+    funbetFollowed, funbetWonCount,
+    exclusiveFollowed, exclusiveWon,
+    totalInvested, totalReturned, profit, roi,
+    maxOddsWon, bestSingleProfit,
     notificationsActive: !!client.notifications_activated,
+    // Nuevos stats
+    longestStreak,
+    daysActive: (loginDates || []).length,
+    sportsCount: sportsFollowed.size,
+    competitionsCount: competitionsFollowed.size,
+    monthsActive: monthsActiveSet.size,
+    hasNickname: !!(client.nickname && client.nickname.trim()),
+    hasAvatar: !!client.avatar_url,
+    plan: client.plan,
+    isExclusivePlan: client.plan === 'Exclusive',
+    isProOrBetter: client.plan === 'Pro' || client.plan === 'Exclusive',
   };
 }
 
 // Definición de misiones — orden importa para mostrarlas
+// IMPORTANTE: no cambies los `id` de misiones existentes (los usuarios ya las tienen canjeadas en localStorage)
 const MISSIONS = [
-  // FÁCILES (10 MBC)
+  /* ============================================================
+     FÁCILES (10 MBC) — descubrir features y dar los primeros pasos
+  ============================================================ */
   { id: 'first_step', title: 'Primer paso', desc: 'Sigue tu primera apuesta', difficulty: 'easy', target: 1, icon: 'star',
     progress: s => Math.min(s.totalFollowed, 1) },
   { id: 'first_win', title: 'Primera victoria', desc: 'Acierta tu primera apuesta', difficulty: 'easy', target: 1, icon: 'trophy',
@@ -4626,7 +4713,30 @@ const MISSIONS = [
     progress: s => Math.min(s.totalFollowed, 5) },
   { id: 'connected', title: 'Conectado', desc: 'Activa las notificaciones de la app', difficulty: 'easy', target: 1, icon: 'bell',
     progress: s => s.notificationsActive ? 1 : 0 },
-  // MEDIAS (25 MBC)
+  { id: 'nickname_set', title: 'Tu identidad', desc: 'Elige tu nickname para el foro', difficulty: 'easy', target: 1, icon: 'rosette',
+    progress: s => s.hasNickname ? 1 : 0 },
+  { id: 'photo_set', title: 'Sonrisa al frente', desc: 'Sube tu foto de perfil', difficulty: 'easy', target: 1, icon: 'camera',
+    progress: s => s.hasAvatar ? 1 : 0 },
+  { id: 'curious_mind', title: 'Curiosidad sana', desc: 'Conéctate 3 días distintos', difficulty: 'easy', target: 3, icon: 'eye',
+    progress: s => Math.min(s.daysActive, 3) },
+  { id: 'two_sports', title: 'Multideporte', desc: 'Sigue apuestas de 2 deportes diferentes', difficulty: 'easy', target: 2, icon: 'globe',
+    progress: s => Math.min(s.sportsCount, 2) },
+  { id: 'second_win', title: 'Doblete', desc: 'Acierta 2 apuestas en total', difficulty: 'easy', target: 2, icon: 'medal',
+    progress: s => Math.min(s.won, 2) },
+  { id: 'small_profit', title: 'Beneficio en verde', desc: 'Acumula 10€ de beneficio', difficulty: 'easy', target: 10, icon: 'dollar',
+    progress: s => Math.min(Math.max(s.profit, 0), 10), formatProgress: v => v.toFixed(0) + '€' },
+  { id: 'student', title: 'Buen alumno', desc: 'Sigue una apuesta marcada como EXCLUSIVE', difficulty: 'easy', target: 1, icon: 'graduate',
+    progress: s => Math.min(s.exclusiveFollowed, 1) },
+  { id: 'first_invest', title: 'Capital inicial', desc: 'Invierte tus primeros 25€', difficulty: 'easy', target: 25, icon: 'briefcase',
+    progress: s => Math.min(s.totalInvested, 25), formatProgress: v => v.toFixed(0) + '€' },
+  { id: 'forum_hello', title: 'Hola al foro', desc: 'Tener nickname y notificaciones activas a la vez', difficulty: 'easy', target: 2, icon: 'chat',
+    progress: s => (s.hasNickname ? 1 : 0) + (s.notificationsActive ? 1 : 0) },
+  { id: 'streak_lite', title: 'Buen comienzo', desc: 'Encadena 2 aciertos seguidos', difficulty: 'easy', target: 2, icon: 'bolt',
+    progress: s => Math.min(s.longestStreak, 2) },
+
+  /* ============================================================
+     MEDIAS (25 MBC) — uso continuado y desempeño decente
+  ============================================================ */
   { id: 'collector', title: 'Coleccionista', desc: 'Sigue 10 apuestas en total', difficulty: 'medium', target: 10, icon: 'shield',
     progress: s => Math.min(s.totalFollowed, 10) },
   { id: 'sharpshooter', title: 'Tirador certero', desc: 'Acierta 5 apuestas', difficulty: 'medium', target: 5, icon: 'target',
@@ -4635,13 +4745,64 @@ const MISSIONS = [
     progress: s => s.funbetFollowed ? 1 : 0 },
   { id: 'investor', title: 'Inversor', desc: 'Apuesta 100€ acumulados', difficulty: 'medium', target: 100, icon: 'coins',
     progress: s => Math.min(s.totalInvested, 100), formatProgress: v => v.toFixed(0) + '€' },
-  // DIFÍCILES (50 MBC)
+  { id: 'streak3', title: 'En racha', desc: 'Encadena 3 aciertos seguidos', difficulty: 'medium', target: 3, icon: 'fire',
+    progress: s => Math.min(s.longestStreak, 3) },
+  { id: 'profit_30', title: 'Beneficio sólido', desc: 'Acumula 30€ de beneficio', difficulty: 'medium', target: 30, icon: 'dollar',
+    progress: s => Math.min(Math.max(s.profit, 0), 30), formatProgress: v => v.toFixed(0) + '€' },
+  { id: 'odds_3', title: 'Cuota alta', desc: 'Acierta una apuesta con cuota ≥ 3.00', difficulty: 'medium', target: 3, icon: 'bolt',
+    progress: s => Math.min(s.maxOddsWon, 3), formatProgress: v => v.toFixed(2) },
+  { id: 'tres_meses', title: 'Constancia', desc: 'Sigue apuestas en 2 meses distintos', difficulty: 'medium', target: 2, icon: 'calendar',
+    progress: s => Math.min(s.monthsActive, 2) },
+  { id: 'three_sports', title: 'Polivalente', desc: 'Sigue apuestas de 3 deportes diferentes', difficulty: 'medium', target: 3, icon: 'globe',
+    progress: s => Math.min(s.sportsCount, 3) },
+  { id: 'two_comps', title: 'Conocedor', desc: 'Sigue apuestas de 3 competiciones diferentes', difficulty: 'medium', target: 3, icon: 'compass',
+    progress: s => Math.min(s.competitionsCount, 3) },
+  { id: 'half_dozen', title: 'Media docena', desc: 'Acierta 6 apuestas en total', difficulty: 'medium', target: 6, icon: 'target',
+    progress: s => Math.min(s.won, 6) },
+  { id: 'active_week', title: 'Semana activa', desc: 'Conéctate 7 días distintos', difficulty: 'medium', target: 7, icon: 'eye',
+    progress: s => Math.min(s.daysActive, 7) },
+  { id: 'pro_member', title: 'Sube de nivel', desc: 'Tener plan Pro o superior', difficulty: 'medium', target: 1, icon: 'rocket',
+    progress: s => s.isProOrBetter ? 1 : 0 },
+  { id: 'lucky_win', title: 'Premio gordo', desc: 'Gana 25€ en una sola apuesta', difficulty: 'medium', target: 25, icon: 'gem',
+    progress: s => Math.min(s.bestSingleProfit, 25), formatProgress: v => v.toFixed(0) + '€' },
+
+  /* ============================================================
+     DIFÍCILES (50 MBC) — logros que exigen tiempo y acierto
+  ============================================================ */
   { id: 'champion', title: 'Campeón', desc: 'Sigue 25 apuestas', difficulty: 'hard', target: 25, icon: 'crown',
     progress: s => Math.min(s.totalFollowed, 25) },
   { id: 'master', title: 'Maestro', desc: 'Acierta 15 apuestas', difficulty: 'hard', target: 15, icon: 'medal',
     progress: s => Math.min(s.won, 15) },
   { id: 'big_winner', title: 'Gran ganador', desc: 'Acumula 50€ de beneficio', difficulty: 'hard', target: 50, icon: 'fire',
     progress: s => Math.min(Math.max(s.profit, 0), 50), formatProgress: v => v.toFixed(0) + '€' },
+  { id: 'streak5', title: 'Racha de fuego', desc: 'Encadena 5 aciertos seguidos', difficulty: 'hard', target: 5, icon: 'bolt',
+    progress: s => Math.min(s.longestStreak, 5) },
+  { id: 'odds_5', title: 'Pelotazo', desc: 'Acierta una apuesta con cuota ≥ 5.00', difficulty: 'hard', target: 5, icon: 'zap',
+    progress: s => Math.min(s.maxOddsWon, 5), formatProgress: v => v.toFixed(2) },
+  { id: 'monthly_active', title: 'Mes a mes', desc: 'Sigue apuestas en 3 meses distintos', difficulty: 'hard', target: 3, icon: 'calendar',
+    progress: s => Math.min(s.monthsActive, 3) },
+  { id: 'serial_investor', title: 'Inversor serio', desc: 'Apuesta 500€ acumulados', difficulty: 'hard', target: 500, icon: 'briefcase',
+    progress: s => Math.min(s.totalInvested, 500), formatProgress: v => v.toFixed(0) + '€' },
+  { id: 'exclusive_winner', title: 'Cazador premium', desc: 'Acierta 3 apuestas EXCLUSIVE', difficulty: 'hard', target: 3, icon: 'gem',
+    progress: s => Math.min(s.exclusiveWon, 3) },
+  { id: 'funbet_winner', title: 'Combina y gana', desc: 'Acierta 2 apuestas combinadas (funbet)', difficulty: 'hard', target: 2, icon: 'sparkles',
+    progress: s => Math.min(s.funbetWonCount, 2) },
+  { id: 'broad_horizon', title: 'Horizonte amplio', desc: 'Sigue apuestas de 5 deportes diferentes', difficulty: 'hard', target: 5, icon: 'mountain',
+    progress: s => Math.min(s.sportsCount, 5) },
+
+  /* ============================================================
+     ESPECIALES (150 MBC) — al alcance de muy pocos
+  ============================================================ */
+  { id: 'legend_50', title: 'Leyenda viva', desc: 'Acierta 50 apuestas en total — solo los más constantes lo logran', difficulty: 'special', target: 50, icon: 'crown',
+    progress: s => Math.min(s.won, 50) },
+  { id: 'whale', title: 'Tiburón de las cuotas', desc: 'Acumula 500€ de beneficio en tu cuenta', difficulty: 'special', target: 500, icon: 'diamond',
+    progress: s => Math.min(Math.max(s.profit, 0), 500), formatProgress: v => v.toFixed(0) + '€' },
+  { id: 'unstoppable', title: 'Imparable', desc: 'Encadena 10 aciertos seguidos — solo para nervios de acero', difficulty: 'special', target: 10, icon: 'rocket',
+    progress: s => Math.min(s.longestStreak, 10) },
+  { id: 'jackpot', title: 'Bombazo', desc: 'Acierta una apuesta con cuota ≥ 10.00', difficulty: 'special', target: 10, icon: 'gem',
+    progress: s => Math.min(s.maxOddsWon, 10), formatProgress: v => v.toFixed(2) },
+  { id: 'iron_will', title: 'Voluntad de hierro', desc: 'Sigue apuestas en 6 meses distintos — fiel al equipo', difficulty: 'special', target: 6, icon: 'infinity',
+    progress: s => Math.min(s.monthsActive, 6) },
 ];
 
 // Devuelve el array de misiones con su progreso evaluado
@@ -4783,7 +4944,10 @@ function getUnclaimedWinStreakMilestones(clientId) {
 
 // HTML de una insignia individual (medalla circular)
 function badgeMedalHTML(mission, unlocked) {
-  const diffClass = mission.difficulty === 'medium' ? 'amber' : mission.difficulty === 'hard' ? 'red' : '';
+  const diffClass = mission.difficulty === 'medium' ? 'amber'
+                   : mission.difficulty === 'hard'    ? 'red'
+                   : mission.difficulty === 'special' ? 'violet'
+                   : '';
   const icon = MISSION_ICONS[mission.icon] || MISSION_ICONS.star;
   return `<div class="flex flex-col items-center text-center" title="${mission.title}">
     <div class="badge-medal ${diffClass} ${unlocked ? '' : 'locked'}">
@@ -4796,9 +4960,15 @@ function badgeMedalHTML(mission, unlocked) {
 // HTML de una tarjeta de misión
 function missionCardHTML(mission) {
   const pct = Math.min(100, (mission.current / mission.target) * 100);
-  const diffLabel = mission.difficulty === 'easy' ? 'Fácil' : mission.difficulty === 'medium' ? 'Media' : 'Difícil';
+  const diffLabel = mission.difficulty === 'easy'    ? 'Fácil'
+                   : mission.difficulty === 'medium' ? 'Media'
+                   : mission.difficulty === 'hard'   ? 'Difícil'
+                   : 'Especial';
   const diffClass = `diff-${mission.difficulty}`;
-  const fillClass = mission.difficulty === 'medium' ? 'amber' : mission.difficulty === 'hard' ? 'red' : '';
+  const fillClass = mission.difficulty === 'medium'  ? 'amber'
+                   : mission.difficulty === 'hard'   ? 'red'
+                   : mission.difficulty === 'special'? 'violet'
+                   : '';
   const fmt = mission.formatProgress || (v => Math.floor(v));
   const icon = MISSION_ICONS[mission.icon] || MISSION_ICONS.star;
   return `<article class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5 ${mission.completed ? 'opacity-100' : ''}">
@@ -4844,22 +5014,62 @@ function missionsTabHTML(client) {
   const totalAvailableCoins = evaluated.reduce((s, m) => s + m.coins, 0);
 
   // Agrupar por dificultad para la lista
-  const byDiff = { easy: [], medium: [], hard: [] };
-  evaluated.forEach(m => byDiff[m.difficulty].push(m));
+  const byDiff = { easy: [], medium: [], hard: [], special: [] };
+  evaluated.forEach(m => { (byDiff[m.difficulty] || (byDiff[m.difficulty] = [])).push(m); });
 
-  const renderGroup = (label, list) => `<div class="mt-6">
-    <h4 class="font-display text-base font-semibold text-white mb-3">${label}</h4>
-    <div class="grid gap-3 md:grid-cols-2">${list.map(missionCardHTML).join('')}</div>
-  </div>`;
+  // Mini-resumen por grupo: { done, total, coins }
+  const groupSummary = (key) => {
+    const list = byDiff[key] || [];
+    const done = list.filter(m => m.completed).length;
+    const coins = list.reduce((s, m) => s + m.coins, 0);
+    return { done, total: list.length, coins };
+  };
+  const sE = groupSummary('easy');
+  const sM = groupSummary('medium');
+  const sH = groupSummary('hard');
+  const sS = groupSummary('special');
+
+  // Render de un grupo: la cabecera lleva contador + barra de progreso del grupo
+  const renderGroup = (label, key, list, accentClass, fillClass) => {
+    const sum = groupSummary(key);
+    const pct = sum.total ? (sum.done / sum.total) * 100 : 0;
+    return `<div class="mt-7">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <h4 class="font-display text-base font-semibold ${accentClass}">${label}</h4>
+        <span class="text-[11px] uppercase tracking-[0.18em] text-ink-500">${sum.done} / ${sum.total} completadas</span>
+      </div>
+      <div class="mt-2 progress-track"><div class="progress-fill ${fillClass}" style="width:${pct}%;"></div></div>
+      <div class="mt-4 grid gap-3 md:grid-cols-2">${list.map(missionCardHTML).join('')}</div>
+    </div>`;
+  };
+
+  // Próximas 3 misiones más cercanas a completarse (para destacar arriba)
+  const upcoming = evaluated
+    .filter(m => !m.completed && m.current > 0)
+    .map(m => ({ m, pct: m.current / m.target }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 3);
+
+  const upcomingHTML = upcoming.length ? `
+    <div class="mt-7">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <h4 class="font-display text-base font-semibold text-white">A un paso de conseguirlo</h4>
+        <span class="text-[11px] uppercase tracking-[0.18em] text-ink-500">No las pierdas de vista</span>
+      </div>
+      <div class="mt-3 grid gap-3 md:grid-cols-3">
+        ${upcoming.map(x => missionCardHTML(x.m)).join('')}
+      </div>
+    </div>` : '';
 
   return `<div>
     <!-- Header con MBCoins totales -->
     <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Misiones</span></div>
     <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">Tu progreso</h3>
-    <p class="mt-1 text-sm text-ink-500">Completa misiones para ganar MBCoins y desbloquear insignias.</p>
+    <p class="mt-1 text-sm text-ink-500">Completa misiones para ganar MBCoins y desbloquear insignias. Las <span class="text-fuchsia-300">especiales</span> son las más raras y dan <span class="text-fuchsia-300">150 MBC</span> cada una.</p>
 
-    <div class="mt-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-      <div class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5">
+    <!-- KPI cards -->
+    <div class="mt-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
         <div class="flex items-center gap-2">
           ${mbCoinSVG(20)}
           <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">MBCoins</div>
@@ -4869,34 +5079,47 @@ function missionsTabHTML(client) {
           <span class="text-sm text-ink-500">/ ${totalAvailableCoins}</span>
         </div>
       </div>
-      <div class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5">
+      <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
         <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">Insignias</div>
         <div class="mt-2 flex items-baseline gap-1.5">
           <span class="font-display text-3xl font-bold text-white sm:text-4xl">${completed.length}</span>
           <span class="text-sm text-ink-500">/ ${evaluated.length}</span>
         </div>
+        <div class="mt-3 progress-track"><div class="progress-fill" style="width:${evaluated.length ? (completed.length/evaluated.length)*100 : 0}%;"></div></div>
       </div>
-      <div class="gradient-border rounded-2xl bg-white/[0.02] p-4 sm:p-5 md:col-span-1 col-span-2">
-        <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">Próximamente</div>
-        <p class="mt-2 text-xs text-ink-200/80 leading-relaxed">Podrás canjear tus MBCoins por <span class="text-amber-300">recompensas exclusivas</span>: picks gratis, descuentos en suscripción, merchandising y más.</p>
+      <div class="rounded-2xl border border-fuchsia-400/30 bg-fuchsia-400/[0.05] p-4 sm:p-5">
+        <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-fuchsia-200/80">Especiales</div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span class="font-display text-3xl font-bold text-fuchsia-300 sm:text-4xl">${sS.done}</span>
+          <span class="text-sm text-fuchsia-200/60">/ ${sS.total}</span>
+        </div>
+        <p class="mt-1 text-[11px] text-fuchsia-200/70">+${sS.coins} MBC en juego</p>
+      </div>
+      <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+        <div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">Recompensas</div>
+        <p class="mt-2 text-xs text-ink-200/80 leading-relaxed">Próximamente canjearás MBCoins por <span class="text-amber-300">picks gratis</span>, descuentos y <span class="text-fuchsia-300">merchandising</span>.</p>
       </div>
     </div>
 
     <!-- Galería de insignias -->
     <div class="mt-10">
       <h4 class="font-display text-xl font-semibold tracking-tight text-white">Galería de insignias</h4>
-      <p class="mt-1 text-sm text-ink-500">Desbloquéalas completando misiones. Las grises todavía están bloqueadas.</p>
+      <p class="mt-1 text-sm text-ink-500">Desbloquéalas completando misiones. Las grises todavía están bloqueadas — las moradas son las <span class="text-fuchsia-300">especiales</span>.</p>
       <div class="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
         ${evaluated.map(m => badgeMedalHTML(m, m.completed)).join('')}
       </div>
     </div>
 
+    ${upcomingHTML}
+
     <!-- Lista de misiones agrupadas por dificultad -->
     <div class="mt-10">
-      <h4 class="font-display text-xl font-semibold tracking-tight text-white">Lista de misiones</h4>
-      ${renderGroup('Fáciles · 10 MBC', byDiff.easy)}
-      ${renderGroup('Medias · 25 MBC', byDiff.medium)}
-      ${renderGroup('Difíciles · 50 MBC', byDiff.hard)}
+      <h4 class="font-display text-xl font-semibold tracking-tight text-white">Todas las misiones</h4>
+      <p class="mt-1 text-sm text-ink-500">${sE.total + sM.total + sH.total + sS.total} misiones en total · ${totalAvailableCoins} MBC por conseguir.</p>
+      ${renderGroup('Fáciles · 10 MBC',     'easy',    byDiff.easy,    'text-accent-neon', '')}
+      ${renderGroup('Medias · 25 MBC',      'medium',  byDiff.medium,  'text-amber-300',   'amber')}
+      ${renderGroup('Difíciles · 50 MBC',   'hard',    byDiff.hard,    'text-red-300',     'red')}
+      ${sS.total ? renderGroup('Especiales · 150 MBC · solo para los más fieros', 'special', byDiff.special, 'text-fuchsia-300', 'violet') : ''}
     </div>
   </div>`;
 }
