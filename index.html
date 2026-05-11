@@ -3046,14 +3046,11 @@ function showClientView(clientId) {
   maybeShowOnboarding();
   // (El confetti + popup de "apuesta acertada" se dispara solo al entrar en
   //  la pestaña "Mis apuestas", no aquí.)
-  // Registrar login del día. Si era nuevo, mostrar popup de racha
-  const { wasNew } = registerTodayLogin(activeClientId);
-  // Mostrar popup de racha solo si NO se ha mostrado ya hoy (sessionStorage)
-  const seenTodayKey = `mb_streak_popup_shown_${activeClientId}_${todayISO()}`;
-  if (!sessionStorage.getItem(seenTodayKey)) {
-    sessionStorage.setItem(seenTodayKey, '1');
-    setTimeout(() => showDailyStreakPopup(c, wasNew), 700);
-  }
+  // Registrar login del día y mostrar popup de racha cada vez que entra al panel.
+  // (Si más adelante quieres limitar a una vez al día, basta con añadir un
+  //  guard con localStorage en showDailyStreakPopup.)
+  registerTodayLogin(activeClientId);
+  setTimeout(() => showDailyStreakPopup(c, true), 700);
   // Comprobar hitos de win streak no canjeados (después del de racha diaria)
   setTimeout(() => checkWinStreakMilestones(c), 1800);
 }
@@ -7507,6 +7504,9 @@ function animateMBCoinsCounter(from, to) {
 const _DAY_NAMES = ['L','M','X','J','V','S','D'];
 const _MONTH_NAMES_LONG = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
+window.showDailyStreakPopup = function(client, todayWasNew) {
+  return showDailyStreakPopup(client, todayWasNew);
+};
 function showDailyStreakPopup(client, todayWasNew) {
   if (!client) return;
   const now = new Date();
