@@ -509,29 +509,7 @@
   }
   .forum-mention-item:hover, .forum-mention-item.active { background: rgba(0,230,150,0.12); }
 
-  /* === PULL TO REFRESH (móvil, en panel cliente y admin) =================
-     Indicador circular verde que aparece al arrastrar hacia abajo desde arriba.
-     Añadimos overscroll-behavior-y: contain para evitar que el "rubber band"
-     de iOS robe el gesto antes de que llegue a nuestro touchmove. */
-  body.client-active, body.admin-active { overscroll-behavior-y: contain; }
-  #ptrIndicator {
-    position: fixed; top: 0; left: 50%;
-    width: 40px; height: 40px;
-    transform: translate(-50%, -100%);
-    border-radius: 9999px;
-    background: rgba(6,18,12,0.95);
-    border: 1px solid rgba(0,230,150,0.35);
-    box-shadow: 0 8px 20px -6px rgba(0,0,0,0.55);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 200; opacity: 0;
-    transition: opacity .15s ease;
-    pointer-events: none;
-  }
-  #ptrIndicator.visible { opacity: 1; }
-  #ptrIndicator.spinning .ptr-arrow { animation: ptr-spin 0.8s linear infinite; }
-  .ptr-arrow { color: #00e696; transition: transform .2s ease; }
-  #ptrIndicator.ready .ptr-arrow { transform: rotate(180deg); }
-  @keyframes ptr-spin { to { transform: rotate(360deg); } }
+  /* (Pull to refresh eliminado a petición del usuario) */
 
   /* === CALENDARIO DE RACHA DE DÍAS CONECTADOS ===========================
      Cada celda del calendario tiene 3 estados: visitada (oscuro + MBCoin),
@@ -1640,11 +1618,6 @@
 <!-- Contenedor global de toasts (notificaciones elegantes) -->
 <div id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-<!-- Indicador de Pull-to-Refresh (móvil, panel cliente) -->
-<div id="ptrIndicator" aria-hidden="true">
-  <svg class="ptr-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-</div>
-
 <!-- Botón flotante de WhatsApp soporte (solo home pública) -->
 <a id="waSupportBtn" href="https://wa.me/34615565977" target="_blank" rel="noopener noreferrer" aria-label="Hablar con soporte por WhatsApp" title="¿Dudas? Habla con nosotros">
   <span class="wa-icon">
@@ -2724,6 +2697,7 @@ async function loadClientsFromSupabase() {
       price: parseFloat(row.price),
       status: row.status,
       joinedAt: row.joined_at,
+      nickname: row.nickname || null,
       stripe_customer_id: row.stripe_customer_id || null,
       stripe_subscription_id: row.stripe_subscription_id || null,
       notifications_activated: !!row.notifications_activated,
@@ -3586,6 +3560,7 @@ async function showClientFromSupabaseUser(user) {
   const client = row ? {
     id: row.id, name: row.name, email: row.email, plan: row.plan,
     price: parseFloat(row.price), status: row.status, joinedAt: row.joined_at, verified: true,
+    nickname: row.nickname || null,
     stripe_customer_id: row.stripe_customer_id || null,
     stripe_subscription_id: row.stripe_subscription_id || null,
     notifications_activated: !!row.notifications_activated,
@@ -8716,105 +8691,7 @@ function showWinStreakPopup(client, milestone, reward) {
   });
 }
 
-/* ============================================================
-   PULL TO REFRESH — gesto móvil de "arrastrar abajo desde arriba"
-   Activo dentro del panel CLIENTE y del panel ADMIN.
-============================================================ */
-(function setupPullToRefresh() {
-  const indicator = document.getElementById('ptrIndicator');
-  if (!indicator) return;
-
-  const THRESHOLD = 60;  // px que hay que arrastrar para activar
-  const MAX_PULL  = 120; // límite visual de pull
-  let startY = 0, pulling = false, currentY = 0, refreshing = false;
-
-  function panelMode() {
-    const cp = document.getElementById('clientPanel');
-    if (cp && !cp.classList.contains('hidden')) return 'client';
-    const ap = document.getElementById('adminPanel');
-    if (ap && !ap.classList.contains('hidden')) return 'admin';
-    return null;
-  }
-  function scrolledY() {
-    return window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-  }
-
-  document.addEventListener('touchstart', (e) => {
-    if (!panelMode() || refreshing) return;
-    if (scrolledY() > 5) return; // solo si estamos arriba del scroll
-    // No arrancar si el dedo empieza dentro de un input/textarea/select editable
-    const tg = e.target;
-    if (tg && (tg.closest('input, textarea, select, [contenteditable="true"]'))) return;
-    // Tampoco si está sobre el bottom nav, modales, etc.
-    if (tg && tg.closest('#clientBottomNav, #adminBottomNav, [role="dialog"]')) return;
-    startY = e.touches[0].clientY;
-    currentY = startY;
-    pulling = true;
-  }, { passive: true });
-
-  // touchmove en NO PASIVO para poder hacer preventDefault y bloquear el rubber band
-  // de iOS que estaba atrapando el gesto antes de que llegáramos a renderizar nada.
-  document.addEventListener('touchmove', (e) => {
-    if (!pulling || refreshing) return;
-    currentY = e.touches[0].clientY;
-    const distance = currentY - startY;
-    if (distance <= 0) { resetPTR(); return; }
-    // Bloqueamos el comportamiento por defecto SOLO mientras estamos arrastrando
-    // hacia abajo desde el top → así frenamos el bounce de iOS sin romper scroll normal.
-    if (e.cancelable) e.preventDefault();
-    // mostrar y mover el indicador con resistencia (no es 1:1)
-    const capped = Math.min(distance * 0.55, MAX_PULL);
-    indicator.classList.add('visible');
-    indicator.style.transform = `translate(-50%, ${capped + 10}px)`;
-    if (distance >= THRESHOLD) indicator.classList.add('ready');
-    else indicator.classList.remove('ready');
-  }, { passive: false });
-
-  document.addEventListener('touchend', async () => {
-    if (!pulling || refreshing) { resetPTR(); return; }
-    const distance = currentY - startY;
-    pulling = false;
-    if (distance >= THRESHOLD) {
-      // Trigger refresh según el panel activo
-      refreshing = true;
-      indicator.classList.add('spinning');
-      indicator.classList.remove('ready');
-      indicator.style.transform = `translate(-50%, 25px)`;
-      try {
-        const mode = panelMode();
-        if (mode === 'client') {
-          if (typeof loadPicksFromSupabase === 'function') await loadPicksFromSupabase();
-          if (typeof loadFollowedBetsForUser === 'function' && activeClientId) {
-            await loadFollowedBetsForUser(activeClientId);
-          }
-          if (typeof loadClientRetosData === 'function') await loadClientRetosData();
-          if (typeof rerenderCurrentClientPanel === 'function') rerenderCurrentClientPanel();
-        } else if (mode === 'admin') {
-          // Refrescar clientes y picks en admin
-          if (typeof loadClientsFromSupabase === 'function') await loadClientsFromSupabase();
-          if (typeof loadPicksFromSupabase === 'function') await loadPicksFromSupabase();
-          if (typeof renderAdmin === 'function') renderAdmin();
-          if (typeof renderPicksAdmin === 'function' && document.getElementById('picksTab') && !document.getElementById('picksTab').classList.contains('hidden')) {
-            renderPicksAdmin();
-          }
-          if (typeof openRetosAdmin === 'function' && document.getElementById('retosTab') && !document.getElementById('retosTab').classList.contains('hidden')) {
-            openRetosAdmin();
-          }
-        }
-        if (typeof showToast === 'function') showToast('Actualizado', 'success', 1800);
-      } catch (err) { console.error('[PTR] refresh error', err); }
-      setTimeout(() => { refreshing = false; resetPTR(); }, 600);
-    } else {
-      resetPTR();
-    }
-  });
-
-  function resetPTR() {
-    pulling = false;
-    indicator.classList.remove('visible', 'ready', 'spinning');
-    indicator.style.transform = 'translate(-50%, -100%)';
-  }
-})();
+/* (Pull to refresh eliminado a petición del usuario) */
 
 /* ============================================================
    HISTÓRICO EXPORTABLE — botón "Exportar CSV" en Mis estadísticas
