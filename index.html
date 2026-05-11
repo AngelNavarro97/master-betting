@@ -4519,7 +4519,7 @@ function personalStatsCardsHTML(s) {
     </div>`;
 }
 function kpiCard(label, value, highlight=false) {
-  return `<div class="gradient-border relative overflow-hidden bg-white/[0.02] p-4 sm:p-5 ${highlight ? 'ring-1 ring-accent-neon/30' : ''}">
+  return `<div class="relative overflow-hidden rounded-2xl border ${highlight ? 'border-accent-neon/30' : 'border-white/10'} bg-white/[0.02] p-4 sm:p-5">
     <div class="pointer-events-none absolute -top-12 -right-8 h-32 w-32 rounded-full opacity-20 blur-3xl" style="background:linear-gradient(135deg,#00e696,#22c55e,#10b981);"></div>
     <div class="relative"><div class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">${label}</div><div class="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl ${highlight?'text-gradient':'text-white'}">${value}</div></div>
   </div>`;
