@@ -534,6 +534,37 @@
   <section class="relative overflow-hidden">
     <!-- (degradado del hero eliminado: ahora usamos solo el fondo global del body) -->
     <div class="pointer-events-none absolute left-1/2 top-40 -z-10 h-[520px] w-[520px] -translate-x-1/2 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(0,230,150,0.25) 0%, rgba(16,185,129,0.15) 50%, transparent 80%);"></div>
+
+    <!-- Cinematic background: línea de yield animada -->
+    <svg class="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-30 sm:opacity-40" viewBox="0 0 1200 600" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="heroLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00e696" stop-opacity="0"/>
+          <stop offset="40%" stop-color="#00e696" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#10b981" stop-opacity="1"/>
+        </linearGradient>
+        <linearGradient id="heroFillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#00e696" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#00e696" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Línea principal: ondulada subiendo, simula curva de yield -->
+      <path id="heroLine" d="M 0 480 C 200 460, 320 430, 460 380 S 720 280, 880 240 S 1080 170, 1200 90"
+            fill="none" stroke="url(#heroLineGrad)" stroke-width="2.5" stroke-linecap="round"
+            style="stroke-dasharray:2200; stroke-dashoffset:2200; animation: heroDraw 4s ease-out 0.4s forwards;"/>
+      <!-- Relleno bajo la curva -->
+      <path d="M 0 480 C 200 460, 320 430, 460 380 S 720 280, 880 240 S 1080 170, 1200 90 L 1200 600 L 0 600 Z"
+            fill="url(#heroFillGrad)" opacity="0" style="animation: heroFill 2s ease-out 2.5s forwards;"/>
+      <!-- Punto final brillante -->
+      <circle cx="1200" cy="90" r="5" fill="#00e696" opacity="0">
+        <animate attributeName="opacity" values="0;1;0.6;1" dur="2s" begin="3.5s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="5;9;5" dur="2s" begin="3.5s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+    <style>
+      @keyframes heroDraw { to { stroke-dashoffset: 0; } }
+      @keyframes heroFill { to { opacity: 1; } }
+    </style>
     <div class="relative mx-auto flex max-w-6xl flex-col items-center px-5 pb-20 pt-32 text-center sm:px-6 sm:pb-28 sm:pt-52">
       <span class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-ink-200/80 backdrop-blur animate-fade-in sm:mb-6 sm:px-4 sm:text-xs">
         <span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon" style="box-shadow: 0 0 10px rgba(0,230,150,0.9);"></span>
@@ -551,9 +582,9 @@
         <a href="#resultados" class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-7 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Ver resultados</a>
       </div>
       <div class="mt-14 grid w-full max-w-3xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] animate-fade-up sm:mt-20" style="animation-delay:360ms">
-        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+1.200</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Suscriptores</div></div>
-        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">68%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Acierto medio</div></div>
-        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+12.4u</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Yield 2025</div></div>
+        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div data-counter="1200" data-prefix="+" data-thousands="1" class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+1.200</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Suscriptores</div></div>
+        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div data-counter="68" data-suffix="%" class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">68%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Acierto medio</div></div>
+        <div class="bg-black/40 px-3 py-5 text-left sm:px-6 sm:py-7"><div data-counter="12.4" data-prefix="+" data-suffix="u" data-decimals="1" class="font-display text-xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+12.4u</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Yield 2025</div></div>
       </div>
     </div>
   </section>
@@ -695,10 +726,10 @@
         <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Histórico mensual y picks recientes. Todo registrado.</p>
       </div>
       <div class="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] sm:rounded-3xl md:grid-cols-4">
-        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">290</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Picks publicados</div></div>
-        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">68%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Tasa de acierto</div></div>
-        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+41.8u</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Yield acumulado</div></div>
-        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">14%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">ROI medio</div></div>
+        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div data-counter="290" class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">290</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Picks publicados</div></div>
+        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div data-counter="68" data-suffix="%" class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">68%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Tasa de acierto</div></div>
+        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div data-counter="41.8" data-prefix="+" data-suffix="u" data-decimals="1" class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+41.8u</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Yield acumulado</div></div>
+        <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div data-counter="14" data-suffix="%" class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">14%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">ROI medio</div></div>
       </div>
     </div>
   </section>
@@ -932,6 +963,97 @@
     </div>
   </section>
 
+  <!-- FAQ -->
+  <section id="faq" class="relative section">
+    <div class="mx-auto max-w-3xl px-5 sm:px-6">
+      <div class="mb-10 text-center sm:mb-14">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">Preguntas frecuentes</span>
+        <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl">Todo lo que <span class="text-gradient">quieres saber</span>.</h2>
+      </div>
+      <div class="space-y-3">
+        <details class="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 transition hover:border-white/20 open:border-accent-neon/30 open:bg-accent-neon/[0.03]">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-white list-none sm:text-base">
+            <span>¿Cómo recibo los pronósticos una vez me suscriba?</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-neon transition group-open:rotate-45">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </summary>
+          <p class="mt-3 text-sm text-ink-200/80 leading-relaxed">Inmediatamente después del pago, recibes el acceso al canal privado de Telegram donde publicamos los pronósticos. También puedes ver tu histórico, las apuestas seguidas y las estadísticas dentro del panel privado en esta web.</p>
+        </details>
+
+        <details class="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 transition hover:border-white/20 open:border-accent-neon/30 open:bg-accent-neon/[0.03]">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-white list-none sm:text-base">
+            <span>¿Puedo cancelar la suscripción cuando quiera?</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-neon transition group-open:rotate-45">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </summary>
+          <p class="mt-3 text-sm text-ink-200/80 leading-relaxed">Sí, sin permanencia y sin preguntas. Desde tu panel privado puedes gestionar la suscripción y cancelarla con un clic. Mantienes el acceso hasta el final del periodo ya pagado.</p>
+        </details>
+
+        <details class="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 transition hover:border-white/20 open:border-accent-neon/30 open:bg-accent-neon/[0.03]">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-white list-none sm:text-base">
+            <span>¿Qué pasa si pierdo dinero?</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-neon transition group-open:rotate-45">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </summary>
+          <p class="mt-3 text-sm text-ink-200/80 leading-relaxed">Las apuestas siempre conllevan riesgo y nunca prometemos ganancias garantizadas. Nuestra metodología busca rentabilidad a largo plazo aplicando disciplina y gestión de stake. El plan <span class="text-amber-300">Exclusive</span> incluye además reembolso directo si al final del periodo no obtienes ganancias siguiendo nuestras recomendaciones.</p>
+        </details>
+
+        <details class="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 transition hover:border-white/20 open:border-accent-neon/30 open:bg-accent-neon/[0.03]">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-white list-none sm:text-base">
+            <span>¿Cuántos pronósticos publicáis al mes?</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-neon transition group-open:rotate-45">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </summary>
+          <p class="mt-3 text-sm text-ink-200/80 leading-relaxed">Depende del plan: <span class="text-white">8 pronósticos/mes</span> en Basic, <span class="text-white">16</span> en Pro y <span class="text-white">25 + 2 funbets exclusivas</span> en Exclusive. Solo publicamos cuando detectamos valor real — preferimos calidad y disciplina antes que volumen.</p>
+        </details>
+
+        <details class="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 transition hover:border-white/20 open:border-accent-neon/30 open:bg-accent-neon/[0.03]">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-white list-none sm:text-base">
+            <span>¿En qué casas de apuestas puedo usar vuestros pronósticos?</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-neon transition group-open:rotate-45">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </summary>
+          <p class="mt-3 text-sm text-ink-200/80 leading-relaxed">En cualquiera. Nosotros te indicamos la cuota mínima de referencia y tú apuestas en la casa de tu confianza. Dentro del panel privado tienes una sección con las casas recomendadas y sus mejores promociones.</p>
+        </details>
+
+        <details class="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 transition hover:border-white/20 open:border-accent-neon/30 open:bg-accent-neon/[0.03]">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-white list-none sm:text-base">
+            <span>¿Qué son los retos del plan Exclusive?</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-neon transition group-open:rotate-45">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </summary>
+          <p class="mt-3 text-sm text-ink-200/80 leading-relaxed">Los retos son secuencias de apuestas con un objetivo concreto (ej. 10€ → 300€). Cada paso es una apuesta cuidadosamente seleccionada y vas viendo la barra de progreso del bote. Los clientes Exclusive tienen acceso gratuito a retos durante su suscripción; Basic y Pro pueden comprar retos sueltos.</p>
+        </details>
+
+        <details class="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 transition hover:border-white/20 open:border-accent-neon/30 open:bg-accent-neon/[0.03]">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-white list-none sm:text-base">
+            <span>¿Cómo funciona el pago? ¿Es seguro?</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-neon transition group-open:rotate-45">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </summary>
+          <p class="mt-3 text-sm text-ink-200/80 leading-relaxed">Procesamos los pagos con Stripe, el sistema que utilizan empresas como Apple, Google o Spotify. Nunca tocamos los datos de tu tarjeta — todo va cifrado directamente a Stripe. Puedes pagar con tarjeta, Apple Pay o Google Pay.</p>
+        </details>
+
+        <details class="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 transition hover:border-white/20 open:border-accent-neon/30 open:bg-accent-neon/[0.03]">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-white list-none sm:text-base">
+            <span>¿Tenéis garantía de devolución?</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-neon transition group-open:rotate-45">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </summary>
+          <p class="mt-3 text-sm text-ink-200/80 leading-relaxed">El plan <span class="text-amber-300">Exclusive</span> incluye reembolso directo si al cierre del mes no obtienes ganancias siguiendo nuestros pronósticos. Es nuestra forma de garantizar que solo cobramos cuando aportamos valor real.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
   <!-- FINAL CTA -->
   <section class="relative section">
     <!-- (overlay del CTA final eliminado) -->
@@ -967,6 +1089,20 @@
     </div>
   </div>
 </footer>
+
+<!-- CTA flotante (solo home pública, solo móvil, aparece tras scroll) -->
+<div id="stickyMobileCTA" class="fixed bottom-0 left-0 right-0 z-40 hidden md:hidden" style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.6rem);">
+  <div class="mx-3 mb-3 rounded-2xl border border-white/10 bg-black/85 backdrop-blur-xl px-3 py-2.5 shadow-2xl flex items-center justify-between gap-3" style="box-shadow: 0 -8px 30px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);">
+    <div class="min-w-0 flex-1">
+      <p class="text-[11px] text-ink-500 leading-tight">Empieza desde</p>
+      <p class="text-sm font-semibold text-white leading-tight">9,99€/mes <span class="text-ink-500 font-normal text-xs">· sin permanencia</span></p>
+    </div>
+    <a href="#planes" class="inline-flex items-center justify-center gap-1.5 rounded-full bg-accent-neon px-4 py-2 text-[13px] font-semibold text-black transition hover:bg-emerald-300 whitespace-nowrap">
+      Suscribirme
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </div>
+</div>
 
 </div><!-- /#publicSite -->
 
@@ -6295,6 +6431,78 @@ function escapeHtml(str) {
   if (str == null) return '';
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+/* ============================================================
+   CONTADOR ANIMADO en los stats grandes de la home
+   Anima de 0 al valor real cuando el elemento entra en la viewport.
+============================================================ */
+function animateCounter(el) {
+  if (el.dataset.counted === '1') return;
+  el.dataset.counted = '1';
+  const target   = parseFloat(el.dataset.counter || '0');
+  const decimals = parseInt(el.dataset.decimals || '0', 10);
+  const prefix   = el.dataset.prefix || '';
+  const suffix   = el.dataset.suffix || '';
+  const useThousands = el.dataset.thousands === '1';
+  const duration = 1400; // ms
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / duration);
+    // easeOutCubic
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = target * eased;
+    let txt = decimals ? current.toFixed(decimals).replace('.', ',') : Math.round(current).toString();
+    if (useThousands) txt = txt.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    el.textContent = `${prefix}${txt}${suffix}`;
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function initCounterObserver() {
+  const els = document.querySelectorAll('[data-counter]');
+  if (!els.length) return;
+  // Si el navegador no soporta IntersectionObserver, animamos directamente
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(animateCounter);
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        animateCounter(e.target);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  els.forEach(el => io.observe(el));
+}
+document.addEventListener('DOMContentLoaded', initCounterObserver);
+
+/* ============================================================
+   CTA FLOTANTE MÓVIL — aparece tras pasar el hero
+============================================================ */
+(function setupStickyMobileCTA() {
+  const bar = document.getElementById('stickyMobileCTA');
+  if (!bar) return;
+  // Si el usuario está logueado (panel cliente o admin visibles) no la mostramos
+  function isPublicVisible() {
+    const ps = document.getElementById('publicSite');
+    return ps && !ps.classList.contains('hidden');
+  }
+  function update() {
+    if (!isPublicVisible()) { bar.classList.add('hidden'); return; }
+    const triggerY = window.innerHeight * 0.6; // aparece tras ~60% del primer viewport
+    if (window.scrollY > triggerY) {
+      bar.classList.remove('hidden');
+    } else {
+      bar.classList.add('hidden');
+    }
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  document.addEventListener('DOMContentLoaded', update);
+  update();
+})();
 
 /* ============================================================
    RETOS — VISTA DEL CLIENTE
