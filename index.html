@@ -2026,6 +2026,8 @@
 
       <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Link de pago de Stripe</span><input id="rfStripeLink" type="url" placeholder="https://buy.stripe.com/..." class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/><span class="mt-1.5 block text-[11px] text-ink-500">Pega aquí el Payment Link generado en Stripe Dashboard para este reto. Si lo dejas vacío, el botón "Comprar reto" llevará a la página de planes.</span></label>
 
+      <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Stripe Price ID</span><input id="rfStripePriceId" type="text" placeholder="price_1TVsRD..." class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/><span class="mt-1.5 block text-[11px] text-ink-500">El ID del precio en Stripe (formato <span class="text-white">price_xxxx</span>). Es lo que conecta el pago con este reto cuando alguien compra desde la home.</span></label>
+
       <label class="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 cursor-pointer">
         <input id="rfFreeForExclusive" type="checkbox" class="mt-0.5 accent-amber-400"/>
         <span class="text-sm text-white">Incluido gratis para Exclusive
@@ -6287,12 +6289,14 @@ function openRetoModal(id) {
     document.getElementById('rfGoal').value          = c.goal_amount;
     document.getElementById('rfPrice').value         = c.price;
     document.getElementById('rfStripeLink').value    = c.stripe_payment_link || '';
+    document.getElementById('rfStripePriceId').value = c.stripe_price_id || '';
     document.getElementById('rfFreeForExclusive').checked = !!c.is_free_for_exclusive;
     document.getElementById('rfActive').checked      = c.is_active !== false;
   } else {
     document.getElementById('retoForm').reset();
     document.getElementById('rfPrice').value  = 25;
     document.getElementById('rfStripeLink').value = '';
+    document.getElementById('rfStripePriceId').value = '';
     document.getElementById('rfActive').checked = true;
     document.getElementById('rfFreeForExclusive').checked = false;
   }
@@ -6318,6 +6322,7 @@ document.getElementById('retoForm').addEventListener('submit', async (e) => {
     goal_amount: Number(document.getElementById('rfGoal').value),
     price: Number(document.getElementById('rfPrice').value),
     stripe_payment_link: document.getElementById('rfStripeLink').value.trim() || null,
+    stripe_price_id:     document.getElementById('rfStripePriceId').value.trim() || null,
     is_free_for_exclusive: document.getElementById('rfFreeForExclusive').checked,
     is_active: document.getElementById('rfActive').checked,
   };
