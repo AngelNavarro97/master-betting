@@ -397,11 +397,22 @@
     overflow: hidden;
   }
   @media (max-width: 768px) {
+    /* En móvil el foro se "ancla" al viewport visual con position fixed:
+       así, cuando se abre el teclado iOS no puede mover el chat hacia arriba.
+       El composer queda siempre pegado al borde inferior visible. */
     .forum-wrap {
       grid-template-columns: 1fr;
-      height: 70dvh;            /* dvh: viewport dinámico, no se rompe con la URL bar */
-      min-height: 380px;
-      max-height: 70dvh;
+      position: fixed;
+      top: 64px;       /* hueco para el saludo del cliente */
+      left: 0; right: 0;
+      bottom: var(--mb-keyboard-bottom, 64px);  /* JS lo ajusta cuando se abre el teclado */
+      height: auto !important;
+      max-height: none;
+      min-height: 0;
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      z-index: 30;
     }
     .forum-sidebar { display: none !important; }
     .forum-sidebar.mobile-open { display: block !important; position: absolute; inset: 0; z-index: 5; background: rgba(6,18,12,0.96); }
@@ -1730,6 +1741,7 @@
         <button data-tab="rankings" class="adm-tab">Rankings</button>
         <button data-tab="results" class="adm-tab">Resultados</button>
         <button data-tab="chat" class="adm-tab">Chat</button>
+        <button data-tab="foro" class="adm-tab">Foro</button>
       </div>
     </div>
   </div>
@@ -1892,6 +1904,52 @@
         <input id="chatInput" type="text" placeholder="Escribe un mensaje..." autocomplete="off" maxlength="500" class="flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30"/>
         <button type="submit" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-ink-200">Enviar</button>
       </form>
+    </div>
+  </div>
+
+  <!-- TAB: FORO (admin moderación) -->
+  <div id="foroAdminTab" class="hidden">
+    <div class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8 space-y-6">
+      <div>
+        <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Moderación del foro</h2>
+        <p class="mt-1 text-sm text-ink-500">Revisa los últimos mensajes de todos los canales, borra mensajes problemáticos y gestiona usuarios bloqueados.</p>
+      </div>
+
+      <!-- Filtros + acciones -->
+      <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 text-xs text-ink-500">
+          <span>Canal:</span>
+          <select id="foroAdminChannelFilter" class="rounded-full border border-white/10 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30">
+            <option value="all">Todos</option>
+          </select>
+        </label>
+        <label class="flex items-center gap-2 text-xs text-ink-500">
+          <span>Mostrar:</span>
+          <select id="foroAdminDeletedFilter" class="rounded-full border border-white/10 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30">
+            <option value="active">Solo activos</option>
+            <option value="all">Activos + borrados</option>
+            <option value="deleted">Solo borrados</option>
+          </select>
+        </label>
+        <input id="foroAdminSearch" type="text" placeholder="Buscar texto en mensajes..." class="flex-1 min-w-[200px] rounded-full border border-white/10 bg-black/40 px-4 py-1.5 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30"/>
+        <button id="foroAdminRefreshBtn" class="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-white hover:bg-white/10">Recargar</button>
+      </div>
+
+      <!-- Lista de mensajes -->
+      <div>
+        <h3 class="font-display text-lg font-semibold text-white mb-3">Últimos mensajes</h3>
+        <div id="foroAdminMessagesList" class="space-y-2">
+          <p class="text-sm text-ink-500">Cargando...</p>
+        </div>
+      </div>
+
+      <!-- Bloqueados -->
+      <div>
+        <h3 class="font-display text-lg font-semibold text-white mb-3">Usuarios bloqueados</h3>
+        <div id="foroAdminBlocksList" class="space-y-2">
+          <p class="text-sm text-ink-500">Cargando...</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2262,7 +2320,29 @@
         </div>
         <button data-action="close-profile" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button>
       </div>
-      <p class="mt-2 text-sm text-ink-200/70">Cambia tu email o tu contraseña. Los cambios se sincronizan al instante.</p>
+      <p class="mt-2 text-sm text-ink-200/70">Cambia tu foto, email o contraseña. Los cambios se sincronizan al instante.</p>
+
+      <!-- SECCIÓN FOTO DE PERFIL -->
+      <div class="mt-6">
+        <h3 class="font-display text-base font-semibold text-white">Foto de perfil</h3>
+        <p class="mt-1 text-xs text-ink-500">PNG, JPG o WEBP · máximo 2 MB. La imagen se cuadra y comprime automáticamente.</p>
+        <div class="mt-4 flex items-center gap-4">
+          <div id="profileAvatarPreview" class="shrink-0"></div>
+          <div class="flex-1 flex flex-col gap-2">
+            <input id="profileAvatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"/>
+            <button type="button" id="profileAvatarUploadBtn" class="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-ink-200">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Subir foto
+            </button>
+            <button type="button" id="profileAvatarRemoveBtn" class="hidden inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-white hover:bg-white/10">
+              Quitar foto (volver al avatar)
+            </button>
+          </div>
+        </div>
+        <p id="profileAvatarMsg" class="hidden mt-3 rounded-xl border px-3 py-2 text-xs"></p>
+      </div>
+
+      <div class="my-6 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
 
       <!-- SECCIÓN EMAIL -->
       <div class="mt-6">
@@ -2774,6 +2854,7 @@ async function loadClientsFromSupabase() {
       status: row.status,
       joinedAt: row.joined_at,
       nickname: row.nickname || null,
+      avatar_url: row.avatar_url || null,
       stripe_customer_id: row.stripe_customer_id || null,
       stripe_subscription_id: row.stripe_subscription_id || null,
       notifications_activated: !!row.notifications_activated,
@@ -3259,6 +3340,7 @@ const ADMIN_ICON = {
   rankings: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>',
   results:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>',
   chat:     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  foro:     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><path d="M9 8h6"/><path d="M9 12h4"/><path d="M3 18V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7l-4 4z"/></svg>',
 };
 
 // Renderiza la barra inferior del admin con la pestaña activa marcada
@@ -3272,6 +3354,7 @@ function renderAdminBottomNav(activeTab) {
     ${btn('retos',    'Retos')}
     ${btn('rankings', 'Rankings')}
     ${btn('chat',     'Chat')}
+    ${btn('foro',     'Foro')}
   </div>`;
 }
 function showClientView(clientId) {
@@ -3655,6 +3738,7 @@ async function showClientFromSupabaseUser(user) {
     id: row.id, name: row.name, email: row.email, plan: row.plan,
     price: parseFloat(row.price), status: row.status, joinedAt: row.joined_at, verified: true,
     nickname: resolvedNickname,
+    avatar_url: row.avatar_url || null,
     stripe_customer_id: row.stripe_customer_id || null,
     stripe_subscription_id: row.stripe_subscription_id || null,
     notifications_activated: !!row.notifications_activated,
@@ -4020,7 +4104,7 @@ function statsPanelHTML(c, forAdmin) {
       <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
       <p class="mt-1 text-sm text-ink-500">Hola,</p>
       <div class="flex items-center gap-3 mt-1">
-        <div class="shrink-0">${mbAvatarSVG(c.id, c.nickname || c.name, 52)}</div>
+        <div class="shrink-0">${mbAvatarHTML(c, 52)}</div>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${c.name}</h2>
@@ -4388,6 +4472,30 @@ function getInitialsFromNickname(nickname) {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
 }
+// Devuelve el HTML del avatar:
+// - Si el cliente tiene foto custom (avatar_url) → <img>
+// - Si no → SVG generado con iniciales sobre gradiente único
+// `target` puede ser un objeto cliente {id, nickname, avatar_url} o un userId string.
+function mbAvatarHTML(target, nicknameOrSize, sizeArg) {
+  let userId, nickname, avatarUrl, size;
+  if (typeof target === 'object' && target !== null) {
+    userId    = target.id;
+    nickname  = target.nickname || target.name || '';
+    avatarUrl = target.avatar_url;
+    size      = (typeof nicknameOrSize === 'number') ? nicknameOrSize : 44;
+  } else {
+    userId    = target;
+    nickname  = nicknameOrSize || '';
+    avatarUrl = null;
+    size      = sizeArg || 44;
+  }
+  if (avatarUrl) {
+    const safeUrl = String(avatarUrl).replace(/[<>"']/g,'');
+    return `<img src="${safeUrl}" alt="${(nickname||'').replace(/[<>"']/g,'')}" width="${size}" height="${size}" style="display:inline-block;flex-shrink:0;width:${size}px;height:${size}px;border-radius:9999px;object-fit:cover;background:#0a0a0a;" loading="lazy" />`;
+  }
+  return mbAvatarSVG(userId, nickname, size);
+}
+
 // Devuelve un SVG de avatar determinista para este user_id.
 // nickname se usa solo para las iniciales encima del gradiente.
 function mbAvatarSVG(userId, nickname, size = 44) {
@@ -5415,12 +5523,14 @@ function switchTab(tab) {
   document.getElementById('rankingsTab').classList.add('hidden');
   document.getElementById('resultsTab').classList.add('hidden');
   document.getElementById('chatTab').classList.add('hidden');
+  document.getElementById('foroAdminTab')?.classList.add('hidden');
   if (tab === 'clients') document.getElementById('clientsTab').classList.remove('hidden');
   else if (tab === 'picks') { document.getElementById('picksTab').classList.remove('hidden'); renderPicksAdmin(); }
   else if (tab === 'retos') { document.getElementById('retosTab')?.classList.remove('hidden'); openRetosAdmin(); }
   else if (tab === 'rankings') { document.getElementById('rankingsTab').classList.remove('hidden'); renderRankings(); }
   else if (tab === 'results') { document.getElementById('resultsTab').classList.remove('hidden'); renderResultsAdmin(); }
   else if (tab === 'chat') { document.getElementById('chatTab').classList.remove('hidden'); openChat(); }
+  else if (tab === 'foro') { document.getElementById('foroAdminTab')?.classList.remove('hidden'); openForoAdmin(); }
   // Mantener sincronizada la barra inferior del admin
   renderAdminBottomNav(tab);
 }
@@ -6329,7 +6439,19 @@ function openProfileModal() {
   document.getElementById('profileNewPw2').value = '';
   document.getElementById('profileEmailMsg').classList.add('hidden');
   document.getElementById('profilePwMsg').classList.add('hidden');
+  document.getElementById('profileAvatarMsg').classList.add('hidden');
+  refreshProfileAvatarPreview();
   document.getElementById('profileModal').classList.remove('hidden');
+}
+
+// Pinta el preview del avatar en el modal y muestra/oculta el botón "Quitar foto"
+function refreshProfileAvatarPreview() {
+  const c = clients.find(x => x.id === activeClientId);
+  if (!c) return;
+  const preview = document.getElementById('profileAvatarPreview');
+  if (preview) preview.innerHTML = mbAvatarHTML(c, 76);
+  const removeBtn = document.getElementById('profileAvatarRemoveBtn');
+  if (removeBtn) removeBtn.classList.toggle('hidden', !c.avatar_url);
 }
 function closeProfileModal() {
   document.getElementById('profileModal').classList.add('hidden');
@@ -6400,6 +6522,140 @@ document.getElementById('profilePwBtn')?.addEventListener('click', async () => {
   document.getElementById('profileNewPw').value = '';
   document.getElementById('profileNewPw2').value = '';
   showProfileMsg('profilePwMsg', '✓ Contraseña actualizada correctamente. La próxima vez usa la nueva.', 'ok');
+});
+
+// === FOTO DE PERFIL: subida, recorte cuadrado, compresión y guardado ===
+
+// Procesa el File seleccionado: cuadra y comprime a 256x256 webp.
+// Devuelve un Blob listo para subir.
+async function processAvatarImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = () => { img.src = reader.result; };
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    img.onload = () => {
+      const size = 256;
+      // recorte cuadrado centrado (object-fit: cover)
+      const minSide = Math.min(img.width, img.height);
+      const sx = (img.width  - minSide) / 2;
+      const sy = (img.height - minSide) / 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+      // Intenta webp; si falla (Safari muy viejo) cae a jpeg
+      canvas.toBlob((blob) => {
+        if (blob && blob.size > 0) return resolve({ blob, ext: 'webp', type: 'image/webp' });
+        canvas.toBlob((jpgBlob) => {
+          if (jpgBlob) resolve({ blob: jpgBlob, ext: 'jpg', type: 'image/jpeg' });
+          else reject(new Error('No se pudo convertir la imagen'));
+        }, 'image/jpeg', 0.88);
+      }, 'image/webp', 0.88);
+    };
+    img.onerror = () => reject(new Error('La imagen no es válida'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Botón "Subir foto" → dispara el input file
+document.getElementById('profileAvatarUploadBtn')?.addEventListener('click', () => {
+  document.getElementById('profileAvatarFile').click();
+});
+
+// Cuando el usuario selecciona un archivo → procesar y subir
+document.getElementById('profileAvatarFile')?.addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ''; // reset para que pueda volver a elegir el mismo
+  if (!file) return;
+
+  const msgEl = document.getElementById('profileAvatarMsg');
+  const showMsg = (text, type='ok') => {
+    msgEl.textContent = text;
+    msgEl.className = 'mt-3 rounded-xl border px-3 py-2 text-xs ' +
+      (type === 'ok'
+        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+        : 'border-red-500/40 bg-red-500/10 text-red-300');
+  };
+
+  // Validaciones básicas
+  if (!file.type.startsWith('image/')) return showMsg('El archivo debe ser una imagen.', 'error');
+  if (file.size > 2 * 1024 * 1024) return showMsg('La imagen pesa más de 2 MB. Elige otra más ligera.', 'error');
+
+  const uploadBtn = document.getElementById('profileAvatarUploadBtn');
+  const c = clients.find(x => x.id === activeClientId);
+  if (!c) return;
+  uploadBtn.disabled = true; uploadBtn.textContent = 'Procesando...';
+  try {
+    // 1) Procesar (cuadrado 256x256 + comprimir)
+    const { blob, ext, type } = await processAvatarImage(file);
+    uploadBtn.textContent = 'Subiendo...';
+    // 2) Subir a Supabase Storage en avatars/{uid}/avatar.{ext}
+    const path = `${c.id}/avatar.${ext}`;
+    const { error: upErr } = await sb.storage.from('avatars').upload(path, blob, {
+      contentType: type,
+      upsert: true,
+      cacheControl: '3600'
+    });
+    if (upErr) throw upErr;
+    // 3) Obtener URL pública + cache-buster (para que se vea ya)
+    const { data: pub } = sb.storage.from('avatars').getPublicUrl(path);
+    const publicUrl = pub?.publicUrl + '?t=' + Date.now();
+    // 4) Guardar en clients.avatar_url
+    const { error: dbErr } = await sb.from('clients').update({ avatar_url: publicUrl }).eq('id', c.id);
+    if (dbErr) throw dbErr;
+    // 5) Actualizar memoria local y refrescar UI
+    c.avatar_url = publicUrl;
+    refreshProfileAvatarPreview();
+    rerenderCurrentClientPanel && rerenderCurrentClientPanel();
+    showMsg('✓ Foto actualizada. Ya se ve en tu perfil y en el foro.', 'ok');
+  } catch (err) {
+    console.error('[avatar upload]', err);
+    showMsg('Error al subir la foto: ' + (err.message || err), 'error');
+  } finally {
+    uploadBtn.disabled = false; uploadBtn.textContent = 'Subir foto';
+  }
+});
+
+// Botón "Quitar foto" → vuelve al avatar deterministaaa
+document.getElementById('profileAvatarRemoveBtn')?.addEventListener('click', async () => {
+  const c = clients.find(x => x.id === activeClientId);
+  if (!c) return;
+  const msgEl = document.getElementById('profileAvatarMsg');
+  const showMsg = (text, type='ok') => {
+    msgEl.textContent = text;
+    msgEl.className = 'mt-3 rounded-xl border px-3 py-2 text-xs ' +
+      (type === 'ok'
+        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+        : 'border-red-500/40 bg-red-500/10 text-red-300');
+  };
+  const ok = await (window.mbConfirm ? mbConfirm({
+    title: 'Quitar foto de perfil',
+    message: '¿Seguro que quieres quitar tu foto y volver al avatar por defecto?',
+    okText: 'Sí, quitar',
+    cancelText: 'Cancelar',
+    danger: true
+  }) : Promise.resolve(confirm('¿Quitar foto?')));
+  if (!ok) return;
+  const btn = document.getElementById('profileAvatarRemoveBtn');
+  btn.disabled = true; btn.textContent = 'Quitando...';
+  try {
+    // Intentamos borrar ambos formatos (no pasa nada si uno no existe)
+    await sb.storage.from('avatars').remove([`${c.id}/avatar.webp`, `${c.id}/avatar.jpg`]).catch(() => {});
+    const { error: dbErr } = await sb.from('clients').update({ avatar_url: null }).eq('id', c.id);
+    if (dbErr) throw dbErr;
+    c.avatar_url = null;
+    refreshProfileAvatarPreview();
+    rerenderCurrentClientPanel && rerenderCurrentClientPanel();
+    showMsg('✓ Foto quitada. Has vuelto a tu avatar por defecto.', 'ok');
+  } catch (err) {
+    console.error('[avatar remove]', err);
+    showMsg('Error al quitar la foto: ' + (err.message || err), 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Quitar foto (volver al avatar)';
+  }
 });
 
 // === Cookie banner (RGPD) ===
@@ -8046,6 +8302,43 @@ async function renderForumPanel() {
   await loadForumData();
   renderForumChannels();
   await openForumChannel(forumCurrentChannelId, /*pushHistory=*/false);
+  setupForumKeyboardHandling();
+}
+
+/* Maneja el teclado virtual en móvil: cuando se abre, ajustamos la variable CSS
+   --mb-keyboard-bottom para que el composer quede justo encima del teclado.
+   Solo se aplica si el panel del foro está visible. */
+let _forumViewportHandler = null;
+function setupForumKeyboardHandling() {
+  if (!window.visualViewport) return;
+  if (_forumViewportHandler) return; // ya está
+  _forumViewportHandler = () => {
+    const wrap = document.getElementById('forumRoot');
+    if (!wrap) {
+      document.documentElement.style.setProperty('--mb-keyboard-bottom', '64px');
+      return;
+    }
+    if (!window.matchMedia('(max-width: 768px)').matches) {
+      document.documentElement.style.setProperty('--mb-keyboard-bottom', '64px');
+      return;
+    }
+    const vv = window.visualViewport;
+    // Espacio "comido" por el teclado = innerHeight - visualViewport.height
+    const keyboardHeight = Math.max(0, window.innerHeight - vv.height);
+    // bottom de la zona visible (encima del teclado o del bottom nav)
+    // Si NO hay teclado, usamos 64px para dejar hueco al bottom nav del cliente
+    const bottom = keyboardHeight > 0 ? keyboardHeight + 4 : 64;
+    document.documentElement.style.setProperty('--mb-keyboard-bottom', bottom + 'px');
+    // Cuando se abre el teclado, hacer scroll al fondo de los mensajes para
+    // que el último mensaje no quede detrás del composer
+    if (keyboardHeight > 0) {
+      const msgs = document.getElementById('forumMessages');
+      if (msgs) setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
+    }
+  };
+  window.visualViewport.addEventListener('resize', _forumViewportHandler);
+  window.visualViewport.addEventListener('scroll', _forumViewportHandler);
+  _forumViewportHandler();
 }
 
 function renderForumChannels() {
@@ -8190,7 +8483,8 @@ async function renderForumMessages() {
       ? '<span class="forum-msg-plan amber">EX</span>'
       : plan === 'Pro' ? '<span class="forum-msg-plan accent">PRO</span>'
       : '';
-    const avatar = mbAvatarSVG(g.user_id, nickname, 36);
+    // Si el cache tiene avatar_url usamos foto custom; si no, SVG generado
+    const avatar = mbAvatarHTML(u ? { id: g.user_id, nickname, avatar_url: u.avatar_url } : g.user_id, nickname, 36);
     const time = new Date(g.firstAt).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
     const itemsHTML = g.items.map(m => forumSingleMessageHTML(m, isAdmn)).join('');
     return `<div class="forum-msg-group">
@@ -8580,24 +8874,30 @@ function showNicknameModal(client, onDone) {
 // Comprueba si el cliente activo necesita nickname y abre el modal.
 // IMPORTANTE: hace una verificación final contra la BD en caliente para evitar
 // pedirlo si ya está guardado y la copia en memoria no lo refleja por algún bug.
+// Si encuentra el nickname en localStorage o BD, RErenderea el panel para que
+// se vea en el header inmediatamente (sin esperar a otro cambio de pestaña).
 async function maybeAskNickname() {
   if (!activeClientId) return;
   const c = clients.find(x => x.id === activeClientId);
   if (!c) return;
-  // 1) Si ya está en memoria, no preguntamos
+  // 1) Si ya está en memoria, no preguntamos ni rerendereamos
   if (c.nickname && String(c.nickname).trim()) return;
   // 2) Fallback en localStorage (si guardamos antes en este dispositivo)
   try {
     const local = localStorage.getItem(`mb_nickname_${c.id}`);
-    if (local && local.trim()) { c.nickname = local.trim(); return; }
+    if (local && local.trim()) {
+      c.nickname = local.trim();
+      rerenderCurrentClientPanel(); // ← repinta el header para que salga ya
+      return;
+    }
   } catch(e) {}
   // 3) Última verificación contra BD: por si el SELECT inicial perdió la columna
   try {
     const { data } = await sb.from('clients').select('nickname').eq('id', c.id).maybeSingle();
     if (data && data.nickname && String(data.nickname).trim()) {
       c.nickname = data.nickname.trim();
-      // Lo guardamos también en localStorage para próximos logins
       try { localStorage.setItem(`mb_nickname_${c.id}`, c.nickname); } catch(e) {}
+      rerenderCurrentClientPanel(); // ← repinta el header para que salga ya
       return;
     }
   } catch(e) { console.warn('[nickname check]', e); }
@@ -8683,7 +8983,7 @@ async function openUserProfile(userId) {
   content.innerHTML = `
     <div class="text-center">
       <div class="mx-auto" style="width:88px;height:88px;border-radius:9999px;overflow:hidden;border:3px solid rgba(255,255,255,0.1);">
-        ${mbAvatarSVG(target.id, nickname, 88)}
+        ${mbAvatarHTML(target, 88)}
       </div>
       <h2 class="mt-4 font-display text-2xl font-semibold text-white">${nickname.replace(/[<>]/g,'')}</h2>
       <div class="mt-2 flex items-center justify-center gap-2">${planBadge}</div>
@@ -9702,6 +10002,262 @@ window.addEventListener('focus', async () => {
   // Limpiamos la marca al cabo de 30s
   setTimeout(() => { window.__pendingRetoCompra = null; }, 30000);
 });
+
+/* ============================================================
+   PANEL ADMIN · MODERACIÓN DEL FORO
+   ============================================================
+   Carga TODOS los mensajes del foro (no filtra por canal del usuario),
+   con info del autor (nickname/email/plan/avatar). Permite:
+     · Borrar mensaje (soft delete)
+     · Bloquear/desbloquear usuario
+     · Filtrar por canal, por estado (activos/borrados) y por texto
+============================================================ */
+
+let _foroAdminState = {
+  channels: [],
+  messages: [],
+  blocks: [],
+  userInfoById: {},
+  initialized: false
+};
+
+async function openForoAdmin() {
+  // Asegurar que solo los admins pueden ver el panel.
+  // Reutilizamos el helper que ya existe en la sección del foro.
+  if (typeof _forumIsCurrentUserAdmin === 'function' && !_forumIsCurrentUserAdmin()) {
+    document.getElementById('foroAdminTab').innerHTML =
+      '<div class="mx-auto mt-8 max-w-md px-5"><div class="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-300">No tienes permisos para ver esta sección.</div></div>';
+    return;
+  }
+  // Listeners (idempotentes: solo se enganchan una vez)
+  if (!_foroAdminState.initialized) {
+    document.getElementById('foroAdminRefreshBtn')?.addEventListener('click', loadForoAdminData);
+    document.getElementById('foroAdminChannelFilter')?.addEventListener('change', renderForoAdminUI);
+    document.getElementById('foroAdminDeletedFilter')?.addEventListener('change', renderForoAdminUI);
+    document.getElementById('foroAdminSearch')?.addEventListener('input', () => {
+      clearTimeout(_foroAdminState._searchT);
+      _foroAdminState._searchT = setTimeout(renderForoAdminUI, 250);
+    });
+    // Delegación de clicks en la lista (borrar, bloquear, desbloquear)
+    document.getElementById('foroAdminMessagesList')?.addEventListener('click', onForoAdminAction);
+    document.getElementById('foroAdminBlocksList')?.addEventListener('click', onForoAdminAction);
+    _foroAdminState.initialized = true;
+  }
+  await loadForoAdminData();
+}
+
+async function loadForoAdminData() {
+  const msgsEl  = document.getElementById('foroAdminMessagesList');
+  const blksEl  = document.getElementById('foroAdminBlocksList');
+  if (msgsEl) msgsEl.innerHTML = '<p class="text-sm text-ink-500">Cargando mensajes...</p>';
+  if (blksEl) blksEl.innerHTML = '<p class="text-sm text-ink-500">Cargando bloqueados...</p>';
+
+  // 1) Canales
+  const { data: chs } = await sb.from('forum_channels')
+    .select('id, slug, name, emoji, position')
+    .order('position', { ascending: true });
+  _foroAdminState.channels = chs || [];
+
+  // Rellenar el <select> de canal si está vacío
+  const sel = document.getElementById('foroAdminChannelFilter');
+  if (sel && sel.options.length <= 1) {
+    (_foroAdminState.channels).forEach(ch => {
+      const opt = document.createElement('option');
+      opt.value = ch.id;
+      opt.textContent = `${ch.emoji || ''} #${ch.name}`.trim();
+      sel.appendChild(opt);
+    });
+  }
+
+  // 2) Últimos 300 mensajes (admins ven también los borrados gracias a RLS)
+  const { data: msgs } = await sb.from('forum_messages')
+    .select('id, channel_id, user_id, body, created_at, deleted_at, deleted_by')
+    .order('created_at', { ascending: false })
+    .limit(300);
+  _foroAdminState.messages = msgs || [];
+
+  // 3) Bloqueos
+  const { data: blks } = await sb.from('forum_blocks')
+    .select('id, user_id, blocked_by, reason, created_at')
+    .order('created_at', { ascending: false });
+  _foroAdminState.blocks = blks || [];
+
+  // 4) Info de usuarios implicados (autores + bloqueados + bloqueadores)
+  const userIds = new Set();
+  (_foroAdminState.messages).forEach(m => { if (m.user_id) userIds.add(m.user_id); if (m.deleted_by) userIds.add(m.deleted_by); });
+  (_foroAdminState.blocks).forEach(b => { if (b.user_id) userIds.add(b.user_id); if (b.blocked_by) userIds.add(b.blocked_by); });
+  const idsArr = Array.from(userIds);
+  if (idsArr.length > 0) {
+    const { data: uinfo } = await sb.rpc('get_forum_user_info', { target_user_ids: idsArr });
+    _foroAdminState.userInfoById = {};
+    (uinfo || []).forEach(u => { _foroAdminState.userInfoById[u.id] = u; });
+  } else {
+    _foroAdminState.userInfoById = {};
+  }
+
+  renderForoAdminUI();
+}
+
+function renderForoAdminUI() {
+  renderForoAdminMessages();
+  renderForoAdminBlocks();
+}
+
+function renderForoAdminMessages() {
+  const listEl = document.getElementById('foroAdminMessagesList');
+  if (!listEl) return;
+  const channelId   = document.getElementById('foroAdminChannelFilter')?.value || 'all';
+  const deletedMode = document.getElementById('foroAdminDeletedFilter')?.value || 'active';
+  const search      = (document.getElementById('foroAdminSearch')?.value || '').toLowerCase().trim();
+
+  const channelsById = {};
+  _foroAdminState.channels.forEach(c => { channelsById[c.id] = c; });
+  const blockedSet = new Set(_foroAdminState.blocks.map(b => b.user_id));
+
+  let filtered = _foroAdminState.messages.filter(m => {
+    if (channelId !== 'all' && m.channel_id !== channelId) return false;
+    if (deletedMode === 'active'  && m.deleted_at !== null) return false;
+    if (deletedMode === 'deleted' && m.deleted_at === null) return false;
+    if (search && !(m.body || '').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<p class="text-sm text-ink-500 px-2 py-4">No hay mensajes con esos filtros.</p>';
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(m => {
+    const u  = _foroAdminState.userInfoById[m.user_id];
+    const ch = channelsById[m.channel_id];
+    const nickname = u?.nickname || '(sin nickname)';
+    const avatar = mbAvatarHTML(u ? { id: m.user_id, nickname, avatar_url: u.avatar_url } : m.user_id, nickname, 36);
+    const planBadge = u?.plan
+      ? `<span class="ml-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink-300">${u.plan}</span>`
+      : '';
+    const channelTag = ch
+      ? `<span class="ml-2 inline-flex items-center rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] text-ink-300">${ch.emoji || ''} #${ch.name}</span>`
+      : '';
+    const dateStr = new Date(m.created_at).toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const bodyEscaped = (m.body || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const isDeleted = !!m.deleted_at;
+    const isBlocked = blockedSet.has(m.user_id);
+
+    const deleteBtn = !isDeleted
+      ? `<button data-foro-admin-action="delete-msg" data-msg-id="${m.id}" class="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-medium text-red-300 hover:bg-red-500/20">Borrar</button>`
+      : `<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-ink-500">Borrado</span>`;
+    const blockBtn = !isBlocked
+      ? `<button data-foro-admin-action="block-user" data-user-id="${m.user_id}" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-200 hover:bg-amber-400/20">Bloquear usuario</button>`
+      : `<span class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] text-amber-200">Ya bloqueado</span>`;
+
+    return `<div class="rounded-2xl border ${isDeleted ? 'border-red-500/20 bg-red-500/[0.04]' : 'border-white/10 bg-white/[0.02]'} p-4">
+      <div class="flex items-start gap-3">
+        <div class="shrink-0">${avatar}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-1">
+            <span class="font-medium text-white text-sm">${nickname}</span>
+            ${planBadge}
+            ${channelTag}
+            <span class="ml-2 text-[11px] text-ink-500">${dateStr}</span>
+          </div>
+          <p class="mt-1 text-sm text-ink-100 whitespace-pre-wrap break-words ${isDeleted ? 'line-through opacity-60' : ''}">${bodyEscaped}</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            ${deleteBtn}
+            ${blockBtn}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderForoAdminBlocks() {
+  const listEl = document.getElementById('foroAdminBlocksList');
+  if (!listEl) return;
+  const list = _foroAdminState.blocks;
+  if (!list.length) {
+    listEl.innerHTML = '<p class="text-sm text-ink-500 px-2 py-4">No hay usuarios bloqueados ahora mismo.</p>';
+    return;
+  }
+  listEl.innerHTML = list.map(b => {
+    const u  = _foroAdminState.userInfoById[b.user_id];
+    const by = _foroAdminState.userInfoById[b.blocked_by];
+    const nickname = u?.nickname || '(sin nickname)';
+    const avatar = mbAvatarHTML(u ? { id: b.user_id, nickname, avatar_url: u.avatar_url } : b.user_id, nickname, 36);
+    const dateStr = new Date(b.created_at).toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const byTxt = by?.nickname ? `por ${by.nickname}` : '';
+    return `<div class="rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-4 flex items-center gap-3">
+      <div class="shrink-0">${avatar}</div>
+      <div class="flex-1 min-w-0">
+        <div class="font-medium text-white text-sm">${nickname}</div>
+        <div class="text-[11px] text-ink-500">Bloqueado el ${dateStr} ${byTxt}</div>
+      </div>
+      <button data-foro-admin-action="unblock-user" data-block-id="${b.id}" class="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-400/20">Desbloquear</button>
+    </div>`;
+  }).join('');
+}
+
+async function onForoAdminAction(e) {
+  const btn = e.target.closest('[data-foro-admin-action]');
+  if (!btn) return;
+  const action = btn.dataset.foroAdminAction;
+
+  if (action === 'delete-msg') {
+    const msgId = btn.dataset.msgId;
+    const ok = await mbConfirm({
+      title: 'Borrar mensaje',
+      message: 'El mensaje se marcará como borrado y dejará de verse en el foro. Esta acción se puede revertir desde la base de datos si hace falta.',
+      okLabel: 'Borrar mensaje',
+      danger: true
+    });
+    if (!ok) return;
+    btn.disabled = true; btn.textContent = 'Borrando...';
+    const { error } = await sb.from('forum_messages').update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: activeClientId
+    }).eq('id', msgId);
+    if (error) { showToast('Error al borrar: ' + error.message, 'error'); btn.disabled = false; btn.textContent = 'Borrar'; return; }
+    showToast('Mensaje borrado', 'success');
+    await loadForoAdminData();
+    return;
+  }
+
+  if (action === 'block-user') {
+    const uid = btn.dataset.userId;
+    const ok = await mbConfirm({
+      title: 'Bloquear usuario',
+      message: 'Este usuario ya no podrá escribir en ningún canal del foro. Sí podrá seguir leyendo.',
+      okLabel: 'Bloquear',
+      danger: true
+    });
+    if (!ok) return;
+    btn.disabled = true; btn.textContent = 'Bloqueando...';
+    const { error } = await sb.from('forum_blocks').insert({
+      user_id: uid,
+      blocked_by: activeClientId
+    });
+    if (error) { showToast('Error al bloquear: ' + error.message, 'error'); btn.disabled = false; btn.textContent = 'Bloquear usuario'; return; }
+    showToast('Usuario bloqueado', 'success');
+    await loadForoAdminData();
+    return;
+  }
+
+  if (action === 'unblock-user') {
+    const blockId = btn.dataset.blockId;
+    const ok = await mbConfirm({
+      title: 'Desbloquear usuario',
+      message: 'El usuario podrá volver a escribir en los canales del foro.',
+      okLabel: 'Desbloquear'
+    });
+    if (!ok) return;
+    btn.disabled = true; btn.textContent = 'Desbloqueando...';
+    const { error } = await sb.from('forum_blocks').delete().eq('id', blockId);
+    if (error) { showToast('Error al desbloquear: ' + error.message, 'error'); btn.disabled = false; btn.textContent = 'Desbloquear'; return; }
+    showToast('Usuario desbloqueado', 'success');
+    await loadForoAdminData();
+    return;
+  }
+}
 </script>
 </body>
 </html>
