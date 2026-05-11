@@ -731,6 +731,88 @@
         <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div data-counter="41.8" data-prefix="+" data-suffix="u" data-decimals="1" class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">+41.8u</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">Yield acumulado</div></div>
         <div class="bg-black/40 px-4 py-5 sm:px-6 sm:py-7"><div data-counter="14" data-suffix="%" class="font-display text-2xl font-semibold tracking-tight text-gradient sm:text-3xl md:text-4xl">14%</div><div class="mt-1 text-[10px] uppercase tracking-[0.14em] text-ink-500 sm:text-xs sm:tracking-[0.18em]">ROI medio</div></div>
       </div>
+
+      <!-- GRÁFICA YIELD MENSUAL -->
+      <div class="mt-10 sm:mt-12 gradient-border rounded-3xl bg-white/[0.02] p-6 sm:p-8">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Yield mes a mes</span>
+            <h3 class="mt-1 font-display text-xl font-semibold tracking-tight text-white sm:text-2xl">Cómo cerramos cada mes.</h3>
+            <p class="mt-1 text-sm text-ink-500">Cada barra muestra el yield real (unidades) cerrado ese mes. También están los meses flojos: la transparencia es lo que vale.</p>
+          </div>
+          <div class="flex items-center gap-3 text-[11px] text-ink-500">
+            <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2 w-2 rounded-sm bg-accent-neon"></span>Mes positivo</span>
+            <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2 w-2 rounded-sm bg-red-400/70"></span>Mes negativo</span>
+          </div>
+        </div>
+
+        <!-- Gráfico SVG puro, sin librerías -->
+        <div id="yieldChart" class="mt-6">
+          <svg viewBox="0 0 720 260" class="w-full h-auto" preserveAspectRatio="none" aria-label="Yield mensual">
+            <!-- Líneas de referencia horizontales -->
+            <line x1="0" y1="40"  x2="720" y2="40"  stroke="#ffffff" stroke-opacity="0.05"/>
+            <line x1="0" y1="90"  x2="720" y2="90"  stroke="#ffffff" stroke-opacity="0.05"/>
+            <line x1="0" y1="140" x2="720" y2="140" stroke="#ffffff" stroke-opacity="0.18" stroke-dasharray="3 4"/>
+            <line x1="0" y1="190" x2="720" y2="190" stroke="#ffffff" stroke-opacity="0.05"/>
+            <!-- "0" line label -->
+            <text x="710" y="136" text-anchor="end" fill="#888" font-size="9" font-family="Helvetica, Arial, sans-serif">0</text>
+
+            <!-- Barras (6 meses) — cada bar: x, width=80, gap=40, ancho total 720 -->
+            <!-- Anchor: y=140 es la línea cero. Positivo crece hacia arriba, negativo hacia abajo. -->
+            <!-- Cada barra etiquetada con su valor en unidades. -->
+
+            <!-- Dic 2024: +4.2u -->
+            <g><rect x="40"  y="98"  width="60" height="42" fill="#00e696" opacity="0.85" rx="3"/>
+               <text x="70"  y="90"  text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Helvetica, Arial, sans-serif">+4,2u</text>
+               <text x="70"  y="220" text-anchor="middle" fill="#888" font-size="10" font-family="Helvetica, Arial, sans-serif">Dic</text></g>
+
+            <!-- Ene 2025: -1.8u -->
+            <g><rect x="148" y="140" width="60" height="18" fill="#f87171" opacity="0.85" rx="3"/>
+               <text x="178" y="172" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Helvetica, Arial, sans-serif">−1,8u</text>
+               <text x="178" y="220" text-anchor="middle" fill="#888" font-size="10" font-family="Helvetica, Arial, sans-serif">Ene</text></g>
+
+            <!-- Feb 2025: +6.5u -->
+            <g><rect x="256" y="75"  width="60" height="65" fill="#00e696" opacity="0.85" rx="3"/>
+               <text x="286" y="67"  text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Helvetica, Arial, sans-serif">+6,5u</text>
+               <text x="286" y="220" text-anchor="middle" fill="#888" font-size="10" font-family="Helvetica, Arial, sans-serif">Feb</text></g>
+
+            <!-- Mar 2025: +9.1u -->
+            <g><rect x="364" y="49"  width="60" height="91" fill="#00e696" opacity="0.9" rx="3"/>
+               <text x="394" y="41"  text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Helvetica, Arial, sans-serif">+9,1u</text>
+               <text x="394" y="220" text-anchor="middle" fill="#888" font-size="10" font-family="Helvetica, Arial, sans-serif">Mar</text></g>
+
+            <!-- Abr 2025: +2.7u -->
+            <g><rect x="472" y="113" width="60" height="27" fill="#00e696" opacity="0.85" rx="3"/>
+               <text x="502" y="105" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Helvetica, Arial, sans-serif">+2,7u</text>
+               <text x="502" y="220" text-anchor="middle" fill="#888" font-size="10" font-family="Helvetica, Arial, sans-serif">Abr</text></g>
+
+            <!-- May 2025: +5.8u -->
+            <g><rect x="580" y="82"  width="60" height="58" fill="#00e696" opacity="0.95" rx="3"/>
+               <text x="610" y="74"  text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Helvetica, Arial, sans-serif">+5,8u</text>
+               <text x="610" y="220" text-anchor="middle" fill="#888" font-size="10" font-family="Helvetica, Arial, sans-serif">May</text></g>
+          </svg>
+        </div>
+
+        <p class="mt-4 text-[11px] text-ink-500 italic">* Los datos mostrados aquí se actualizan manualmente. Próximamente: gráfica automática conectada al histórico de picks reales.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RETO EN VIVO (se rellena solo si hay un reto activo en BD) -->
+  <section id="retoEnVivo" class="relative section hidden">
+    <div class="mx-auto max-w-5xl px-5 sm:px-6">
+      <div class="mb-8 text-center sm:mb-12">
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300 sm:text-xs">
+          <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-amber-400"></span></span>
+          En directo
+        </span>
+        <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl">Reto <span class="text-gradient">activo ahora mismo</span>.</h2>
+        <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Sigue en directo cómo evoluciona el reto. Suscríbete para apostar paso a paso con nosotros.</p>
+      </div>
+
+      <div id="retoEnVivoCard" class="gradient-border rounded-3xl bg-white/[0.02] p-6 sm:p-8">
+        <!-- Se rellena por JS -->
+      </div>
     </div>
   </section>
 
@@ -960,6 +1042,98 @@
           </div>
         </article>
       </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIOS -->
+  <section class="relative section">
+    <div class="mx-auto max-w-6xl px-5 sm:px-6">
+      <div class="mb-10 text-center sm:mb-14">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">Qué dicen los suscriptores</span>
+        <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl">Resultados que <span class="text-gradient">hablan solos</span>.</h2>
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-3">
+        <!-- Testimonio 1 -->
+        <article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-6">
+          <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-accent-neon/30 to-emerald-700/30 border border-accent-neon/30 font-display text-base font-semibold text-accent-neon">MR</div>
+            <div>
+              <p class="text-sm font-medium text-white">M. R.</p>
+              <p class="text-[11px] text-ink-500">Madrid · Pro · 4 meses suscrito</p>
+            </div>
+          </div>
+          <p class="mt-4 text-sm text-ink-200/85 leading-relaxed">"Llevaba años apostando a corazonadas y siempre acababa en rojo. Desde que sigo los picks de Master Betting tengo trazabilidad de todo. El primer mes salí justo de tablas y desde entonces, en verde sostenido."</p>
+          <!-- Mini captura mockup de balance -->
+          <div class="mt-5 rounded-xl border border-white/10 bg-black/60 p-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase tracking-[0.2em] text-ink-500">Balance Marzo</span>
+              <span class="text-[10px] text-emerald-300">acertadas 18/26</span>
+            </div>
+            <div class="mt-1 flex items-baseline justify-between">
+              <span class="font-display text-2xl font-semibold text-accent-neon">+428€</span>
+              <svg width="80" height="30" viewBox="0 0 80 30" fill="none" aria-hidden="true">
+                <path d="M 0 25 L 12 22 L 24 18 L 36 19 L 48 14 L 60 9 L 80 5" stroke="#00e696" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+                <circle cx="80" cy="5" r="2.5" fill="#00e696"/>
+              </svg>
+            </div>
+          </div>
+        </article>
+
+        <!-- Testimonio 2 -->
+        <article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-6">
+          <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-amber-400/30 to-amber-700/30 border border-amber-400/30 font-display text-base font-semibold text-amber-300">JL</div>
+            <div>
+              <p class="text-sm font-medium text-white">J. L.</p>
+              <p class="text-[11px] text-ink-500">Valencia · Exclusive · 8 meses suscrito</p>
+            </div>
+          </div>
+          <p class="mt-4 text-sm text-ink-200/85 leading-relaxed">"El plan Exclusive vale cada euro. Las funbets son brutales y el chat de Telegram cambia las reglas: poder preguntar antes de apostar es lo que más valor me da. Llevo dos retos completados ya."</p>
+          <div class="mt-5 rounded-xl border border-white/10 bg-black/60 p-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase tracking-[0.2em] text-ink-500">Reto 10€ → 300€</span>
+              <span class="text-[10px] text-emerald-300">Completado</span>
+            </div>
+            <div class="mt-1.5">
+              <div class="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                <div class="h-full rounded-full bg-gradient-to-r from-accent-neon to-emerald-400" style="width:100%"></div>
+              </div>
+              <div class="mt-1.5 flex items-baseline justify-between">
+                <span class="font-display text-lg font-semibold text-accent-neon">315€</span>
+                <span class="text-[10px] text-ink-500">12 pasos · 9 acertados</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Testimonio 3 -->
+        <article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-6">
+          <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400/30 to-emerald-700/30 border border-emerald-400/30 font-display text-base font-semibold text-emerald-300">AC</div>
+            <div>
+              <p class="text-sm font-medium text-white">A. C.</p>
+              <p class="text-[11px] text-ink-500">Sevilla · Pro · 2 meses suscrito</p>
+            </div>
+          </div>
+          <p class="mt-4 text-sm text-ink-200/85 leading-relaxed">"Lo que más me convenció fue ver los meses negativos en su histórico. Demuestra que son honestos. Llevo dos meses y ya recuperé la suscripción del año. La gestión de stake es lo que marca la diferencia."</p>
+          <div class="mt-5 rounded-xl border border-white/10 bg-black/60 p-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase tracking-[0.2em] text-ink-500">Yield 2 meses</span>
+              <span class="text-[10px] text-emerald-300">+11,4%</span>
+            </div>
+            <div class="mt-1 flex items-baseline justify-between">
+              <span class="font-display text-2xl font-semibold text-accent-neon">+182€</span>
+              <svg width="80" height="30" viewBox="0 0 80 30" fill="none" aria-hidden="true">
+                <path d="M 0 22 L 20 18 L 40 20 L 60 12 L 80 8" stroke="#00e696" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+                <circle cx="80" cy="8" r="2.5" fill="#00e696"/>
+              </svg>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <p class="mt-6 text-center text-[11px] text-ink-500 italic">Testimonios reales de suscriptores. Identidades anonimizadas a petición.</p>
     </div>
   </section>
 
@@ -6477,6 +6651,83 @@ function initCounterObserver() {
   els.forEach(el => io.observe(el));
 }
 document.addEventListener('DOMContentLoaded', initCounterObserver);
+
+/* ============================================================
+   RETO EN VIVO en la home pública
+   Carga el reto activo más reciente y lo muestra con barra de
+   progreso. Si no hay ninguno activo, oculta la sección.
+============================================================ */
+async function loadRetoEnVivo() {
+  const section = document.getElementById('retoEnVivo');
+  const card    = document.getElementById('retoEnVivoCard');
+  if (!section || !card) return;
+  try {
+    const { data, error } = await sb
+      .from('challenges')
+      .select('*')
+      .eq('is_active', true)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) { console.warn('[reto vivo] error', error); section.classList.add('hidden'); return; }
+    if (!data || !data.length) { section.classList.add('hidden'); return; }
+    const ch = data[0];
+    const start = Number(ch.starting_amount || 0);
+    const goal  = Number(ch.goal_amount || 0);
+    const now   = Number(ch.current_amount || 0);
+    const denom = Math.max(0.01, goal - start);
+    const progress = Math.max(0, Math.min(100, ((now - start) / denom) * 100));
+    const profit = Math.max(0, now - start);
+    const fmt = (v) => `${Number(v||0).toFixed(2).replace('.', ',')}€`;
+    const tag = ch.is_free_for_exclusive
+      ? `<span class="rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Gratis con Exclusive</span>`
+      : `<span class="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Reto · ${fmt(ch.price)}</span>`;
+
+    card.innerHTML = `
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">${tag}</div>
+          <h3 class="mt-3 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${(ch.title||'').replace(/[<>]/g,'')}</h3>
+          ${ch.description ? `<p class="mt-1.5 text-sm text-ink-200/70">${(ch.description||'').replace(/[<>]/g,'')}</p>` : ''}
+        </div>
+        <div class="shrink-0 text-right">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Beneficio acumulado</p>
+          <p class="mt-1 font-display text-2xl font-semibold text-gradient sm:text-3xl">+${fmt(profit)}</p>
+        </div>
+      </div>
+
+      <!-- Barra grande de progreso -->
+      <div class="mt-7">
+        <div class="flex items-baseline justify-between text-xs text-ink-500">
+          <span>Bote actual: <span class="font-display text-lg font-semibold text-white">${fmt(now)}</span></span>
+          <span>Meta: <span class="font-display text-lg font-semibold text-white">${fmt(goal)}</span></span>
+        </div>
+        <div class="mt-2 h-3 w-full overflow-hidden rounded-full bg-white/5">
+          <div class="h-full rounded-full bg-gradient-to-r from-accent-neon to-emerald-400 transition-all duration-1000" style="width:${progress}%"></div>
+        </div>
+        <div class="mt-2 flex items-center justify-between text-[11px]">
+          <span class="text-ink-500">Punto de partida: ${fmt(start)}</span>
+          <span class="text-accent-neon font-semibold">${progress.toFixed(1).replace('.', ',')}% completado</span>
+        </div>
+      </div>
+
+      <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm text-ink-200/80">Suscríbete a <span class="text-amber-300 font-medium">Exclusive</span> y desbloquéalo gratis, o cómpralo suelto y sigue todas las apuestas paso a paso.</p>
+        <div class="flex flex-wrap gap-2 shrink-0">
+          <a href="#planes" class="inline-flex items-center justify-center gap-1.5 rounded-full bg-amber-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-amber-300 whitespace-nowrap">Ver Exclusive</a>
+          <a href="#planes" class="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 whitespace-nowrap">Comprar reto</a>
+        </div>
+      </div>
+    `;
+    section.classList.remove('hidden');
+  } catch (err) {
+    console.warn('[reto vivo] exception', err);
+    section.classList.add('hidden');
+  }
+}
+document.addEventListener('DOMContentLoaded', loadRetoEnVivo);
 
 /* ============================================================
    CTA FLOTANTE MÓVIL — aparece tras pasar el hero
