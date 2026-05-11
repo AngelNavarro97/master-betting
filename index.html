@@ -3665,8 +3665,9 @@ function statsPanelHTML(c, forAdmin) {
 
   // === Vista cliente: pills arriba + paneles ===
   const showPremium = c.plan !== 'Exclusive';
-  const pendingCount    = countPendingFollowedBets(c.id);     // verde · Mis apuestas
-  const unfollowedCount = countUnfollowedAvailablePicks(c.id); // amarillo · Apuestas (sin seguir)
+  const pendingCount      = countPendingFollowedBets(c.id);          // verde · Mis apuestas
+  const unfollowedCount   = countUnfollowedAvailablePicks(c.id);     // amarillo · Apuestas (sin seguir)
+  const unclaimedMissions = countUnclaimedCompletedMissions(c);      // verde · Misiones (sin canjear)
   const tab = currentClientTab;
 
   // Iconos SVG para cada pestaña (mismo set, para usar arriba y abajo)
@@ -3692,7 +3693,7 @@ function statsPanelHTML(c, forAdmin) {
           Exclusive</button>` : ''}
         <button data-ctab="retos"    class="cli-tab ${tab==='retos'?'active':''}">Retos</button>
         <button data-ctab="mybets"   class="cli-tab ${tab==='mybets'?'active':''}">Mis apuestas${pendingCount>0?`<span class="cli-badge">${pendingCount}</span>`:''}</button>
-        <button data-ctab="missions" class="cli-tab ${tab==='missions'?'active':''}">Misiones</button>
+        <button data-ctab="missions" class="cli-tab ${tab==='missions'?'active':''}">Misiones${unclaimedMissions>0?`<span class="cli-badge">${unclaimedMissions}</span>`:''}</button>
         <button data-ctab="bookies"  class="cli-tab ${tab==='bookies'?'active':''}">Casas</button>
         <button data-ctab="mystats"  class="cli-tab ${tab==='mystats'?'active':''}">Mis estadísticas</button>
       </div>
@@ -3700,7 +3701,7 @@ function statsPanelHTML(c, forAdmin) {
 
   // Actualizamos la barra inferior estática (móvil) cada vez que cambia el render
   // Lo hacemos en un microtask para que el DOM ya esté inserto cuando pintemos.
-  setTimeout(() => updateClientBottomNav(c, tab, showPremium, pendingCount, unfollowedCount), 0);
+  setTimeout(() => updateClientBottomNav(c, tab, showPremium, pendingCount, unfollowedCount, unclaimedMissions), 0);
   // Iconos accesibles desde la función externa también
   window.__cliIconSet = ICON;
 
@@ -3734,7 +3735,7 @@ let currentClientTab = 'summary';
 
 // Actualiza el contenido de la barra inferior estática (móvil)
 // Se llama tras cada render del panel cliente
-function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollowedCount = 0) {
+function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollowedCount = 0, unclaimedMissions = 0) {
   const nav = document.getElementById('clientBottomNav');
   if (!nav) return;
   const ICON = window.__cliIconSet;
@@ -3766,8 +3767,12 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
 
   // Icono de tres puntos para "Más"
   const moreIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
-  // Si Basic/Pro y aún no han visto Exclusive, mostramos punto ámbar para llamar la atención
-  const moreBadge = showPremium ? '<span class="cli-bnav-badge" style="background:#fbbf24;color:#111;">·</span>' : '';
+  // Badge sobre el botón "Más":
+  //   - si hay misiones por canjear → punto verde con número
+  //   - si no, pero el cliente es Basic/Pro y vive bajo el "Más" → punto ámbar de Exclusive
+  let moreBadge = '';
+  if (unclaimedMissions > 0) moreBadge = `<span class="cli-bnav-badge">${unclaimedMissions}</span>`;
+  else if (showPremium)      moreBadge = '<span class="cli-bnav-badge" style="background:#fbbf24;color:#111;">·</span>';
 
   nav.innerHTML = `<div class="cli-bnav-grid">
     ${bnavBtn('summary', 'Resumen')}
@@ -3786,12 +3791,17 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
       const iconColorCls = it.amber ? 'text-amber-300 bg-amber-400/10' : 'text-accent-neon bg-accent-neon/10';
       const isActive = it.key === activeTab;
       const activeRing = isActive ? ' ring-2 ring-accent-neon/40' : '';
+      // Badge verde con número si es Misiones y hay completadas sin canjear
+      const sheetBadge = (it.key === 'missions' && unclaimedMissions > 0)
+        ? `<span class="cli-badge" style="position:static;">${unclaimedMissions}</span>`
+        : '';
       return `<button data-ctab="${it.key}" class="more-sheet-item flex items-center gap-4 w-full rounded-2xl border ${amberCls} px-4 py-3.5 text-left transition${activeRing}">
         <span class="flex h-10 w-10 items-center justify-center rounded-full ${iconColorCls}">${ICON[it.key]}</span>
         <span class="flex-1 min-w-0">
           <span class="block text-sm font-medium ${labelCls}">${it.label}</span>
           ${it.amber ? '<span class="block text-[11px] text-amber-200/60">Mejora tu plan</span>' : ''}
         </span>
+        ${sheetBadge}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-500"><polyline points="9 18 15 12 9 6"/></svg>
       </button>`;
     }).join('');
@@ -4035,10 +4045,34 @@ function evaluateMissions(client) {
   });
 }
 
-// Total MBCoins acumulados (suma de las recompensas de misiones completadas)
+// Persistencia local de misiones CANJEADAS por usuario (claim flow).
+// Una misión puede estar "completada" pero hasta que el cliente pulse "Canjear" no
+// se suman sus MBCoins al total visible. Esto da una sensación de recompensa real.
+function getClaimedMissionIds(clientId) {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(`mb_claimed_missions_${clientId}`) || '[]'));
+  } catch (e) { return new Set(); }
+}
+function setClaimedMissionIds(clientId, set) {
+  try {
+    localStorage.setItem(`mb_claimed_missions_${clientId}`, JSON.stringify(Array.from(set)));
+  } catch (e) {}
+}
+// Misiones completadas pero aún NO canjeadas (las que generan badge verde y popup)
+function getUnclaimedCompletedMissions(client) {
+  const evaluated = evaluateMissions(client);
+  const claimed = getClaimedMissionIds(client.id);
+  return evaluated.filter(m => m.completed && !claimed.has(m.id));
+}
+function countUnclaimedCompletedMissions(client) {
+  return getUnclaimedCompletedMissions(client).length;
+}
+
+// Total MBCoins acumulados (solo cuenta misiones CANJEADAS, no solo completadas)
 function getTotalMBCoins(client) {
+  const claimed = getClaimedMissionIds(client.id);
   return evaluateMissions(client)
-    .filter(m => m.completed)
+    .filter(m => m.completed && claimed.has(m.id))
     .reduce((sum, m) => sum + m.coins, 0);
 }
 
@@ -5412,6 +5446,10 @@ document.addEventListener('click', async (e) => {
   // Al entrar en "Mis apuestas" comprobamos si hay apuestas recién ganadas → popup + confetti
   if (newTab === 'mybets') {
     setTimeout(checkForNewWinsAndCelebrate, 350);
+  }
+  // Al entrar en "Misiones" comprobamos si hay misiones por canjear → popup canjear
+  if (newTab === 'missions') {
+    setTimeout(checkForUnclaimedMissionsAndPrompt, 350);
   }
 });
 
@@ -7025,6 +7063,156 @@ function showWinPopup(bet, pick, totalWins = 1) {
   document.addEventListener('keydown', function esc(e){
     if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
   });
+}
+
+/* ============================================================
+   POPUP "MISIONES COMPLETADAS · CANJEAR MBCOINS"
+   Aparece al entrar en la pestaña Misiones si hay misiones completadas
+   pero aún no canjeadas. Botón "Canjear" → suma los coins al total
+   con una animación de conteo.
+============================================================ */
+function checkForUnclaimedMissionsAndPrompt() {
+  if (!activeClientId) return;
+  if (currentClientTab !== 'missions') return;
+  const c = clients.find(x => String(x.id) === String(activeClientId));
+  if (!c) return;
+  const unclaimed = getUnclaimedCompletedMissions(c);
+  if (!unclaimed.length) return;
+  setTimeout(() => showMissionsClaimPopup(unclaimed, c), 350);
+}
+
+function showMissionsClaimPopup(missions, client) {
+  const totalToClaim = missions.reduce((s, m) => s + (m.coins || 0), 0);
+  const oldTotal = getTotalMBCoins(client);
+  const newTotal = oldTotal + totalToClaim;
+
+  // Lista de misiones (máx 4 visibles, el resto se resume)
+  const visible = missions.slice(0, 4);
+  const extra = missions.length - visible.length;
+  const listHTML = visible.map(m => `
+    <div class="flex items-center justify-between gap-3 py-2.5 border-b border-white/5 last:border-0">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-neon/10 border border-accent-neon/30">
+          ${(MISSION_ICONS[m.icon] || MISSION_ICONS.star).replace('<svg', '<svg width="16" height="16"')}
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-white truncate">${m.title}</p>
+          <p class="text-[11px] text-ink-500 truncate">${m.desc || ''}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        ${mbCoinSVG(16)}
+        <span class="font-display text-sm font-bold text-accent-neon">+${m.coins}</span>
+      </div>
+    </div>
+  `).join('');
+  const extraText = extra > 0 ? `<p class="mt-2 text-center text-[11px] text-ink-500">... y ${extra} misión${extra===1?'':'es'} más</p>` : '';
+
+  const wrap = document.createElement('div');
+  wrap.id = 'missionsClaimPopup';
+  wrap.className = 'fixed inset-0 z-[150] flex items-center justify-center px-4 py-6';
+  wrap.setAttribute('role','dialog'); wrap.setAttribute('aria-modal','true');
+  wrap.innerHTML = `
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-claim></div>
+    <div class="relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl">
+      <button data-close-claim aria-label="Cerrar" class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-ink-300 hover:bg-white/10 hover:text-white">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="text-center px-6 pt-7 sm:px-8">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-neon/15 border border-accent-neon/40">
+          ${mbCoinSVG(34)}
+        </div>
+        <h2 class="mt-4 font-display text-2xl font-semibold text-white">¡Misión${missions.length===1?'':'es'} completada${missions.length===1?'':'s'}!</h2>
+        <p class="mt-1 text-sm text-ink-200/70">Has ganado <span class="text-accent-neon font-semibold">+${totalToClaim} MBCoins</span></p>
+      </div>
+
+      <div class="mx-5 mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-3 sm:mx-6">
+        ${listHTML}
+        ${extraText}
+      </div>
+
+      <div class="mx-5 mt-4 rounded-2xl border border-accent-neon/30 bg-accent-neon/[0.06] p-5 sm:mx-6 text-center">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">Total que recibes</div>
+        <div class="mt-2 flex items-center justify-center gap-2">
+          ${mbCoinSVG(28)}
+          <span id="claimTotalNum" class="font-display text-4xl font-semibold text-gradient">+${totalToClaim}</span>
+        </div>
+        <p class="mt-1 text-xs text-ink-500">MBCoins</p>
+      </div>
+
+      <div class="px-5 py-6 sm:px-6">
+        <button type="button" id="claimMissionsBtn" class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-accent-neon px-5 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">
+          ${mbCoinSVG(18)}
+          Canjear MBCoins
+        </button>
+        <p class="mt-3 text-center text-[11px] text-ink-500">Se sumarán a tu total y podrás usarlas próximamente para recompensas.</p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  function close() { wrap.remove(); document.removeEventListener('keydown', esc); }
+  function esc(e) { if (e.key === 'Escape') close(); }
+  wrap.querySelectorAll('[data-close-claim]').forEach(el => el.addEventListener('click', close));
+  document.addEventListener('keydown', esc);
+
+  // Click en "Canjear"
+  document.getElementById('claimMissionsBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('claimMissionsBtn');
+    btn.disabled = true; btn.style.opacity = '0.7';
+    // 1. Marcar como canjeadas en localStorage
+    const claimed = getClaimedMissionIds(client.id);
+    missions.forEach(m => claimed.add(m.id));
+    setClaimedMissionIds(client.id, claimed);
+    // 2. Animar el número grande del popup desde +X hasta +X (efecto visual de "stamping")
+    const totalNumEl = document.getElementById('claimTotalNum');
+    if (totalNumEl) {
+      totalNumEl.style.transition = 'transform .35s cubic-bezier(.18,1.4,.32,1)';
+      totalNumEl.style.transform = 'scale(1.18)';
+      setTimeout(() => { totalNumEl.style.transform = 'scale(1)'; }, 350);
+    }
+    // 3. Pequeña confetti verde
+    if (typeof fireConfetti === 'function') fireConfetti({ count: 50, durationMs: 1800 });
+    // 4. Toast
+    if (typeof showToast === 'function') showToast(`+${totalToClaim} MBCoins añadidos a tu total`, 'success');
+    // 5. Esperar un poco y cerrar + rerenderizar el panel
+    setTimeout(() => {
+      close();
+      rerenderCurrentClientPanel();
+      // 6. Animar el contador grande de MBCoins del panel desde oldTotal a newTotal
+      setTimeout(() => animateMBCoinsCounter(oldTotal, newTotal), 200);
+    }, 900);
+  });
+}
+
+// Animar el número grande de MBCoins del panel cliente (Misiones tab) tras canjear.
+// Busca el primer <span class="text-accent-neon"> dentro del bloque MBCoins.
+function animateMBCoinsCounter(from, to) {
+  // Encuentra el bloque "MBCoins" del panel y anima su número
+  const labels = document.querySelectorAll('.text-ink-500');
+  let target = null;
+  labels.forEach(el => {
+    if (el.textContent && el.textContent.trim().toUpperCase() === 'MBCOINS') {
+      const span = el.parentElement?.parentElement?.querySelector('.text-accent-neon');
+      if (span) target = span;
+    }
+  });
+  if (!target) return;
+  const duration = 900;
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.round(from + (to - from) * eased);
+    target.textContent = current;
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  // Pequeño "pop" visual
+  target.style.transition = 'transform .35s cubic-bezier(.18,1.4,.32,1)';
+  target.style.transform = 'scale(1.15)';
+  setTimeout(() => { target.style.transform = 'scale(1)'; }, 350);
+  requestAnimationFrame(tick);
 }
 
 /* ============================================================
