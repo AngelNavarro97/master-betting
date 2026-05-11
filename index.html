@@ -651,15 +651,13 @@
               <circle cx="160" cy="48" r="14" stroke="#22c55e" stroke-width="1" opacity="0.55"/>
               <circle cx="160" cy="48" r="7" stroke="#00e696" stroke-width="0.9" opacity="0.45"/>
             </svg>
-            <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-3">
               <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Pro</h3>
               <span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>
-              <span class="rounded-full border border-accent-neon/40 bg-accent-neon/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent-neon">7 días gratis</span>
             </div>
             <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
             <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">19,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <p class="mt-1.5 text-[11px] text-accent-neon">Prueba 7 días gratis · cancela sin coste antes de cobrar</p>
-            <button type="button" data-stripe-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Empezar prueba gratis</button>
+            <button type="button" data-stripe-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>16 pronósticos mensuales</span></li>
@@ -2854,10 +2852,8 @@ function planCardHTML(plan) {
       price: '19,99',
       tagline: 'Lo más popular. Más volumen, más oportunidad.',
       bgClass: 'bg-plan-pro',
-      headerExtra: '<span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span><span class="rounded-full border border-accent-neon/40 bg-accent-neon/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent-neon">7 días gratis</span>',
+      headerExtra: '<span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>',
       btnClass: 'bg-white text-black hover:bg-ink-200',
-      trialNote: 'Prueba 7 días gratis · cancela sin coste antes de cobrar',
-      ctaLabel: 'Empezar prueba gratis',
       // Mismo SVG decorativo que la tarjeta Pro de la home
       decoSVG: `<svg class="pointer-events-none absolute -bottom-4 -right-4 h-40 w-44 sm:h-44 sm:w-52 opacity-[0.22]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
         <path d="M -10 130 Q 70 10 130 70 T 220 60" stroke="#00e696" stroke-width="1.2" stroke-dasharray="3 5" opacity="0.75"/>
@@ -2909,8 +2905,7 @@ function planCardHTML(plan) {
       </div>
       <p class="mt-2 text-sm text-ink-200/70">${data.tagline}</p>
       <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">${data.price}</span><span class="text-sm text-ink-500">€/mes</span></div>
-      ${data.trialNote ? `<p class="mt-1.5 text-[11px] text-accent-neon">${data.trialNote}</p>` : ''}
-      <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">${data.ctaLabel || `Cambiar a ${data.name}`}</button>
+      <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">Cambiar a ${data.name}</button>
       <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
       <ul class="space-y-3.5 text-sm text-ink-200/85">
         ${data.features.map(f => `<li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>${f}</span></li>`).join('')}
