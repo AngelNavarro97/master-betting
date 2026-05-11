@@ -2472,14 +2472,22 @@ function showClientView(clientId) {
 /* === Modal de mejora de plan === */
 // Genera el HTML de una tarjeta de plan tipo home, pero compacta para el modal.
 function planCardHTML(plan) {
+  // Definiciones IDÉNTICAS a las tarjetas de la home (features + estilo + botón)
   const data = {
     Pro: {
       name: 'Pro',
       price: '19,99',
       tagline: 'Lo más popular. Más volumen, más oportunidad.',
       bgClass: 'bg-plan-pro',
-      badge: '<span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>',
-      btnClass: 'bg-white/90 text-black/80 hover:bg-white',
+      headerExtra: '<span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>',
+      btnClass: 'bg-white text-black hover:bg-ink-200',
+      // Mismo SVG decorativo que la tarjeta Pro de la home
+      decoSVG: `<svg class="pointer-events-none absolute -bottom-4 -right-4 h-40 w-44 sm:h-44 sm:w-52 opacity-[0.22]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
+        <path d="M -10 130 Q 70 10 130 70 T 220 60" stroke="#00e696" stroke-width="1.2" stroke-dasharray="3 5" opacity="0.75"/>
+        <circle cx="160" cy="48" r="14" stroke="#22c55e" stroke-width="1" opacity="0.55"/>
+        <circle cx="160" cy="48" r="7" stroke="#00e696" stroke-width="0.9" opacity="0.45"/>
+      </svg>`,
+      bgBlobStyle: 'background: linear-gradient(135deg,#00e696,#22c55e,#10b981);',
       features: [
         '16 pronósticos mensuales',
         '1 pronóstico del plan EXCLUSIVE incluido',
@@ -2492,30 +2500,44 @@ function planCardHTML(plan) {
       price: '34,99',
       tagline: 'El círculo cerrado. Reembolso garantizado.',
       bgClass: 'bg-plan-exclusive',
-      badge: '<span class="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300">Premium</span>',
-      btnClass: 'border border-white/15 bg-white/5 text-white/80 hover:bg-white/10',
+      headerExtra: '',
+      btnClass: 'border border-white/15 bg-white/5 text-white backdrop-blur hover:border-white/30 hover:bg-white/10',
+      // Mismo SVG decorativo que la tarjeta Exclusive de la home
+      decoSVG: `<svg class="pointer-events-none absolute -bottom-4 -right-4 h-40 w-44 sm:h-44 sm:w-52 opacity-[0.22]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
+        <g stroke="#00e696" stroke-width="1" opacity="0.6">
+          <polygon points="50,30 78,46 78,78 50,94 22,78 22,46"/>
+          <polygon points="106,62 134,78 134,110 106,126 78,110 78,78"/>
+          <polygon points="106,-2 134,14 134,46 106,62 78,46 78,14"/>
+          <polygon points="162,30 190,46 190,78 162,94 134,78 134,46"/>
+        </g>
+      </svg>`,
+      bgBlobStyle: 'background: linear-gradient(135deg,#00e696,#10b981,#064e3b);',
       features: [
         '25 pronósticos mensuales',
         '2 funbets exclusivas al mes',
+        'Acceso gratuito a retos durante la suscripción',
         'Acceso al chat privado de Telegram',
         'Reembolso directo si no obtienes ganancias',
       ],
     },
   }[plan];
   if (!data) return '';
-  return `<div class="gradient-border ${data.bgClass} relative h-full overflow-hidden rounded-3xl p-6 sm:p-7">
-    <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
-    <div class="flex items-center gap-3">
-      <h3 class="font-display text-3xl font-semibold tracking-tight text-white">${data.name}</h3>
-      ${data.badge}
+  return `<div class="relative h-full">
+    <div class="gradient-border ${data.bgClass} relative h-full overflow-hidden rounded-3xl p-6 sm:p-8">
+      <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-40 blur-3xl" style="${data.bgBlobStyle}"></div>
+      ${data.decoSVG}
+      <div class="flex items-center gap-3">
+        <h3 class="font-display text-3xl font-semibold tracking-tight text-white">${data.name}</h3>
+        ${data.headerExtra}
+      </div>
+      <p class="mt-2 text-sm text-ink-200/70">${data.tagline}</p>
+      <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">${data.price}</span><span class="text-sm text-ink-500">€/mes</span></div>
+      <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">Cambiar a ${data.name}</button>
+      <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+      <ul class="space-y-3.5 text-sm text-ink-200/85">
+        ${data.features.map(f => `<li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>${f}</span></li>`).join('')}
+      </ul>
     </div>
-    <p class="mt-2 text-sm text-ink-200/70">${data.tagline}</p>
-    <div class="mt-6 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">${data.price}</span><span class="text-sm text-ink-500">€/mes</span></div>
-    <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">Cambiar a ${data.name}</button>
-    <div class="my-6 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
-    <ul class="space-y-3 text-sm text-ink-200/85">
-      ${data.features.map(f => `<li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>${f}</span></li>`).join('')}
-    </ul>
   </div>`;
 }
 
