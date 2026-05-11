@@ -5885,12 +5885,13 @@ function renderRetoDetail() {
       : 'border-amber-400/40 bg-amber-400/10 text-amber-300';
     const statusText = ({pending:'Pendiente', won:'Ganada', lost:'Perdida', void:'Anulada'})[s.status] || s.status;
     const ret = (s.status==='won' && s.return_amount!=null) ? `<span class="text-[11px] text-emerald-300 ml-2">+${fmtMoney(s.return_amount)}</span>` : '';
+    const matchHTML = renderStepMatch(s.match_text, true) || `<p class="text-sm font-medium text-white">${escapeHtml(s.match_text)}</p>`;
     return `<button type="button" data-action="edit-step" data-id="${s.id}" class="block w-full text-left rounded-2xl border border-white/10 bg-white/[0.02] p-4 transition hover:border-white/20">
       <div class="flex items-start justify-between gap-3 flex-wrap">
         <div class="min-w-0">
           <div class="flex items-center gap-2"><span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Paso ${s.step_number}</span><span class="rounded-full border ${statusClass} px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]">${statusText}</span>${ret}</div>
-          <p class="mt-1.5 text-sm font-medium text-white">${escapeHtml(s.match_text)}</p>
-          <p class="mt-0.5 text-xs text-ink-500">${escapeHtml(s.bet_description)} · @${Number(s.odd).toFixed(2)} · Stake ${fmtMoney(s.stake_amount)}${s.bookmaker?` · ${escapeHtml(s.bookmaker)}`:''}</p>
+          <div class="mt-2">${matchHTML}</div>
+          <p class="mt-1.5 text-xs text-ink-500">${escapeHtml(s.bet_description)} · @${Number(s.odd).toFixed(2)} · Stake ${fmtMoney(s.stake_amount)}${s.bookmaker?` · ${escapeHtml(s.bookmaker)}`:''}</p>
         </div>
       </div>
     </button>`;
@@ -6093,12 +6094,33 @@ document.querySelectorAll('#sfSportGroup input[type="radio"]').forEach(r => {
 document.getElementById('sfCompetition')?.addEventListener('input', refreshStepDatalists);
 document.getElementById('sfCompetition')?.addEventListener('change', refreshStepDatalists);
 
-// Helper: parte un string "Local – Visitante" en {team1, team2}.
-// Acepta varios separadores: " – " (guión largo), " - " (guión normal) y " vs ".
-function splitTeams(matchText) {
-  if (!matchText) return { team1: '', team2: '' };
-  const parts = matchText.split(/\s+[–\-]\s+|\s+vs\s+/i);
-  return { team1: (parts[0]||'').trim(), team2: (parts[1]||'').trim() };
+// Helper: parte un string del tipo "[Competición · ]Local – Visitante" en sus partes.
+// Devuelve { competition, team1, team2 } y, opcionalmente, deduce el deporte de la competición.
+// Separadores aceptados: " · " (competición ↔ equipos), " – " (guión largo) o " - " entre equipos.
+function parseMatchText(matchText) {
+  if (!matchText) return { competition: '', team1: '', team2: '' };
+  let competition = '';
+  let teamsStr = matchText;
+  const compIdx = matchText.indexOf(' · ');
+  if (compIdx !== -1) {
+    competition = matchText.slice(0, compIdx).trim();
+    teamsStr = matchText.slice(compIdx + 3).trim();
+  }
+  const parts = teamsStr.split(/\s+[–\-]\s+|\s+vs\s+/i);
+  return { competition, team1: (parts[0]||'').trim(), team2: (parts[1]||'').trim() };
+}
+// Deducimos el deporte mirando la competición en COMPETITIONS
+function sportFromCompetition(name) {
+  if (!name) return 'Fútbol';
+  const c = COMPETITIONS[name];
+  return c ? c.sport : 'Fútbol';
+}
+// Renderiza el partido de un paso como pill de competición + logos de equipos
+// (reutiliza singleEventLine que ya usan los pronósticos normales)
+function renderStepMatch(matchText, showNames = false) {
+  const { competition, team1, team2 } = parseMatchText(matchText);
+  if (!competition && !team1 && !team2) return '';
+  return singleEventLine({ competition, team1, team2 }, showNames);
 }
 
 function openStepModal(stepId) {
@@ -6115,16 +6137,19 @@ function openStepModal(stepId) {
     const s = (challengeSteps[cId]||[]).find(x => x.id === stepId);
     if (!s) return;
     document.getElementById('sfStepNumber').value = s.step_number;
-    const { team1, team2 } = splitTeams(s.match_text);
+    // El competición + equipos vienen codificados en match_text → los extraemos
+    const { competition, team1, team2 } = parseMatchText(s.match_text);
     document.getElementById('sfTeam1').value      = team1;
     document.getElementById('sfTeam2').value      = team2;
-    document.getElementById('sfCompetition').value = s.competition || '';
+    document.getElementById('sfCompetition').value = competition;
     document.getElementById('sfBet').value        = s.bet_description;
     document.getElementById('sfOdd').value        = s.odd;
     document.getElementById('sfStake').value      = s.stake_amount;
     document.getElementById('sfBookmaker').value  = s.bookmaker || '';
     document.getElementById('sfBetDate').value    = s.bet_date ? new Date(s.bet_date).toISOString().slice(0,16) : '';
-    const sportRadio = document.querySelector(`#sfSportGroup input[type="radio"][value="${s.sport||'Fútbol'}"]`);
+    // El deporte lo deducimos de la competición (o lo dejamos en Fútbol si no se sabe)
+    const sport = sportFromCompetition(competition);
+    const sportRadio = document.querySelector(`#sfSportGroup input[type="radio"][value="${sport}"]`);
     if (sportRadio) sportRadio.checked = true;
     document.querySelector(`input[name="sf-status"][value="${s.status||'pending'}"]`).checked = true;
     document.getElementById('sfReturn').value     = s.return_amount != null ? s.return_amount : '';
@@ -6180,15 +6205,18 @@ document.getElementById('stepForm').addEventListener('submit', async (e) => {
   const cId = document.getElementById('sfChallengeId').value;
   const status = document.querySelector('input[name="sf-status"]:checked')?.value || 'pending';
   const betDateRaw = document.getElementById('sfBetDate').value;
-  const team1 = document.getElementById('sfTeam1').value.trim();
-  const team2 = document.getElementById('sfTeam2').value.trim();
-  const matchText = (team1 && team2) ? `${team1} – ${team2}` : (team1 || team2);
+  const team1       = document.getElementById('sfTeam1').value.trim();
+  const team2       = document.getElementById('sfTeam2').value.trim();
+  const competition = document.getElementById('sfCompetition').value.trim();
+  // Componemos el match_text incluyendo la competición si la han puesto:
+  //   "LaLiga · Real Madrid – Barcelona"
+  //   "Real Madrid – Barcelona" (si no hay competición)
+  const teamsPart = (team1 && team2) ? `${team1} – ${team2}` : (team1 || team2);
+  const matchText = competition ? `${competition} · ${teamsPart}` : teamsPart;
   const payload = {
     challenge_id: cId,
     step_number: parseInt(document.getElementById('sfStepNumber').value, 10),
     match_text: matchText,
-    sport: document.querySelector('#sfSportGroup input[type="radio"]:checked')?.value || 'Fútbol',
-    competition: document.getElementById('sfCompetition').value.trim() || null,
     bet_description: document.getElementById('sfBet').value.trim(),
     odd: Number(document.getElementById('sfOdd').value),
     stake_amount: Number(document.getElementById('sfStake').value),
@@ -6398,13 +6426,14 @@ function retosUnlockedCardHTML(ch, c) {
   const pendingStep = steps.find(s => s.status === 'pending');
   const history = steps.filter(s => s.status !== 'pending');
 
+  const pendingMatchHTML = pendingStep ? (renderStepMatch(pendingStep.match_text, true) || `<p class="text-sm font-semibold text-white">${escapeHtml(pendingStep.match_text)}</p>`) : '';
   const pendingHTML = pendingStep ? `<div class="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4">
     <div class="flex items-center justify-between gap-2 flex-wrap">
       <span class="rounded-full border border-amber-400/50 bg-amber-400/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">PASO ${pendingStep.step_number}</span>
       <span class="text-[11px] text-ink-500">${pendingStep.bet_date ? new Date(pendingStep.bet_date).toLocaleString('es-ES', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : 'Pendiente'}</span>
     </div>
-    <p class="mt-2 text-sm font-semibold text-white">${escapeHtml(pendingStep.match_text)}</p>
-    <p class="mt-0.5 text-xs text-ink-200/80">${escapeHtml(pendingStep.bet_description)} · @${Number(pendingStep.odd).toFixed(2)} · Stake ${fmtMoneyShort(pendingStep.stake_amount)}${pendingStep.bookmaker?` · ${escapeHtml(pendingStep.bookmaker)}`:''}</p>
+    <div class="mt-2.5">${pendingMatchHTML}</div>
+    <p class="mt-2 text-xs text-ink-200/80">${escapeHtml(pendingStep.bet_description)} · @${Number(pendingStep.odd).toFixed(2)} · Stake ${fmtMoneyShort(pendingStep.stake_amount)}${pendingStep.bookmaker?` · ${escapeHtml(pendingStep.bookmaker)}`:''}</p>
   </div>` : `<div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-center text-xs text-ink-500">No hay paso pendiente. ${ch.status==='completed'?'¡Reto completado!':'Próxima apuesta en breve.'}</div>`;
 
   const historyHTML = history.length ? `<div class="space-y-2">
@@ -6413,13 +6442,15 @@ function retosUnlockedCardHTML(ch, c) {
       const txt = s.status==='won' ? `<span class="text-emerald-300 font-semibold">+${fmtMoneyShort(Number(s.return_amount||0) - Number(s.stake_amount||0))}</span>`
         : s.status==='lost' ? `<span class="text-red-300 font-semibold">−${fmtMoneyShort(s.stake_amount)}</span>`
         : `<span class="text-ink-500">Anulada</span>`;
+      // En el historial mostramos los logos pero sin nombres extendidos (más compacto)
+      const matchHTML = renderStepMatch(s.match_text, false) || `<p class="text-sm text-white">${escapeHtml(s.match_text)}</p>`;
       return `<div class="rounded-lg border ${cls} p-3 text-xs">
         <div class="flex items-center justify-between gap-2 flex-wrap">
           <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Paso ${s.step_number}</span>
           ${txt}
         </div>
-        <p class="mt-1 text-sm text-white">${escapeHtml(s.match_text)}</p>
-        <p class="text-[11px] text-ink-500">${escapeHtml(s.bet_description)} · @${Number(s.odd).toFixed(2)}</p>
+        <div class="mt-1.5">${matchHTML}</div>
+        <p class="mt-1 text-[11px] text-ink-500">${escapeHtml(s.bet_description)} · @${Number(s.odd).toFixed(2)}</p>
       </div>`;
     }).join('')}
   </div>` : '';
