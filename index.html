@@ -327,17 +327,15 @@
   .bg-plan-pro       { background: linear-gradient(135deg, rgba(34,197,94,0.26),  rgba(16,185,129,0.10)); }
   .bg-plan-exclusive { background: linear-gradient(135deg, rgba(0,230,150,0.32), rgba(6,78,59,0.20)); }
 
-  .gradient-border { position: relative; border-radius: 24px; isolation: isolate; }
-  .gradient-border::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 40%, rgba(255,255,255,0.08));
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; }
-  /* Borde amarillo para tarjetas de pronósticos Exclusive */
-  .gradient-border-amber { position: relative; border-radius: 24px; isolation: isolate; }
-  .gradient-border-amber::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px;
-    background: linear-gradient(135deg, rgba(252,211,77,0.85), rgba(245,158,11,0.45) 50%, rgba(252,211,77,0.7));
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; }
+  /* Borde de tarjetas: simple, sin trucos de máscara CSS (que fallan en iOS PWA
+     y algunas Android WebViews dejando ver el pseudo-elemento como un cuadrado
+     con esquinas en pico de fondo). Usamos border normal que renderiza bien en
+     todos los navegadores y se ve consistente. */
+  .gradient-border { position: relative; border-radius: 16px; border: 1px solid rgba(255,255,255,0.10); isolation: isolate; }
+  .gradient-border::before { display: none; }
+  /* Variante amarilla para tarjetas de pronósticos Exclusive */
+  .gradient-border-amber { position: relative; border-radius: 16px; border: 2px solid rgba(252,211,77,0.55); isolation: isolate; }
+  .gradient-border-amber::before { display: none; }
 
   .halo-inner { position:absolute; inset:-30%; z-index:-10; opacity:0.7; filter:blur(40px);
     background: conic-gradient(from 0deg, rgba(0,230,150,0.7), rgba(16,185,129,0.55), rgba(110,231,183,0.55), rgba(34,197,94,0.7), rgba(0,230,150,0.7));
@@ -4639,7 +4637,7 @@ function lockedPickCard(p) {
   const isCombined = pickIsCombined(p);
   const totalOdds = pickTotalOdds(p);
   const headerLabel = isCombined ? `Combinada (${p.events.length} eventos)` : fe.sport;
-  return `<article class="gradient-border-amber relative overflow-hidden rounded-2xl bg-white/[0.02] p-4 sm:p-5">
+  return `<article class="relative overflow-hidden rounded-2xl border-2 border-amber-400/60 bg-white/[0.02] p-4 sm:p-5">
     <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
       <span class="inline-flex items-center gap-1.5">${sportIcon(fe.sport,16)}<span>${headerLabel}</span></span>
       <span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
@@ -7165,25 +7163,103 @@ function showMissionsClaimPopup(missions, client) {
     const claimed = getClaimedMissionIds(client.id);
     missions.forEach(m => claimed.add(m.id));
     setClaimedMissionIds(client.id, claimed);
-    // 2. Animar el número grande del popup desde +X hasta +X (efecto visual de "stamping")
+    // 2. Pop del número grande del popup
     const totalNumEl = document.getElementById('claimTotalNum');
     if (totalNumEl) {
       totalNumEl.style.transition = 'transform .35s cubic-bezier(.18,1.4,.32,1)';
       totalNumEl.style.transform = 'scale(1.18)';
       setTimeout(() => { totalNumEl.style.transform = 'scale(1)'; }, 350);
     }
-    // 3. Pequeña confetti verde
-    if (typeof fireConfetti === 'function') fireConfetti({ count: 50, durationMs: 1800 });
-    // 4. Toast
-    if (typeof showToast === 'function') showToast(`+${totalToClaim} MBCoins añadidos a tu total`, 'success');
-    // 5. Esperar un poco y cerrar + rerenderizar el panel
+    // 3. Cerramos el popup primero para que se vea el panel destino
     setTimeout(() => {
       close();
       rerenderCurrentClientPanel();
-      // 6. Animar el contador grande de MBCoins del panel desde oldTotal a newTotal
-      setTimeout(() => animateMBCoinsCounter(oldTotal, newTotal), 200);
-    }, 900);
+      // 4. Esperamos a que el panel se pinte y disparamos la animación de monedas volando
+      setTimeout(() => {
+        flyCoinsToTotal(totalToClaim, oldTotal, newTotal);
+      }, 250);
+    }, 450);
   });
+}
+
+// Lanza N monedas SVG (logo MBCoin) desde el centro de la pantalla hasta el contador
+// grande de MBCoins del panel. Cuando aterriza la primera, anima el contador del 0 al
+// total nuevo y dispara un toast verde.
+function flyCoinsToTotal(coinsToClaim, oldTotal, newTotal) {
+  // Encuentra el contador destino (el número grande de MBCoins en panel Misiones)
+  const labels = document.querySelectorAll('.text-ink-500');
+  let target = null;
+  labels.forEach(el => {
+    if (el.textContent && el.textContent.trim().toUpperCase() === 'MBCOINS') {
+      const span = el.parentElement?.parentElement?.querySelector('.text-accent-neon');
+      if (span) target = span;
+    }
+  });
+  // Si no encontramos el target (puede pasar si el panel cambió rápido), solo animamos el toast
+  if (!target) {
+    if (typeof showToast === 'function') showToast(`+${coinsToClaim} MBCoins añadidos a tu total`, 'success');
+    return;
+  }
+  const targetRect = target.getBoundingClientRect();
+  const targetX = targetRect.left + targetRect.width / 2;
+  const targetY = targetRect.top  + targetRect.height / 2;
+
+  // Origen: centro de la pantalla
+  const startX = window.innerWidth / 2;
+  const startY = window.innerHeight / 2;
+
+  // Lanzamos hasta 12 monedas (más serían ruido visual)
+  const N = Math.min(12, Math.max(6, Math.floor(coinsToClaim / 10) + 4));
+  const root = document.createElement('div');
+  root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:160;';
+  document.body.appendChild(root);
+
+  // Inyectar keyframes si no existen
+  if (!document.getElementById('coinFlyKeyframes')) {
+    const s = document.createElement('style');
+    s.id = 'coinFlyKeyframes';
+    s.textContent = `
+      @keyframes coin-fly {
+        0%   { transform: translate(-50%, -50%) scale(0.4) rotate(0deg); opacity: 0; }
+        15%  { transform: translate(-50%, -50%) scale(1.15) rotate(45deg); opacity: 1; }
+        100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.5) rotate(720deg); opacity: 0.95; }
+      }
+      .flying-coin { position: absolute; width: 28px; height: 28px; left: 0; top: 0;
+        will-change: transform, opacity; filter: drop-shadow(0 4px 12px rgba(0,230,150,0.5)); }
+    `;
+    document.head.appendChild(s);
+  }
+
+  // SVG de la moneda (igual que mbCoinSVG pero con dimensiones controlables)
+  const coinSVG = (typeof mbCoinSVG === 'function')
+    ? mbCoinSVG(28)
+    : '<svg viewBox="0 0 24 24" width="28" height="28" fill="#00e696"><circle cx="12" cy="12" r="10"/></svg>';
+
+  for (let i = 0; i < N; i++) {
+    const coin = document.createElement('div');
+    const dx = (targetX - startX) + (Math.random() - 0.5) * 30;
+    const dy = (targetY - startY) + (Math.random() - 0.5) * 30;
+    const delay = i * 60; // staggered
+    const duration = 750 + Math.random() * 250;
+    coin.className = 'flying-coin';
+    coin.style.left = startX + 'px';
+    coin.style.top  = startY + 'px';
+    coin.style.setProperty('--dx', dx + 'px');
+    coin.style.setProperty('--dy', dy + 'px');
+    coin.style.animation = `coin-fly ${duration}ms cubic-bezier(.55,.06,.68,.19) ${delay}ms forwards`;
+    coin.innerHTML = coinSVG;
+    root.appendChild(coin);
+  }
+
+  // Cuando aterriza la primera moneda, arrancamos el conteo del total y un pop
+  const firstArrival = 750 + 60; // duration del primer + delay 0
+  setTimeout(() => {
+    animateMBCoinsCounter(oldTotal, newTotal);
+    if (typeof showToast === 'function') showToast(`+${coinsToClaim} MBCoins añadidos a tu total`, 'success');
+  }, firstArrival - 50);
+
+  // Limpiar tras el último aterrizaje
+  setTimeout(() => root.remove(), N * 60 + 900 + 200);
 }
 
 // Animar el número grande de MBCoins del panel cliente (Misiones tab) tras canjear.
