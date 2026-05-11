@@ -380,6 +380,27 @@
     }
   }
 
+  /* === PULL TO REFRESH (móvil, solo en panel cliente) ===================
+     Indicador circular verde que aparece al arrastrar hacia abajo desde arriba. */
+  #ptrIndicator {
+    position: fixed; top: 0; left: 50%;
+    width: 40px; height: 40px;
+    transform: translate(-50%, -100%);
+    border-radius: 9999px;
+    background: rgba(6,18,12,0.95);
+    border: 1px solid rgba(0,230,150,0.35);
+    box-shadow: 0 8px 20px -6px rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0;
+    transition: opacity .15s ease;
+    pointer-events: none;
+  }
+  #ptrIndicator.visible { opacity: 1; }
+  #ptrIndicator.spinning .ptr-arrow { animation: ptr-spin 0.8s linear infinite; }
+  .ptr-arrow { color: #00e696; transition: transform .2s ease; }
+  #ptrIndicator.ready .ptr-arrow { transform: rotate(180deg); }
+  @keyframes ptr-spin { to { transform: rotate(360deg); } }
+
   /* === CALENDARIO DE RACHA DE DÍAS CONECTADOS ===========================
      Cada celda del calendario tiene 3 estados: visitada (oscuro + MBCoin),
      futura (verde marca), pasada-perdida (gris muy sutil). */
@@ -1478,6 +1499,11 @@
 
 <!-- Contenedor global de toasts (notificaciones elegantes) -->
 <div id="toastStack" aria-live="polite" aria-atomic="false"></div>
+
+<!-- Indicador de Pull-to-Refresh (móvil, panel cliente) -->
+<div id="ptrIndicator" aria-hidden="true">
+  <svg class="ptr-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+</div>
 
 <!-- Botón flotante de WhatsApp soporte (solo home pública) -->
 <a id="waSupportBtn" href="https://wa.me/34615565977" target="_blank" rel="noopener noreferrer" aria-label="Hablar con soporte por WhatsApp" title="¿Dudas? Habla con nosotros">
@@ -3046,11 +3072,15 @@ function showClientView(clientId) {
   maybeShowOnboarding();
   // (El confetti + popup de "apuesta acertada" se dispara solo al entrar en
   //  la pestaña "Mis apuestas", no aquí.)
-  // Registrar login del día y mostrar popup de racha cada vez que entra al panel.
-  // (Si más adelante quieres limitar a una vez al día, basta con añadir un
-  //  guard con localStorage en showDailyStreakPopup.)
-  registerTodayLogin(activeClientId);
-  setTimeout(() => showDailyStreakPopup(c, true), 700);
+  // Registrar login del día. Si era nuevo (primer login del día), mostrar popup
+  // de racha. Usamos localStorage (no sessionStorage) para que NO reaparezca si
+  // el usuario cierra y reabre la pestaña dentro del mismo día.
+  const { wasNew } = registerTodayLogin(activeClientId);
+  const seenTodayKey = `mb_streak_popup_seen_${activeClientId}_${todayISO()}`;
+  if (!localStorage.getItem(seenTodayKey)) {
+    localStorage.setItem(seenTodayKey, '1');
+    setTimeout(() => showDailyStreakPopup(c, true), 700);
+  }
   // Comprobar hitos de win streak no canjeados (después del de racha diaria)
   setTimeout(() => checkWinStreakMilestones(c), 1800);
 }
@@ -3828,7 +3858,12 @@ function statsPanelHTML(c, forAdmin) {
   } else if (tab === 'bookies') {
     panel = bookmakersTabHTML();
   } else if (tab === 'mystats') {
-    panel = monthlyResultsHTML('personal', c);
+    panel = `<div class="mb-4 flex flex-wrap items-center justify-end gap-2">
+      <button data-export-csv class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-white hover:bg-white/10">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar histórico (CSV)
+      </button>
+    </div>` + monthlyResultsHTML('personal', c);
   }
 
   // El saludo "Mi cuenta · Hola, [nombre]" solo lo mostramos en la pestaña Resumen
@@ -7700,6 +7735,253 @@ function showWinStreakPopup(client, milestone, reward) {
     }, 400);
   });
 }
+
+/* ============================================================
+   PULL TO REFRESH — gesto móvil de "arrastrar abajo desde arriba"
+   Solo activo dentro del panel cliente.
+============================================================ */
+(function setupPullToRefresh() {
+  const indicator = document.getElementById('ptrIndicator');
+  if (!indicator) return;
+
+  const THRESHOLD = 70;  // px que hay que arrastrar para activar
+  const MAX_PULL  = 110; // límite visual de pull
+  let startY = 0, pulling = false, currentY = 0, refreshing = false;
+
+  function isClientPanelActive() {
+    const cp = document.getElementById('clientPanel');
+    return cp && !cp.classList.contains('hidden');
+  }
+
+  document.addEventListener('touchstart', (e) => {
+    if (!isClientPanelActive() || refreshing) return;
+    if (window.scrollY > 5) return; // solo si estamos arriba del scroll
+    startY = e.touches[0].clientY;
+    pulling = true;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!pulling || refreshing) return;
+    currentY = e.touches[0].clientY;
+    const distance = currentY - startY;
+    if (distance < 0) { resetPTR(); return; }
+    // mostrar y mover el indicador proporcionalmente
+    const capped = Math.min(distance, MAX_PULL);
+    indicator.classList.add('visible');
+    indicator.style.transform = `translate(-50%, ${capped - 50}px) rotate(${capped * 3}deg)`;
+    if (distance >= THRESHOLD) indicator.classList.add('ready');
+    else indicator.classList.remove('ready');
+  }, { passive: true });
+
+  document.addEventListener('touchend', async () => {
+    if (!pulling || refreshing) { resetPTR(); return; }
+    const distance = currentY - startY;
+    pulling = false;
+    if (distance >= THRESHOLD) {
+      // Trigger refresh
+      refreshing = true;
+      indicator.classList.add('spinning');
+      indicator.classList.remove('ready');
+      indicator.style.transform = `translate(-50%, 20px)`;
+      try {
+        if (typeof loadPicksFromSupabase === 'function') await loadPicksFromSupabase();
+        if (typeof loadFollowedBetsForUser === 'function' && activeClientId) {
+          await loadFollowedBetsForUser(activeClientId);
+        }
+        if (typeof rerenderCurrentClientPanel === 'function') rerenderCurrentClientPanel();
+        if (typeof showToast === 'function') showToast('Actualizado', 'success', 1800);
+      } catch (e) { console.error('[PTR] refresh error', e); }
+      setTimeout(() => { refreshing = false; resetPTR(); }, 500);
+    } else {
+      resetPTR();
+    }
+  });
+
+  function resetPTR() {
+    pulling = false;
+    indicator.classList.remove('visible', 'ready', 'spinning');
+    indicator.style.transform = 'translate(-50%, -100%)';
+  }
+})();
+
+/* ============================================================
+   HISTÓRICO EXPORTABLE — botón "Exportar CSV" en Mis estadísticas
+============================================================ */
+function exportClientHistoryCSV(clientId) {
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  const picksById = {}; monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+  const bets = getFollowed(clientId).map(b => ({ b, p: picksById[b.pickId] })).filter(x => x.p);
+
+  // Cabeceras
+  const headers = ['Fecha partido','Hora','Deporte','Competición','Partido','Pronóstico','Cuota','Importe apostado (€)','Resultado','Beneficio (€)'];
+  const rows = bets.map(({ b, p }) => {
+    const fe = pickFirstEvent(p);
+    const odds = pickTotalOdds(p);
+    const r = pickResult(p);
+    let profit = 0;
+    if (r === 'win')  profit = b.amount * (odds - 1);
+    else if (r === 'loss') profit = -b.amount;
+    const resultLabel = r === 'win' ? 'Acertada' : r === 'loss' ? 'Fallada' : r === 'void' ? 'Anulada' : 'Pendiente';
+    const csvEscape = (v) => {
+      const s = String(v == null ? '' : v).replace(/"/g, '""');
+      return /[",;\n\r]/.test(s) ? `"${s}"` : s;
+    };
+    return [
+      p.date || '',
+      p.time || '',
+      fe.sport || '',
+      fe.competition || '',
+      p.match || `${fe.team1||''} vs ${fe.team2||''}`,
+      fe.pickType || '',
+      odds.toFixed(2),
+      b.amount.toFixed(2),
+      resultLabel,
+      r === 'pending' ? '' : profit.toFixed(2),
+    ].map(csvEscape).join(';');
+  });
+
+  // BOM para que Excel detecte UTF-8 correctamente
+  const csv = '﻿' + [headers.join(';'), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `master-betting-historico-${c.name?.replace(/\s+/g,'_')||'cliente'}-${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  if (typeof showToast === 'function') showToast(`Histórico exportado (${rows.length} apuestas)`, 'success');
+}
+// Listener delegado para el botón
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-export-csv]'); if (!btn) return;
+  if (activeClientId) exportClientHistoryCSV(activeClientId);
+});
+
+/* ============================================================
+   LIVE ACTIVITY FEED — pequeñas notificaciones rotativas en home
+   Mezcla actividades inventadas + compras reales recientes de retos.
+============================================================ */
+const _FAKE_NAMES = ['Carlos','María','Javier','Lucía','Diego','Marta','Pablo','Andrea','Iván','Sofía','Adrián','Cristina','Sergio','Elena','Manuel'];
+const _FAKE_CITIES = ['Madrid','Barcelona','Valencia','Sevilla','Málaga','Bilbao','Zaragoza','Murcia','Granada','Vigo','Alicante','Córdoba'];
+const _FAKE_ACTIVITIES = [
+  (n, c) => `${n} (${c}) se ha suscrito al plan Pro`,
+  (n, c) => `${n} (${c}) acaba de comprar un reto`,
+  (n, c) => `${n} (${c}) acertó un pick a cuota @1.85`,
+  (n, c) => `${n} (${c}) ha completado una misión y ganado MBCoins`,
+  (n, c) => `${n} (${c}) cerró +€42 esta semana siguiendo nuestros picks`,
+  (n, c) => `${n} (${c}) se ha unido al canal de Telegram gratuito`,
+  (n, c) => `${n} (${c}) compró el reto 10€ → 300€`,
+];
+const _FAKE_TIME_AGO = ['hace 2 min','hace 7 min','hace 15 min','hace 24 min','hace 38 min','hace 1 h','hace 2 h','hace 3 h'];
+
+function buildFakeActivity() {
+  const name = _FAKE_NAMES[Math.floor(Math.random()*_FAKE_NAMES.length)];
+  const city = _FAKE_CITIES[Math.floor(Math.random()*_FAKE_CITIES.length)];
+  const template = _FAKE_ACTIVITIES[Math.floor(Math.random()*_FAKE_ACTIVITIES.length)];
+  const when = _FAKE_TIME_AGO[Math.floor(Math.random()*_FAKE_TIME_AGO.length)];
+  return { text: template(name, city), when };
+}
+
+function setupLiveActivityFeed() {
+  // Solo en la home pública
+  const ps = document.getElementById('publicSite');
+  if (!ps) return;
+  // Crear contenedor si no existe
+  let feed = document.getElementById('liveActivityFeed');
+  if (!feed) {
+    feed = document.createElement('div');
+    feed.id = 'liveActivityFeed';
+    feed.setAttribute('aria-live','polite');
+    feed.style.cssText = `position:fixed; left:1rem; bottom:calc(1rem + env(safe-area-inset-bottom, 0px));
+      z-index:43; max-width:300px; pointer-events:none;`;
+    document.body.appendChild(feed);
+    // En móvil lo subimos para que NO se solape con el botón WhatsApp
+    const mediaQuery = window.matchMedia('(max-width: 640px)');
+    const adjust = () => {
+      if (mediaQuery.matches) {
+        feed.style.left = '1rem';
+        feed.style.bottom = 'calc(9rem + env(safe-area-inset-bottom, 0px))'; // encima del WA btn + sticky CTA
+        feed.style.maxWidth = 'calc(100% - 2rem)';
+      } else {
+        feed.style.left = '6rem'; // a la derecha del botón WA en escritorio
+        feed.style.bottom = 'calc(1rem + env(safe-area-inset-bottom, 0px))';
+        feed.style.maxWidth = '300px';
+      }
+    };
+    adjust();
+    mediaQuery.addEventListener('change', adjust);
+  }
+
+  function isPublicVisible() { return !ps.classList.contains('hidden'); }
+
+  function showActivity(activity) {
+    if (!isPublicVisible()) return;
+    const el = document.createElement('div');
+    el.style.cssText = `
+      pointer-events:auto;
+      display:flex; align-items:flex-start; gap:.65rem;
+      padding:.7rem .85rem;
+      border-radius:.85rem;
+      background:rgba(6,18,12,0.94);
+      border:1px solid rgba(0,230,150,0.25);
+      box-shadow:0 18px 40px -10px rgba(0,0,0,0.55);
+      backdrop-filter:blur(20px);
+      -webkit-backdrop-filter:blur(20px);
+      color:#fff; font-size:.78rem; line-height:1.35;
+      transform:translateX(-30px); opacity:0;
+      transition: transform .35s cubic-bezier(.18,1,.32,1), opacity .35s ease;
+    `;
+    el.innerHTML = `
+      <span style="display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:rgba(0,230,150,0.12);border:1px solid rgba(0,230,150,0.35);margin-top:1px;">
+        <span style="position:relative;display:inline-flex;width:8px;height:8px;">
+          <span style="position:absolute;inset:0;border-radius:9999px;background:#00e696;opacity:.7;animation:ptr-spin 0s, ping 1.4s ease infinite;"></span>
+          <span style="position:relative;display:inline-flex;width:8px;height:8px;border-radius:9999px;background:#00e696;"></span>
+        </span>
+      </span>
+      <div style="min-width:0;">
+        <p style="margin:0;color:#fff;">${activity.text}</p>
+        <p style="margin:.15rem 0 0;color:rgba(245,245,247,0.5);font-size:.65rem;">${activity.when}</p>
+      </div>
+    `;
+    feed.innerHTML = '';
+    feed.appendChild(el);
+    requestAnimationFrame(() => {
+      el.style.transform = 'translateX(0)';
+      el.style.opacity = '1';
+    });
+    // Fade out tras 5.5s
+    setTimeout(() => {
+      el.style.transform = 'translateX(-30px)';
+      el.style.opacity = '0';
+    }, 5500);
+  }
+
+  // Animación ping (keyframes)
+  if (!document.getElementById('liveFeedKeyframes')) {
+    const s = document.createElement('style');
+    s.id = 'liveFeedKeyframes';
+    s.textContent = `@keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }`;
+    document.head.appendChild(s);
+  }
+
+  // Mostrar primera tras 8s, luego cada 12-20s
+  function loop() {
+    if (!isPublicVisible()) { setTimeout(loop, 8000); return; }
+    showActivity(buildFakeActivity());
+    setTimeout(loop, 12000 + Math.random() * 8000);
+  }
+  setTimeout(loop, 8000);
+
+  // Si en algún momento se cierra/abre la home, mantener el feed.
+  // Exponemos una función pública para inyectar actividades REALES desde otros
+  // sitios (ej. cuando se completa una compra de reto en Stripe → webhook → push).
+  window.pushLiveActivity = (text, when = 'hace un momento') => showActivity({ text, when });
+}
+document.addEventListener('DOMContentLoaded', setupLiveActivityFeed);
 
 /* ============================================================
    LIVE COUNTER — "X personas viendo esto ahora"
