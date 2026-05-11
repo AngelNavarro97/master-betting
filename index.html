@@ -146,6 +146,16 @@
     opacity: 1;
     pointer-events: auto;
   }
+  /* Override del fondo "glass" cuando vive dentro del menú móvil:
+     más opaco y con sombra para que los enlaces y botones se lean nítidos
+     sobre cualquier zona del hero (con gradientes, líneas animadas, etc). */
+  .mobile-menu .glass {
+    background: rgba(6, 18, 12, 0.96);
+    backdrop-filter: saturate(180%) blur(28px);
+    -webkit-backdrop-filter: saturate(180%) blur(28px);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+  }
 
   /* === Misiones e insignias (panel cliente) === */
   .mbc-pill { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; }
@@ -7221,8 +7231,10 @@ function fmtMoneyShort(v) {
 }
 
 // Click handler: comprar / reclamar reto
-// Por ahora es MOCK (sin pasarela): simplemente inserta una compra.
-// Cuando montemos Stripe (Fase 3), este botón abrirá el Checkout.
+//  - "Reclamar gratis (Exclusive)" → registra el cupo gratuito directamente
+//  - "Comprar reto · 25€" → abre Stripe Payment Link en nueva pestaña.
+//    El webhook stripe-reto-webhook inserta automáticamente la compra al pagar.
+//    Cuando el usuario vuelve a la pestaña, refrescamos para que vea el reto desbloqueado.
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-buy-reto]'); if (!btn) return;
   if (!activeClientId) return;
@@ -7231,30 +7243,61 @@ document.addEventListener('click', async (e) => {
   const ch = clientRetos.find(x => x.id === challengeId); if (!ch) return;
   const c = clients.find(x => String(x.id) === String(activeClientId)); if (!c) return;
 
-  const confirmMsg = isFree
-    ? `¿Reclamar gratis "${ch.title}" como tu reto incluido del plan Exclusive? Solo puedes reclamar 1 reto gratis durante tu suscripción.`
-    : `¿Confirmar compra del reto "${ch.title}" por ${fmtMoneyShort(ch.price)}? (En esta fase de prueba aún no se cobra de verdad — la pasarela de pago se conecta en la siguiente fase.)`;
-  if (!confirm(confirmMsg)) return;
-
-  btn.disabled = true; btn.textContent = 'Procesando…';
-
-  const payload = {
-    user_id: activeClientId,
-    challenge_id: challengeId,
-    was_free_claim: isFree,
-    amount_paid: isFree ? null : Number(ch.price || 25),
-    stripe_session_id: null,
-  };
-  const { error } = await sb.from('challenge_purchases').insert(payload);
-  if (error) {
-    alert('No se ha podido completar la operación: ' + error.message);
-    btn.disabled = false;
-    btn.textContent = isFree ? 'Reclamar gratis (Exclusive)' : `Comprar reto · ${fmtMoneyShort(ch.price)}`;
+  if (isFree) {
+    // ===== Reclamar gratis (cupo Exclusive) =====
+    if (!confirm(`¿Reclamar gratis "${ch.title}" como tu reto incluido del plan Exclusive? Solo puedes reclamar 1 reto gratis durante tu suscripción.`)) return;
+    btn.disabled = true; btn.textContent = 'Procesando…';
+    const { error } = await sb.from('challenge_purchases').insert({
+      user_id: activeClientId,
+      challenge_id: challengeId,
+      was_free_claim: true,
+      amount_paid: null,
+      stripe_session_id: null,
+    });
+    if (error) {
+      alert('No se ha podido completar la operación: ' + error.message);
+      btn.disabled = false;
+      btn.textContent = 'Reclamar gratis (Exclusive)';
+      return;
+    }
+    await loadClientRetosData();
+    rerenderCurrentClientPanel();
     return;
   }
-  // Recargar y volver a renderizar
-  await loadClientRetosData();
-  rerenderCurrentClientPanel();
+
+  // ===== Compra real con Stripe Checkout =====
+  if (!ch.stripe_payment_link) {
+    alert('Este reto aún no tiene configurado el método de pago. Por favor avisa al administrador.');
+    return;
+  }
+  // Pre-rellenamos el email del cliente en el checkout para que el webhook
+  // encuentre exactamente este usuario al procesar el pago.
+  const sep = ch.stripe_payment_link.includes('?') ? '&' : '?';
+  const url = c.email
+    ? `${ch.stripe_payment_link}${sep}prefilled_email=${encodeURIComponent(c.email)}`
+    : ch.stripe_payment_link;
+  // Marcamos que esperamos resultado de compra (para refrescar al volver)
+  window.__pendingRetoCompra = { challengeId, since: Date.now() };
+  window.open(url, '_blank', 'noopener,noreferrer');
+});
+
+// Cuando el usuario vuelve a la pestaña tras pagar en Stripe, refrescamos
+// el panel para mostrar el reto desbloqueado. Damos 1.5s para que el webhook
+// procese antes de leer la BD.
+window.addEventListener('focus', async () => {
+  if (!window.__pendingRetoCompra) return;
+  if (!activeClientId) return;
+  const elapsed = Date.now() - window.__pendingRetoCompra.since;
+  if (elapsed < 2000) return; // probablemente solo abrió la pestaña y volvió rápido
+  // Pequeño delay para dar tiempo al webhook
+  setTimeout(async () => {
+    if (currentClientTab === 'retos') {
+      await loadClientRetosData();
+      rerenderCurrentClientPanel();
+    }
+  }, 1500);
+  // Limpiamos la marca al cabo de 30s
+  setTimeout(() => { window.__pendingRetoCompra = null; }, 30000);
 });
 </script>
 </body>
