@@ -496,7 +496,7 @@
   .cli-bnav-btn.amber { color: rgba(252,211,77,0.85); }
   .cli-bnav-btn.amber.active { color: #fcd34d; background: rgba(245,158,11,0.16); }
   .cli-bnav-btn .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  /* Badge verde sobre el icono "Mis apuestas" */
+  /* Badge verde sobre el icono "Mis apuestas" (apuestas seguidas pendientes) */
   .cli-bnav-badge {
     position: absolute; top: 0.15rem; right: calc(50% - 1.4rem);
     min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9999px;
@@ -504,6 +504,8 @@
     font-size: 9px; font-weight: 800; line-height: 1;
     display: inline-flex; align-items: center; justify-content: center;
   }
+  /* Variante amarilla del bnav (para "Apuestas" — picks pendientes de seguir) */
+  .cli-bnav-badge.amber { background: #fbbf24; color: #111; }
   /* En modo PWA standalone, deja hueco encima del notch inferior */
   @media (max-width: 639px) {
     body.client-active { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
@@ -519,6 +521,8 @@
   .cli-tab.amber.active { background: rgba(245,158,11,0.18); color: rgba(253,224,71,1); box-shadow: 0 0 0 1px rgba(245,158,11,0.35) inset; }
   /* Badge verde con número (Mis apuestas) */
   .cli-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9999px; background: #00e696; color: #0a0a0a; font-size: 11px; font-weight: 700; line-height: 1; }
+  /* Variante amarilla (Apuestas — picks aún sin seguir) */
+  .cli-badge.amber { background: #fbbf24; color: #111; }
   /* Filtros de Mis apuestas */
   .bet-filter { color: rgba(245,245,247,0.65); padding: 0.3rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); transition: all 0.2s; }
   .bet-filter:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
@@ -2941,8 +2945,8 @@ function showClientView(clientId) {
   window.scrollTo(0, 0);
   // Si es la primera vez que este cliente entra, mostramos el tour de bienvenida
   maybeShowOnboarding();
-  // Comprobar si hay apuestas seguidas recién ganadas que no había visto → confetti
-  setTimeout(checkForNewWinsAndCelebrate, 1200);
+  // (El confetti + popup de "apuesta acertada" se dispara solo al entrar en
+  //  la pestaña "Mis apuestas", no aquí.)
 }
 
 /* === Modal de mejora de plan === */
@@ -3661,7 +3665,8 @@ function statsPanelHTML(c, forAdmin) {
 
   // === Vista cliente: pills arriba + paneles ===
   const showPremium = c.plan !== 'Exclusive';
-  const pendingCount = countPendingFollowedBets(c.id);
+  const pendingCount    = countPendingFollowedBets(c.id);     // verde · Mis apuestas
+  const unfollowedCount = countUnfollowedAvailablePicks(c.id); // amarillo · Apuestas (sin seguir)
   const tab = currentClientTab;
 
   // Iconos SVG para cada pestaña (mismo set, para usar arriba y abajo)
@@ -3681,7 +3686,7 @@ function statsPanelHTML(c, forAdmin) {
     <div class="mb-6 pills-scroller hidden sm:block">
       <div class="inline-flex flex-nowrap whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] p-1">
         <button data-ctab="summary"  class="cli-tab ${tab==='summary'?'active':''}">Resumen</button>
-        <button data-ctab="picks"    class="cli-tab ${tab==='picks'?'active':''}">Apuestas</button>
+        <button data-ctab="picks"    class="cli-tab ${tab==='picks'?'active':''}">Apuestas${unfollowedCount>0?`<span class="cli-badge amber">${unfollowedCount}</span>`:''}</button>
         ${showPremium ? `<button data-ctab="premium" class="cli-tab amber ${tab==='premium'?'active':''}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
           Exclusive</button>` : ''}
@@ -3695,7 +3700,7 @@ function statsPanelHTML(c, forAdmin) {
 
   // Actualizamos la barra inferior estática (móvil) cada vez que cambia el render
   // Lo hacemos en un microtask para que el DOM ya esté inserto cuando pintemos.
-  setTimeout(() => updateClientBottomNav(c, tab, showPremium, pendingCount), 0);
+  setTimeout(() => updateClientBottomNav(c, tab, showPremium, pendingCount, unfollowedCount), 0);
   // Iconos accesibles desde la función externa también
   window.__cliIconSet = ICON;
 
@@ -3729,7 +3734,7 @@ let currentClientTab = 'summary';
 
 // Actualiza el contenido de la barra inferior estática (móvil)
 // Se llama tras cada render del panel cliente
-function updateClientBottomNav(c, activeTab, showPremium, pendingCount) {
+function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollowedCount = 0) {
   const nav = document.getElementById('clientBottomNav');
   if (!nav) return;
   const ICON = window.__cliIconSet;
@@ -3748,8 +3753,14 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount) {
 
   const bnavBtn = (key, label, amber=false) => {
     const cls = `cli-bnav-btn${amber ? ' amber' : ''}${activeTab===key ? ' active' : ''}`;
-    const badge = (key === 'mybets' && pendingCount > 0)
-      ? `<span class="cli-bnav-badge">${pendingCount}</span>` : '';
+    // Badge verde para "mybets" (apuestas seguidas pendientes)
+    // Badge amarillo para "picks" (picks aún sin seguir)
+    let badge = '';
+    if (key === 'mybets' && pendingCount > 0) {
+      badge = `<span class="cli-bnav-badge">${pendingCount}</span>`;
+    } else if (key === 'picks' && unfollowedCount > 0) {
+      badge = `<span class="cli-bnav-badge amber">${unfollowedCount}</span>`;
+    }
     return `<button data-ctab="${key}" class="${cls}">${ICON[key]}${badge}<span class="label">${label}</span></button>`;
   };
 
@@ -3794,6 +3805,16 @@ function countPendingFollowedBets(clientId) {
     const p = picksById[b.pickId];
     return p && pickResult(p) === 'pending';
   }).length;
+}
+
+// Cuenta los picks publicados disponibles para el cliente que AÚN NO ha seguido y
+// que siguen pendientes (no resueltos). Va en el badge amarillo de "Apuestas".
+function countUnfollowedAvailablePicks(clientId) {
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return 0;
+  const allAvailable = availablePicksFor(c) || [];
+  const followedSet = new Set(getFollowed(clientId).map(b => b.pickId));
+  return allAvailable.filter(p => !followedSet.has(p.id) && pickResult(p) === 'pending').length;
 }
 
 /* ============================================================
@@ -5380,6 +5401,10 @@ document.addEventListener('click', async (e) => {
     try { await loadClientRetosData(); } catch(err) { console.error('[retos cliente]', err); }
   }
   rerenderCurrentClientPanel();
+  // Al entrar en "Mis apuestas" comprobamos si hay apuestas recién ganadas → popup + confetti
+  if (newTab === 'mybets') {
+    setTimeout(checkForNewWinsAndCelebrate, 350);
+  }
 });
 
 // Filtros de "Mis apuestas" (estado y mes) — ahora son <select>
@@ -6893,10 +6918,11 @@ function fireConfetti(opts = {}) {
 }
 window.fireConfetti = fireConfetti;
 
-// Detector: cuando el cliente entra a su panel, comprueba si tiene apuestas
-// seguidas ganadas que aún no había visto y dispara confetti la primera vez.
+// Detector: al entrar en "Mis apuestas", busca apuestas seguidas recién ganadas
+// que aún no se le hayan mostrado, abre un popup con el desglose y lanza confetti.
 function checkForNewWinsAndCelebrate() {
   if (!activeClientId) return;
+  if (typeof currentClientTab !== 'undefined' && currentClientTab !== 'mybets') return;
   try {
     const SEEN_KEY = `mb_seen_wins_${activeClientId}`;
     const seenIds = new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]'));
@@ -6905,22 +6931,92 @@ function checkForNewWinsAndCelebrate() {
     if (typeof monthlyPicksPool !== 'undefined') {
       monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
     }
-    const newWins = bets.filter(b => {
-      const p = picksById[b.pickId]; if (!p) return false;
-      const r = (typeof pickResult === 'function') ? pickResult(p) : null;
-      return r === 'win' && !seenIds.has(b.pickId);
-    });
+    const newWins = bets
+      .map(b => ({ bet: b, pick: picksById[b.pickId] }))
+      .filter(({ pick }) => pick && (typeof pickResult === 'function') && pickResult(pick) === 'win')
+      .filter(({ bet }) => !seenIds.has(bet.pickId));
     if (newWins.length > 0) {
-      // Marca como vistas
-      newWins.forEach(b => seenIds.add(b.pickId));
-      localStorage.setItem(SEEN_KEY, JSON.stringify(Array.from(seenIds)));
-      // Toast + confetti
-      const txt = newWins.length === 1
-        ? '¡Pick acertado! Una de tus apuestas ha ganado 🎯'
-        : `¡${newWins.length} apuestas acertadas! 🎯`;
-      setTimeout(() => { showToast(txt, 'success', 5500); fireConfetti(); }, 700);
+      // Marcar todas como vistas para que no vuelva a salir el popup
+      newWins.forEach(({ bet }) => seenIds.add(bet.pickId));
+      try { localStorage.setItem(SEEN_KEY, JSON.stringify(Array.from(seenIds))); } catch(e){}
+      // Disparamos confetti + popup con la primera (la más reciente normalmente
+      // está al principio porque las apuestas se guardan ordenadas por fecha).
+      setTimeout(() => {
+        fireConfetti();
+        showWinPopup(newWins[0].bet, newWins[0].pick, newWins.length);
+      }, 350);
     }
   } catch (e) { console.warn('[wins-celebrate]', e); }
+}
+
+// Popup de celebración con desglose: cuota, apostado, beneficio neto, total a cobrar.
+function showWinPopup(bet, pick, totalWins = 1) {
+  const odds  = (typeof pickTotalOdds === 'function') ? pickTotalOdds(pick) : 1;
+  const stake = Number(bet.amount || 0);
+  const profit = stake * (odds - 1);
+  const total  = stake * odds;
+  const fmt = (typeof fmtEuro === 'function') ? fmtEuro : (v) => `${Number(v||0).toFixed(2).replace('.', ',')} €`;
+  // Línea con badges y nombres del partido (reutiliza eventBlock si está disponible)
+  const eventHTML = (typeof eventBlock === 'function') ? (eventBlock(pick, true) || '') : '';
+
+  const wrap = document.createElement('div');
+  wrap.id = 'winPopup';
+  wrap.className = 'fixed inset-0 z-[150] flex items-center justify-center px-4 py-6';
+  wrap.setAttribute('role','dialog'); wrap.setAttribute('aria-modal','true');
+  wrap.innerHTML = `
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-win></div>
+    <div class="relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl">
+      <div class="text-center px-6 pt-7 sm:px-8">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-neon/15 border border-accent-neon/40">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00e696" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 class="mt-4 font-display text-2xl font-semibold text-white">¡Apuesta acertada!</h2>
+        <p class="mt-1 text-sm text-ink-200/70">${totalWins > 1 ? `Tienes ${totalWins} apuestas ganadas` : 'Tu apuesta ha ganado'}</p>
+      </div>
+
+      <div class="mx-5 mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:mx-6">
+        ${eventHTML || `<p class="text-sm font-medium text-white">${(pick.match || '').replace(/[<>]/g,'')}</p>`}
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-500">
+          <span>Cuota <span class="text-white font-semibold">${odds.toFixed(2)}</span></span>
+          <span class="text-ink-500/50">·</span>
+          <span>Apostado <span class="text-white font-semibold">${fmt(stake)}</span></span>
+        </div>
+      </div>
+
+      <div class="mx-5 mt-4 rounded-2xl border border-accent-neon/30 bg-accent-neon/[0.06] p-5 sm:mx-6">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon text-center">Has ganado</div>
+        <div class="mt-2 text-center">
+          <span class="font-display text-4xl font-semibold text-gradient">+${fmt(profit)}</span>
+        </div>
+        <div class="mt-5 space-y-2 text-sm">
+          <div class="flex items-center justify-between text-ink-200/80">
+            <span>Tu apuesta</span>
+            <span class="text-white">${fmt(stake)}</span>
+          </div>
+          <div class="flex items-center justify-between text-ink-200/80">
+            <span>Cuota</span>
+            <span class="text-white">× ${odds.toFixed(2)}</span>
+          </div>
+          <div class="my-2 h-px bg-white/10"></div>
+          <div class="flex items-center justify-between">
+            <span class="text-white font-semibold">Cobras</span>
+            <span class="font-display text-lg font-semibold text-accent-neon">${fmt(total)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-6 sm:px-6">
+        <button type="button" data-close-win class="w-full inline-flex items-center justify-center rounded-full bg-accent-neon px-5 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">¡Genial!</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+  // Cierre por backdrop, botón o tecla Escape
+  function close() { wrap.remove(); }
+  wrap.querySelectorAll('[data-close-win]').forEach(el => el.addEventListener('click', close));
+  document.addEventListener('keydown', function esc(e){
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+  });
 }
 
 /* ============================================================
