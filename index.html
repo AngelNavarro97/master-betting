@@ -435,6 +435,59 @@
   .forum-loading { padding: 1rem; text-align: center; color: rgba(245,245,247,0.4); font-size: 0.8rem; }
 
   .forum-main { display: flex; flex-direction: column; min-width: 0; }
+
+  /* Selector de canales horizontal — solo móvil/PWA */
+  .forum-channels-mobile {
+    display: none;
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .forum-channels-mobile::-webkit-scrollbar { display: none; }
+  @media (max-width: 768px) {
+    .forum-channels-mobile { display: flex; gap: 0.4rem; }
+  }
+  .forum-mpill {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.04);
+    color: rgba(245,245,247,0.6);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all .15s;
+  }
+  .forum-mpill:hover { color: #fff; background: rgba(255,255,255,0.08); }
+  .forum-mpill.joined { color: rgba(245,245,247,0.85); }
+  .forum-mpill.active { background: rgba(0,230,150,0.12); border-color: rgba(0,230,150,0.45); color: #fff; }
+  .forum-mpill-emoji { font-size: 0.95em; }
+
+  /* En móvil, el botón "abandonar" del canal aparece en el header */
+  .forum-header-leave {
+    display: none;
+    align-items: center; gap: 0.3rem;
+    margin-left: auto;
+    padding: 0.3rem 0.65rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.04);
+    color: rgba(245,245,247,0.55);
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .forum-header-leave:hover { color: #fff; background: rgba(248,113,113,0.10); border-color: rgba(248,113,113,0.30); }
+  @media (max-width: 768px) {
+    .forum-header { display: flex; align-items: center; gap: 0.5rem; }
+    .forum-header-leave.show { display: inline-flex; }
+  }
   .forum-header { padding: 0.85rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
   .forum-header-title { display: flex; align-items: center; gap: 0.5rem; }
   .forum-header-title h3 { margin: 0; font-family: Inter, sans-serif; font-size: 1rem; font-weight: 600; color: #fff; }
@@ -7953,6 +8006,8 @@ function forumTabHTML(c) {
         </ul>
       </aside>
       <main class="forum-main">
+        <!-- Selector de canales horizontal (solo móvil/PWA) -->
+        <div id="forumChannelsMobile" class="forum-channels-mobile"></div>
         <div id="forumHeader" class="forum-header">
           <p class="text-ink-500">Cargando…</p>
         </div>
@@ -7994,26 +8049,43 @@ async function renderForumPanel() {
 }
 
 function renderForumChannels() {
+  // Sidebar (escritorio)
   const list = document.getElementById('forumChannelsList');
-  if (!list) return;
-  list.innerHTML = forumChannels.map(c => {
-    const isActive = c.id === forumCurrentChannelId;
-    const isJoined = forumMyChannelIds.has(c.id) || c.is_default;
-    const cls = `forum-channel-item ${isActive ? 'active' : ''} ${isJoined ? 'joined' : ''}`;
-    const lockIcon = !isJoined ? '<svg class="forum-channel-lock" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' : '';
-    const moreBtn = (isJoined && !c.is_default) ?
-      `<button class="forum-channel-more" data-forum-channel-menu="${c.id}" aria-label="Opciones del canal">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-      </button>` : '';
-    return `<li>
-      <button class="${cls}" data-forum-channel="${c.id}">
-        <span class="forum-channel-emoji">${c.emoji || '#'}</span>
-        <span class="forum-channel-name">${(c.name || '').replace(/[<>]/g,'')}</span>
-        ${lockIcon}
-        ${moreBtn}
-      </button>
-    </li>`;
-  }).join('');
+  if (list) {
+    list.innerHTML = forumChannels.map(c => {
+      const isActive = c.id === forumCurrentChannelId;
+      const isJoined = forumMyChannelIds.has(c.id) || c.is_default;
+      const cls = `forum-channel-item ${isActive ? 'active' : ''} ${isJoined ? 'joined' : ''}`;
+      const lockIcon = !isJoined ? '<svg class="forum-channel-lock" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' : '';
+      const moreBtn = (isJoined && !c.is_default) ?
+        `<button class="forum-channel-more" data-forum-channel-menu="${c.id}" aria-label="Opciones del canal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+        </button>` : '';
+      return `<li>
+        <button class="${cls}" data-forum-channel="${c.id}">
+          <span class="forum-channel-emoji">${c.emoji || '#'}</span>
+          <span class="forum-channel-name">${(c.name || '').replace(/[<>]/g,'')}</span>
+          ${lockIcon}
+          ${moreBtn}
+        </button>
+      </li>`;
+    }).join('');
+  }
+  // Pills horizontales (móvil/PWA)
+  const mobile = document.getElementById('forumChannelsMobile');
+  if (mobile) {
+    mobile.innerHTML = forumChannels.map(c => {
+      const isActive = c.id === forumCurrentChannelId;
+      const isJoined = forumMyChannelIds.has(c.id) || c.is_default;
+      const cls = `forum-mpill ${isActive ? 'active' : ''} ${isJoined ? 'joined' : ''}`;
+      const lockSVG = !isJoined ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' : '';
+      return `<button class="${cls}" data-forum-channel="${c.id}">
+        <span class="forum-mpill-emoji">${c.emoji || '#'}</span>
+        <span class="forum-mpill-name">${(c.name || '').replace(/[<>]/g,'')}</span>
+        ${lockSVG}
+      </button>`;
+    }).join('');
+  }
 }
 
 // Abrir un canal (consulta mensajes, suscribe realtime, pinta UI)
@@ -8040,15 +8112,20 @@ async function openForumChannel(channelId, options = {}) {
   }
   forumCurrentChannelId = channelId;
   renderForumChannels(); // refresca activo
-  // Render header
+  // Render header (con botón Abandonar en móvil si aplica)
   const headerEl = document.getElementById('forumHeader');
   if (headerEl) {
+    const showLeave = forumMyChannelIds.has(channel.id) && !channel.is_default;
     headerEl.innerHTML = `
       <div class="forum-header-title">
         <span class="forum-header-emoji">${channel.emoji || '#'}</span>
         <h3>${(channel.name || '').replace(/[<>]/g,'')}</h3>
       </div>
       ${channel.description ? `<p class="forum-header-desc">${channel.description.replace(/[<>]/g,'')}</p>` : ''}
+      <button type="button" class="forum-header-leave ${showLeave ? 'show' : ''}" data-forum-channel-menu="${channel.id}" aria-label="Abandonar canal">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Abandonar
+      </button>
     `;
   }
   // Carga mensajes
