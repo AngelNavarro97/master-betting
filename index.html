@@ -1818,14 +1818,14 @@
   </div>
 </div>
 
-<!-- MODAL "Perfil de usuario" -->
-<div id="profileModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
-  <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-profile></div>
+<!-- MODAL "Ver perfil de otro usuario" (avatar + plan + stats si es propio/admin) -->
+<div id="userProfileModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-user-profile></div>
   <div class="relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-white/10 shadow-2xl">
-    <button data-close-profile aria-label="Cerrar" class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-ink-300 hover:bg-white/10 hover:text-white">
+    <button data-close-user-profile aria-label="Cerrar" class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-ink-300 hover:bg-white/10 hover:text-white">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    <div id="profileContent" class="px-6 pt-7 pb-6 sm:px-8 sm:pt-9 sm:pb-8"></div>
+    <div id="userProfileContent" class="px-6 pt-7 pb-6 sm:px-8 sm:pt-9 sm:pb-8"></div>
   </div>
 </div>
 
@@ -3821,15 +3821,22 @@ function statsPanelHTML(c, forAdmin) {
     <div class="mb-6 flex flex-col gap-1">
       <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
       <p class="mt-1 text-sm text-ink-500">Hola,</p>
-      <div class="flex flex-wrap items-center gap-3">
-        <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${c.name}</h2>
-        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.cls}">${status.label}</span>
-        <button type="button" data-action="open-profile" class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-medium text-white transition hover:border-white/30 hover:bg-white/10">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Editar perfil
-        </button>
+      <div class="flex items-center gap-3 mt-1">
+        <div class="shrink-0">${mbAvatarSVG(c.id, c.nickname || c.name, 52)}</div>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">${c.name}</h2>
+            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.cls}">${status.label}</span>
+            <!-- Solo visible en escritorio (en móvil va en el menú "Más") -->
+            <button type="button" data-action="open-profile" class="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-medium text-white transition hover:border-white/30 hover:bg-white/10">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Editar perfil
+            </button>
+          </div>
+          ${c.nickname ? `<p class="mt-0.5 text-sm text-accent-neon font-medium">@${(c.nickname||'').replace(/[<>]/g,'')}</p>` : ''}
+        </div>
       </div>
-      <p class="text-sm text-ink-500">Plan ${c.plan} · ${fmtEuro(c.price)}/mes · alta el ${c.joinedAt}</p>
+      <p class="mt-1 text-sm text-ink-500">Plan ${c.plan} · ${fmtEuro(c.price)}/mes · alta el ${c.joinedAt}</p>
     </div>`;
 
   const summaryKPIsHTML = `
@@ -3875,6 +3882,8 @@ function statsPanelHTML(c, forAdmin) {
     missions: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15L2.66 7.14a2 2 0 0 1 0-2L4.81 1.5a2 2 0 0 1 1.73-1h10.92a2 2 0 0 1 1.73 1l2.15 3.64a2 2 0 0 1 0 2L16.79 15"/><circle cx="12" cy="17" r="5"/><path d="M12 14v6"/></svg>',
     bookies:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-9h6v9"/></svg>',
     retos:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-2 8 4 10H4l4-10z"/><path d="M9 11h6"/></svg>',
+    forum:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    profile_edit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
   };
 
   // Pills de arriba (desktop) — ocultos en móvil
@@ -3889,6 +3898,7 @@ function statsPanelHTML(c, forAdmin) {
         <button data-ctab="retos"    class="cli-tab ${tab==='retos'?'active':''}">Retos</button>
         <button data-ctab="mybets"   class="cli-tab ${tab==='mybets'?'active':''}">Mis apuestas${pendingCount>0?`<span class="cli-badge">${pendingCount}</span>`:''}</button>
         <button data-ctab="missions" class="cli-tab ${tab==='missions'?'active':''}">Misiones${unclaimedMissions>0?`<span class="cli-badge">${unclaimedMissions}</span>`:''}</button>
+        <button data-ctab="forum"    class="cli-tab ${tab==='forum'?'active':''}">Foro</button>
         <button data-ctab="bookies"  class="cli-tab ${tab==='bookies'?'active':''}">Casas</button>
         <button data-ctab="mystats"  class="cli-tab ${tab==='mystats'?'active':''}">Mis estadísticas</button>
       </div>
@@ -3914,6 +3924,8 @@ function statsPanelHTML(c, forAdmin) {
     panel = followedBetsClientHTML(c);
   } else if (tab === 'missions') {
     panel = missionsTabHTML(c);
+  } else if (tab === 'forum') {
+    panel = forumTabHTML(c);
   } else if (tab === 'bookies') {
     panel = bookmakersTabHTML();
   } else if (tab === 'mystats') {
@@ -3946,8 +3958,12 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
   const moreItems = [];
   if (showPremium) moreItems.push({ key: 'premium',  label: 'Exclusive', amber: true });
   moreItems.push({ key: 'missions', label: 'Misiones' });
+  moreItems.push({ key: 'forum',    label: 'Foro' });
   moreItems.push({ key: 'bookies',  label: 'Casas' });
   moreItems.push({ key: 'mystats',  label: 'Mis estadísticas' });
+  // "Editar perfil" funciona distinto a las pestañas: abre un modal en lugar de cambiar tab.
+  // Lo manejamos al final con un marcador especial.
+  moreItems.push({ key: 'profile_edit', label: 'Editar perfil', isAction: true });
 
   // Si la pestaña activa está dentro del menú Más, marcamos el botón Más como activo
   const moreActive = moreItems.some(it => it.key === activeTab);
@@ -3995,7 +4011,10 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
       const sheetBadge = (it.key === 'missions' && unclaimedMissions > 0)
         ? `<span class="cli-badge" style="position:static;">${unclaimedMissions}</span>`
         : '';
-      return `<button data-ctab="${it.key}" class="more-sheet-item flex items-center gap-4 w-full rounded-2xl border ${amberCls} px-4 py-3.5 text-left transition${activeRing}">
+      // Las "acciones" (como "Editar perfil") usan data-action en vez de data-ctab
+      // y NO cambian de pestaña, abren un modal.
+      const dataAttr = it.isAction ? `data-action="${it.key}"` : `data-ctab="${it.key}"`;
+      return `<button ${dataAttr} class="more-sheet-item flex items-center gap-4 w-full rounded-2xl border ${amberCls} px-4 py-3.5 text-left transition${activeRing}">
         <span class="flex h-10 w-10 items-center justify-center rounded-full ${iconColorCls}">${ICON[it.key]}</span>
         <span class="flex-1 min-w-0">
           <span class="block text-sm font-medium ${labelCls}">${it.label}</span>
@@ -6114,9 +6133,10 @@ function closeProfileModal() {
   document.getElementById('profileModal').classList.add('hidden');
 }
 
-// Abrir desde la pill "Editar perfil"
+// Abrir desde la pill "Editar perfil" (escritorio) o desde el menú "Más" (móvil/PWA).
+// Reconocemos dos data-action: el viejo "open-profile" y el nuevo "profile_edit".
 document.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-action="open-profile"]');
+  const btn = e.target.closest('[data-action="open-profile"], [data-action="profile_edit"]');
   if (btn) { e.preventDefault(); openProfileModal(); }
 });
 document.querySelectorAll('[data-action="close-profile"]').forEach(el => el.addEventListener('click', closeProfileModal));
@@ -7674,6 +7694,25 @@ function animateMBCoinsCounter(from, to) {
 }
 
 /* ============================================================
+   FORO — placeholder hasta la siguiente sesión (UI completa)
+   Cuando se construya el chat real, esta función se reemplazará.
+============================================================ */
+function forumTabHTML(c) {
+  return `<div>
+    <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Foro</span></div>
+    <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">Comunidad Master Betting</h3>
+    <p class="mt-1 text-sm text-ink-500">El foro estilo Discord con canales y chat en vivo estará disponible muy pronto.</p>
+    <div class="mt-6 gradient-border rounded-2xl bg-white/[0.02] p-8 text-center">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-neon/10 border border-accent-neon/30 text-accent-neon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      </div>
+      <h4 class="mt-4 font-display text-base font-semibold text-white">Foro próximamente</h4>
+      <p class="mx-auto mt-2 max-w-md text-sm text-ink-500">Estamos terminando el chat con canales (#general, #fútbol, #baloncesto, #tenis…), menciones y realtime. Te avisaremos cuando esté listo.</p>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
    NICKNAME MODAL — pedir nickname obligatorio al cliente
 ============================================================ */
 let _nicknameCheckTimer = null;
@@ -7771,8 +7810,8 @@ function maybeAskNickname() {
    PERFIL DE USUARIO — modal con avatar, nickname, plan y stats
 ============================================================ */
 async function openUserProfile(userId) {
-  const modal = document.getElementById('profileModal');
-  const content = document.getElementById('profileContent');
+  const modal = document.getElementById('userProfileModal');
+  const content = document.getElementById('userProfileContent');
   if (!modal || !content) return;
 
   // Localizar al cliente. Si no está en memoria, intentamos cargarlo.
@@ -7855,12 +7894,12 @@ async function openUserProfile(userId) {
   `;
   modal.classList.remove('hidden');
 }
-// Cierre
+// Cierre del modal de "ver perfil" (NO el de editar perfil)
 document.addEventListener('click', (e) => {
-  if (e.target.closest('[data-close-profile]')) document.getElementById('profileModal')?.classList.add('hidden');
+  if (e.target.closest('[data-close-user-profile]')) document.getElementById('userProfileModal')?.classList.add('hidden');
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') document.getElementById('profileModal')?.classList.add('hidden');
+  if (e.key === 'Escape') document.getElementById('userProfileModal')?.classList.add('hidden');
 });
 // Listener global: cualquier elemento con data-user-profile="userId" abre el perfil
 document.addEventListener('click', (e) => {
