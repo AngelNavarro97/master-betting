@@ -381,13 +381,15 @@
   }
 
   /* === FORO estilo Discord ================================================
-     Sidebar de canales + área de chat + composer abajo */
+     Sidebar de canales + área de chat + composer abajo.
+     Usamos 100dvh (dynamic viewport height) en móvil para que NO afecte a la
+     altura real cuando la URL bar de iOS aparece/desaparece. */
   .forum-wrap {
     display: grid;
     grid-template-columns: 220px 1fr;
     gap: 0;
-    height: calc(100vh - 240px);
-    min-height: 480px;
+    height: 70vh;
+    min-height: 420px;
     max-height: 720px;
     border-radius: 1.25rem;
     border: 1px solid rgba(255,255,255,0.08);
@@ -395,7 +397,12 @@
     overflow: hidden;
   }
   @media (max-width: 768px) {
-    .forum-wrap { grid-template-columns: 1fr; height: calc(100vh - 220px); min-height: 480px; }
+    .forum-wrap {
+      grid-template-columns: 1fr;
+      height: 70dvh;            /* dvh: viewport dinámico, no se rompe con la URL bar */
+      min-height: 380px;
+      max-height: 70dvh;
+    }
     .forum-sidebar { display: none !important; }
     .forum-sidebar.mobile-open { display: block !important; position: absolute; inset: 0; z-index: 5; background: rgba(6,18,12,0.96); }
   }
@@ -1920,6 +1927,22 @@
   </div>
 </div>
 
+<!-- MODAL genérico "Confirmar acción" (estilo MB, reemplaza confirm() del navegador) -->
+<div id="mbConfirmModal" class="hidden fixed inset-0 z-[160] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-mb-confirm-close></div>
+  <div class="relative my-auto w-full max-w-sm overflow-hidden rounded-3xl bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl">
+    <div class="px-6 pt-7 sm:px-7 text-center">
+      <div id="mbConfirmIcon" class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-neon/15 border border-accent-neon/40 text-accent-neon"></div>
+      <h2 id="mbConfirmTitle" class="mt-4 font-display text-xl font-semibold text-white">Confirmar</h2>
+      <p id="mbConfirmMsg" class="mt-2 text-sm text-ink-200/75"></p>
+    </div>
+    <div class="px-6 pb-6 pt-5 sm:px-7 flex gap-2">
+      <button type="button" data-mb-confirm-cancel class="flex-1 inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-medium text-white hover:bg-white/10">Cancelar</button>
+      <button type="button" data-mb-confirm-ok class="flex-1 inline-flex items-center justify-center rounded-full bg-accent-neon px-5 py-3 text-sm font-semibold text-black hover:bg-emerald-300">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL "Ver perfil de otro usuario" (avatar + plan + stats si es propio/admin) -->
 <div id="userProfileModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-user-profile></div>
@@ -3205,9 +3228,21 @@ function showClientView(clientId) {
   publicSite.classList.add('hidden'); adminPanel.classList.add('hidden'); clientPanel.classList.remove('hidden');
   // Marca el body para que en móvil reserve hueco inferior por el bottom nav
   document.body.classList.add('client-active');
-  // Mostrar la barra inferior (la mantenemos fuera del clientPanel para evitar el bug
-  // de position:fixed en iOS PWA cuando el contenedor es corto)
-  document.getElementById('clientBottomNav')?.classList.remove('hidden');
+  // Mostrar la barra inferior. En iOS PWA, cuando una pantalla cambia, el cálculo
+  // de position:fixed se hace ANTES de pintar y a veces queda mal hasta el primer
+  // scroll. Forzamos un reflow + un repaint con doble RAF para que se asiente bien.
+  const cbn = document.getElementById('clientBottomNav');
+  if (cbn) {
+    cbn.classList.remove('hidden');
+    // Triple defensa: forzamos reflow leyendo offsetHeight + 2 RAFs antes de pintar
+    void cbn.offsetHeight;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // Pequeña "patada" al transform para forzar repintado de iOS
+        cbn.style.transform = 'translateZ(0)';
+      });
+    });
+  }
   // Identificar al cliente en OneSignal (etiquetar plan + email)
   identifyClientInOneSignal(c);
   // Botón "Mejorar suscripción": solo visible para Basic y Pro (Exclusive ya está en lo más alto)
@@ -3557,10 +3592,16 @@ async function showClientFromSupabaseUser(user) {
   const meta = user.user_metadata || {};
   // Lee la fila de clients (puede tener plan/status actualizados por el admin)
   const { data: row } = await sb.from('clients').select('*').eq('id', user.id).maybeSingle();
+  // Fallback: si la BD por algún motivo devuelve nickname vacío, miramos en localStorage
+  // (donde lo guardamos al confirmarlo) para no obligar a re-elegirlo.
+  let resolvedNickname = (row && row.nickname) ? row.nickname : null;
+  if (!resolvedNickname) {
+    try { resolvedNickname = localStorage.getItem(`mb_nickname_${user.id}`) || null; } catch(e) {}
+  }
   const client = row ? {
     id: row.id, name: row.name, email: row.email, plan: row.plan,
     price: parseFloat(row.price), status: row.status, joinedAt: row.joined_at, verified: true,
-    nickname: row.nickname || null,
+    nickname: resolvedNickname,
     stripe_customer_id: row.stripe_customer_id || null,
     stripe_subscription_id: row.stripe_subscription_id || null,
     notifications_activated: !!row.notifications_activated,
@@ -7802,6 +7843,58 @@ function animateMBCoinsCounter(from, to) {
 }
 
 /* ============================================================
+   MB CONFIRM — modal de confirmación estilo MB (reemplaza confirm())
+   Uso:  const ok = await mbConfirm({ title, message, okLabel, iconSVG, danger });
+============================================================ */
+function mbConfirm(opts = {}) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('mbConfirmModal');
+    const iconEl  = document.getElementById('mbConfirmIcon');
+    const titleEl = document.getElementById('mbConfirmTitle');
+    const msgEl   = document.getElementById('mbConfirmMsg');
+    const okBtn     = modal.querySelector('[data-mb-confirm-ok]');
+    const cancelBtn = modal.querySelector('[data-mb-confirm-cancel]');
+    const backdrops = modal.querySelectorAll('[data-mb-confirm-close]');
+
+    titleEl.textContent = opts.title   || '¿Estás seguro?';
+    msgEl.textContent   = opts.message || '';
+    okBtn.textContent   = opts.okLabel || 'Aceptar';
+    cancelBtn.textContent = opts.cancelLabel || 'Cancelar';
+
+    // Tema (danger = rojo, default = verde MB)
+    if (opts.danger) {
+      iconEl.className = 'mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/40 text-red-300';
+      okBtn.className  = 'flex-1 inline-flex items-center justify-center rounded-full bg-red-500 px-5 py-3 text-sm font-semibold text-white hover:bg-red-400';
+    } else {
+      iconEl.className = 'mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-neon/15 border border-accent-neon/40 text-accent-neon';
+      okBtn.className  = 'flex-1 inline-flex items-center justify-center rounded-full bg-accent-neon px-5 py-3 text-sm font-semibold text-black hover:bg-emerald-300';
+    }
+    iconEl.innerHTML = opts.iconSVG ||
+      '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+
+    modal.classList.remove('hidden');
+
+    function done(value) {
+      modal.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      backdrops.forEach(b => b.removeEventListener('click', onCancel));
+      document.removeEventListener('keydown', onKey);
+      resolve(value);
+    }
+    function onOk()     { done(true); }
+    function onCancel() { done(false); }
+    function onKey(e)   { if (e.key === 'Escape') done(false); if (e.key === 'Enter') done(true); }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    backdrops.forEach(b => b.addEventListener('click', onCancel));
+    document.addEventListener('keydown', onKey);
+  });
+}
+window.mbConfirm = mbConfirm;
+
+/* ============================================================
    FORO — UI completa estilo Discord
    Sidebar de canales + chat con mensajes + composer con menciones.
    Datos cargados desde Supabase + realtime para mensajes nuevos.
@@ -7928,12 +8021,17 @@ async function openForumChannel(channelId, options = {}) {
   if (!channelId) return;
   const channel = forumChannels.find(c => c.id === channelId);
   if (!channel) return;
-  // Si no estoy joined y NO es default → preguntar
+  // Si no estoy joined y NO es default → preguntar con modal MB propio
   const isJoined = forumMyChannelIds.has(channelId) || channel.is_default;
   if (!isJoined) {
-    const ok = confirm(`¿Quieres unirte al canal #${channel.name}?`);
+    const ok = await mbConfirm({
+      title: `Unirse a ${channel.emoji || '#'} ${channel.name}`,
+      message: `Te unirás a este canal y podrás leer y escribir mensajes. Podrás abandonarlo en cualquier momento.`,
+      okLabel: 'Unirme al canal',
+      cancelLabel: 'Cancelar',
+      iconSVG: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
+    });
     if (!ok) return;
-    // Unirse
     const { error } = await sb.from('forum_memberships').insert({ user_id: activeClientId, channel_id: channelId });
     if (error) { showToast('No se pudo unir al canal: ' + error.message, 'error'); return; }
     forumMyChannelIds.add(channelId);
@@ -8243,7 +8341,15 @@ document.addEventListener('click', async (e) => {
     const channelId = menuBtn.dataset.forumChannelMenu;
     const ch = forumChannels.find(c => c.id === channelId);
     if (!ch) return;
-    if (confirm(`¿Abandonar el canal #${ch.name}?`)) {
+    const okLeave = await mbConfirm({
+      title: `Abandonar ${ch.emoji || '#'} ${ch.name}`,
+      message: `Dejarás de ver los mensajes de este canal. Podrás unirte de nuevo cuando quieras.`,
+      okLabel: 'Abandonar',
+      cancelLabel: 'Cancelar',
+      danger: true,
+      iconSVG: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+    });
+    if (okLeave) {
       const { error } = await sb.from('forum_memberships').delete()
         .match({ user_id: activeClientId, channel_id: channelId });
       if (error) { showToast('Error al abandonar: ' + error.message, 'error'); return; }
@@ -8264,7 +8370,13 @@ document.addEventListener('click', async (e) => {
   if (delBtn) {
     if (!_forumIsCurrentUserAdmin()) return;
     const msgId = delBtn.dataset.forumDeleteMsg;
-    if (!confirm('¿Borrar este mensaje?')) return;
+    const okDel = await mbConfirm({
+      title: 'Borrar mensaje',
+      message: 'El mensaje se marcará como eliminado y dejará de verse para los usuarios.',
+      okLabel: 'Borrar', danger: true,
+      iconSVG: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>',
+    });
+    if (!okDel) return;
     const { error } = await sb.from('forum_messages').update({
       deleted_at: new Date().toISOString(),
       deleted_by: activeClientId,
@@ -8279,7 +8391,13 @@ document.addEventListener('click', async (e) => {
     if (!_forumIsCurrentUserAdmin()) return;
     const uid = blkBtn.dataset.forumBlockUser;
     if (uid === activeClientId) { showToast('No puedes bloquearte a ti mismo', 'error'); return; }
-    if (!confirm('¿Bloquear a este usuario del foro?')) return;
+    const okBlk = await mbConfirm({
+      title: 'Bloquear usuario',
+      message: 'Este usuario ya no podrá escribir mensajes en ningún canal del foro. Puede seguir leyendo.',
+      okLabel: 'Bloquear', danger: true,
+      iconSVG: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>',
+    });
+    if (!okBlk) return;
     const { error } = await sb.from('forum_blocks').insert({
       user_id: uid, blocked_by: activeClientId,
     });
@@ -8358,6 +8476,16 @@ function showNicknameModal(client, onDone) {
       showStatus('Error al guardar: ' + error.message, 'error');
       submit.disabled = false; submit.textContent = 'Continuar'; return;
     }
+    // VERIFICACIÓN: leemos de nuevo la BD para asegurar que se ha guardado
+    const { data: check } = await sb.from('clients').select('nickname').eq('id', client.id).maybeSingle();
+    if (!check || !check.nickname) {
+      showStatus('Atención: el nickname se ha enviado pero no se ha podido confirmar en la BD. Avisa al admin si vuelve a pasar.', 'error');
+      console.error('[nickname] no se ha persistido en BD. RLS probablemente bloqueando UPDATE.');
+      submit.disabled = false; submit.textContent = 'Continuar'; return;
+    }
+    // Persistencia local de respaldo: aunque algo falle en la BD en el futuro,
+    // este dispositivo recuerda el nickname y NO vuelve a pedirlo.
+    try { localStorage.setItem(`mb_nickname_${client.id}`, value); } catch(e) {}
     // Actualizar en memoria
     client.nickname = value;
     modal.classList.add('hidden');
@@ -8372,15 +8500,32 @@ function showNicknameModal(client, onDone) {
   setTimeout(() => input.focus(), 100);
 }
 
-// Comprueba si el cliente activo necesita nickname y abre el modal
-function maybeAskNickname() {
+// Comprueba si el cliente activo necesita nickname y abre el modal.
+// IMPORTANTE: hace una verificación final contra la BD en caliente para evitar
+// pedirlo si ya está guardado y la copia en memoria no lo refleja por algún bug.
+async function maybeAskNickname() {
   if (!activeClientId) return;
   const c = clients.find(x => x.id === activeClientId);
   if (!c) return;
-  if (c.nickname && c.nickname.trim()) return; // ya tiene
-  showNicknameModal(c, (updated) => {
-    rerenderCurrentClientPanel();
-  });
+  // 1) Si ya está en memoria, no preguntamos
+  if (c.nickname && String(c.nickname).trim()) return;
+  // 2) Fallback en localStorage (si guardamos antes en este dispositivo)
+  try {
+    const local = localStorage.getItem(`mb_nickname_${c.id}`);
+    if (local && local.trim()) { c.nickname = local.trim(); return; }
+  } catch(e) {}
+  // 3) Última verificación contra BD: por si el SELECT inicial perdió la columna
+  try {
+    const { data } = await sb.from('clients').select('nickname').eq('id', c.id).maybeSingle();
+    if (data && data.nickname && String(data.nickname).trim()) {
+      c.nickname = data.nickname.trim();
+      // Lo guardamos también en localStorage para próximos logins
+      try { localStorage.setItem(`mb_nickname_${c.id}`, c.nickname); } catch(e) {}
+      return;
+    }
+  } catch(e) { console.warn('[nickname check]', e); }
+  // 4) Si tras todas las comprobaciones sigue vacío, pedirlo
+  showNicknameModal(c, () => rerenderCurrentClientPanel());
 }
 
 /* ============================================================
