@@ -380,6 +380,59 @@
     }
   }
 
+  /* === CALENDARIO DE RACHA DE DÍAS CONECTADOS ===========================
+     Cada celda del calendario tiene 3 estados: visitada (oscuro + MBCoin),
+     futura (verde marca), pasada-perdida (gris muy sutil). */
+  .streak-cell {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: transform 0.25s ease;
+  }
+  .streak-cell.future {
+    background: rgba(0, 230, 150, 0.10);
+    border: 1px solid rgba(0, 230, 150, 0.25);
+    color: #00e696;
+  }
+  .streak-cell.missed {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(245,245,247,0.30);
+  }
+  .streak-cell.visited {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(245,245,247,0.55);
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .streak-cell .streak-coin { display: inline-flex; }
+  .streak-cell .streak-coin svg { width: 14px; height: 14px; }
+  .streak-cell.visited .streak-num { font-size: 0.65rem; font-weight: 500; opacity: 0.7; }
+  /* Animación: el MBCoin "cae" sobre el día de hoy cuando es nuevo */
+  .streak-cell.just-now .streak-coin {
+    animation: streak-coin-drop 0.85s cubic-bezier(.35,.8,.4,1.6) 0.3s forwards;
+    opacity: 0;
+  }
+  .streak-cell.just-now {
+    animation: streak-cell-pulse 0.5s ease 1.05s;
+  }
+  @keyframes streak-coin-drop {
+    0%   { transform: translateY(-40px) scale(0.4) rotate(0deg); opacity: 0; }
+    65%  { transform: translateY(2px)   scale(1.15) rotate(180deg); opacity: 1; }
+    85%  { transform: translateY(-3px)  scale(0.95) rotate(220deg); }
+    100% { transform: translateY(0)     scale(1)    rotate(180deg); opacity: 1; }
+  }
+  @keyframes streak-cell-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,230,150,0); }
+    50%      { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(0,230,150,0.18); }
+  }
+
   /* === BOTÓN FLOTANTE WHATSAPP SOPORTE ====================================
      Solo visible en la home pública. Esquina inferior izquierda. */
   #waSupportBtn {
@@ -2993,6 +3046,16 @@ function showClientView(clientId) {
   maybeShowOnboarding();
   // (El confetti + popup de "apuesta acertada" se dispara solo al entrar en
   //  la pestaña "Mis apuestas", no aquí.)
+  // Registrar login del día. Si era nuevo, mostrar popup de racha
+  const { wasNew } = registerTodayLogin(activeClientId);
+  // Mostrar popup de racha solo si NO se ha mostrado ya hoy (sessionStorage)
+  const seenTodayKey = `mb_streak_popup_shown_${activeClientId}_${todayISO()}`;
+  if (!sessionStorage.getItem(seenTodayKey)) {
+    sessionStorage.setItem(seenTodayKey, '1');
+    setTimeout(() => showDailyStreakPopup(c, wasNew), 700);
+  }
+  // Comprobar hitos de win streak no canjeados (después del de racha diaria)
+  setTimeout(() => checkWinStreakMilestones(c), 1800);
 }
 
 /* === Modal de mejora de plan === */
@@ -4117,9 +4180,105 @@ function countUnclaimedCompletedMissions(client) {
 // Total MBCoins acumulados (solo cuenta misiones CANJEADAS, no solo completadas)
 function getTotalMBCoins(client) {
   const claimed = getClaimedMissionIds(client.id);
-  return evaluateMissions(client)
+  const missionsCoins = evaluateMissions(client)
     .filter(m => m.completed && claimed.has(m.id))
     .reduce((sum, m) => sum + m.coins, 0);
+  const dailyStreakCoins = getClaimedDailyStreakMonths(client.id).length * 50;
+  const winStreakCoins = getClaimedWinStreakMilestones(client.id)
+    .reduce((sum, milestone) => sum + (WIN_STREAK_REWARDS[milestone] || 0), 0);
+  return missionsCoins + dailyStreakCoins + winStreakCoins;
+}
+
+/* ============================================================
+   RACHA DE DÍAS CONECTADOS (Daily login streak)
+   - Cada día que el cliente abre el panel, se registra la fecha
+   - Al completar un mes (todos los días del mes vistos) → 50 MBCoins
+   - Storage: localStorage por cliente
+============================================================ */
+function getLoginDates(clientId) {
+  try { return JSON.parse(localStorage.getItem(`mb_login_dates_${clientId}`) || '[]'); }
+  catch (e) { return []; }
+}
+function setLoginDates(clientId, dates) {
+  try { localStorage.setItem(`mb_login_dates_${clientId}`, JSON.stringify(dates)); } catch (e) {}
+}
+function todayISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+// Devuelve { wasNew: bool } indicando si hoy era una fecha nueva
+function registerTodayLogin(clientId) {
+  const dates = getLoginDates(clientId);
+  const today = todayISO();
+  if (dates.includes(today)) return { wasNew: false };
+  dates.push(today);
+  setLoginDates(clientId, dates);
+  return { wasNew: true };
+}
+// Meses ya canjeados ("YYYY-MM")
+function getClaimedDailyStreakMonths(clientId) {
+  try { return JSON.parse(localStorage.getItem(`mb_claimed_streak_months_${clientId}`) || '[]'); }
+  catch (e) { return []; }
+}
+function setClaimedDailyStreakMonths(clientId, months) {
+  try { localStorage.setItem(`mb_claimed_streak_months_${clientId}`, JSON.stringify(months)); } catch (e) {}
+}
+function currentMonthKey() { return todayISO().slice(0,7); }
+// Días del mes en formato YYYY-MM-DD que el cliente ha visitado este mes
+function loginDatesThisMonth(clientId) {
+  const mk = currentMonthKey();
+  return getLoginDates(clientId).filter(d => d.startsWith(mk));
+}
+function daysInMonth(year, monthIdx0) { return new Date(year, monthIdx0 + 1, 0).getDate(); }
+
+/* ============================================================
+   STREAK DE ACIERTOS (Win streak)
+   - Calcula racha consecutiva actual de apuestas ganadas
+   - Hitos: 5 → 10 MBCoins, 10 → 25, 15 → 50, 20 → 100, 25+ → 200
+============================================================ */
+const WIN_STREAK_REWARDS = { 5: 10, 10: 25, 15: 50, 20: 100, 25: 200 };
+const WIN_STREAK_MILESTONES = [5, 10, 15, 20, 25];
+function getClaimedWinStreakMilestones(clientId) {
+  try { return JSON.parse(localStorage.getItem(`mb_claimed_winstreak_${clientId}`) || '[]'); }
+  catch (e) { return []; }
+}
+function setClaimedWinStreakMilestones(clientId, milestones) {
+  try { localStorage.setItem(`mb_claimed_winstreak_${clientId}`, JSON.stringify(milestones)); } catch (e) {}
+}
+// Calcula la racha actual de aciertos consecutivos del cliente
+// (mirando sus apuestas seguidas ordenadas por fecha del partido, descendente)
+function computeCurrentWinStreak(clientId) {
+  const picksById = {}; if (typeof monthlyPicksPool !== 'undefined') monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+  const bets = (typeof getFollowed === 'function') ? getFollowed(clientId) : [];
+  // Resolver: agrupar bet + pick + resultado
+  const resolved = bets.map(b => ({ b, p: picksById[b.pickId] }))
+    .filter(x => x.p && pickResult(x.p) !== 'pending');
+  // Ordenar por fecha del partido DESCENDENTE (más reciente primero)
+  resolved.sort((a, b) => (b.p.date + (b.p.time||'')).localeCompare(a.p.date + (a.p.time||'')));
+  // Contar wins consecutivos desde el más reciente
+  let streak = 0;
+  for (const x of resolved) {
+    const r = pickResult(x.p);
+    if (r === 'win') streak++;
+    else if (r === 'void') continue; // anuladas no cortan la racha
+    else break; // loss corta la racha
+  }
+  return streak;
+}
+// Milestone más alto alcanzado (5, 10, 15, 20 o 25)
+function highestMilestoneReached(streak) {
+  let best = 0;
+  for (const m of WIN_STREAK_MILESTONES) { if (streak >= m) best = m; else break; }
+  return best;
+}
+// Hitos alcanzados que aún no se han canjeado
+function getUnclaimedWinStreakMilestones(clientId) {
+  const streak = computeCurrentWinStreak(clientId);
+  const claimed = new Set(getClaimedWinStreakMilestones(clientId));
+  return WIN_STREAK_MILESTONES.filter(m => streak >= m && !claimed.has(m));
 }
 
 // HTML de una insignia individual (medalla circular)
@@ -7337,6 +7496,209 @@ function animateMBCoinsCounter(from, to) {
   target.style.transform = 'scale(1.15)';
   setTimeout(() => { target.style.transform = 'scale(1)'; }, 350);
   requestAnimationFrame(tick);
+}
+
+/* ============================================================
+   POPUP "RACHA DE DÍAS CONECTADOS"
+   Calendario mensual con días visitados tachados y animación de MBCoin
+   cayendo en el día actual cuando es nuevo. Barra de progreso al 100%
+   = puede canjear 50 MBCoins.
+============================================================ */
+const _DAY_NAMES = ['L','M','X','J','V','S','D'];
+const _MONTH_NAMES_LONG = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function showDailyStreakPopup(client, todayWasNew) {
+  if (!client) return;
+  const now = new Date();
+  const year = now.getFullYear();
+  const monthIdx = now.getMonth();
+  const monthKey = `${year}-${String(monthIdx+1).padStart(2,'0')}`;
+  const today = todayISO();
+  const totalDays = daysInMonth(year, monthIdx);
+  const visited = new Set(loginDatesThisMonth(client.id));
+  const visitedCount = visited.size;
+  const progressPct = Math.min(100, (visitedCount / totalDays) * 100);
+  const monthCompleted = visitedCount >= totalDays;
+  const claimedMonths = getClaimedDailyStreakMonths(client.id);
+  const monthAlreadyClaimed = claimedMonths.includes(monthKey);
+
+  // Construir grid del calendario (lunes a domingo)
+  // El día de la semana del 1 del mes (0=lun, 6=dom)
+  const firstWeekday = (new Date(year, monthIdx, 1).getDay() + 6) % 7;
+  const cells = [];
+  for (let i = 0; i < firstWeekday; i++) cells.push(null);
+  for (let d = 1; d <= totalDays; d++) cells.push(d);
+
+  const cellHTML = cells.map((d, idx) => {
+    if (d === null) return `<div></div>`;
+    const dateStr = `${year}-${String(monthIdx+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === today;
+    const isVisited = visited.has(dateStr);
+    const isFuture = dateStr > today;
+    let cls, content;
+    if (isVisited) {
+      // Día visitado: oscuro grisáceo con MBCoin
+      cls = 'streak-cell visited';
+      content = `<span class="streak-coin">${typeof mbCoinSVG === 'function' ? mbCoinSVG(14) : ''}</span><span class="streak-num">${d}</span>`;
+    } else if (isFuture) {
+      // Día futuro: estilo verde de marca, no completado todavía
+      cls = 'streak-cell future';
+      content = `<span class="streak-num">${d}</span>`;
+    } else {
+      // Día pasado no visitado: gris muy sutil (perdió la racha de ese día)
+      cls = 'streak-cell missed';
+      content = `<span class="streak-num">${d}</span>`;
+    }
+    // Si es hoy y era nuevo (acabamos de añadirlo), añadimos clase para animación de drop
+    if (isToday && todayWasNew) cls += ' just-now';
+    return `<div class="${cls}" data-date="${dateStr}">${content}</div>`;
+  }).join('');
+
+  // CTA debajo
+  let ctaHTML;
+  if (monthAlreadyClaimed) {
+    ctaHTML = `<button disabled class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-white/5 text-ink-500 px-5 py-3 text-sm font-semibold cursor-not-allowed">Ya canjeado este mes</button>`;
+  } else if (monthCompleted) {
+    ctaHTML = `<button id="claimStreakBtn" class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-accent-neon px-5 py-3 text-sm font-semibold text-black hover:bg-emerald-300">${typeof mbCoinSVG === 'function' ? mbCoinSVG(18) : ''} Canjear 50 MBCoins</button>`;
+  } else {
+    ctaHTML = `<button disabled class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-white/5 text-ink-500 px-5 py-3 text-sm font-semibold cursor-not-allowed">Completa el mes para canjear 50 MBCoins</button>`;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.id = 'streakPopup';
+  wrap.className = 'fixed inset-0 z-[150] flex items-center justify-center px-4 py-6';
+  wrap.setAttribute('role','dialog'); wrap.setAttribute('aria-modal','true');
+  wrap.innerHTML = `
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-streak></div>
+    <div class="relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl">
+      <button data-close-streak aria-label="Cerrar" class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-ink-300 hover:bg-white/10 hover:text-white">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="text-center px-6 pt-7 sm:px-8">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-neon/15 border border-accent-neon/40">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00e696" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18"/></svg>
+        </div>
+        <h2 class="mt-3 font-display text-xl font-semibold text-white">Racha de ${_MONTH_NAMES_LONG[monthIdx]}</h2>
+        <p class="mt-1 text-sm text-ink-200/70">Entra cada día y gana ${typeof mbCoinSVG === 'function' ? mbCoinSVG(14) : ''} <span class="text-accent-neon font-semibold">50 MBCoins</span> al completar el mes</p>
+      </div>
+
+      <!-- Cabeceras de días de la semana -->
+      <div class="mt-5 mx-5 sm:mx-6 grid grid-cols-7 gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-500 text-center">
+        ${_DAY_NAMES.map(d => `<div>${d}</div>`).join('')}
+      </div>
+      <!-- Calendario -->
+      <div class="mt-2 mx-5 sm:mx-6 grid grid-cols-7 gap-1.5">${cellHTML}</div>
+
+      <!-- Barra de progreso -->
+      <div class="mx-5 sm:mx-6 mt-5">
+        <div class="flex items-baseline justify-between text-[11px]">
+          <span class="text-ink-500">Progreso del mes</span>
+          <span><span class="text-white font-semibold">${visitedCount}</span><span class="text-ink-500">/${totalDays} días</span></span>
+        </div>
+        <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/5">
+          <div class="h-full rounded-full bg-gradient-to-r from-accent-neon to-emerald-400" style="width:${progressPct}%"></div>
+        </div>
+        <div class="mt-1 text-right text-[10px] text-ink-500">${progressPct.toFixed(0)}% — meta 50 MBCoins</div>
+      </div>
+
+      <div class="px-5 py-6 sm:px-6">${ctaHTML}</div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  function close() { wrap.remove(); document.removeEventListener('keydown', esc); }
+  function esc(e) { if (e.key === 'Escape') close(); }
+  wrap.querySelectorAll('[data-close-streak]').forEach(el => el.addEventListener('click', close));
+  document.addEventListener('keydown', esc);
+
+  // Si hay botón "Canjear", engancho el handler
+  const claimBtn = document.getElementById('claimStreakBtn');
+  if (claimBtn) {
+    claimBtn.addEventListener('click', () => {
+      const oldTotal = getTotalMBCoins(client);
+      const months = getClaimedDailyStreakMonths(client.id);
+      months.push(monthKey);
+      setClaimedDailyStreakMonths(client.id, months);
+      claimBtn.disabled = true; claimBtn.style.opacity = '0.7';
+      setTimeout(() => {
+        close();
+        rerenderCurrentClientPanel();
+        const newTotal = getTotalMBCoins(client);
+        setTimeout(() => flyCoinsToTotal(50, oldTotal, newTotal), 250);
+      }, 400);
+    });
+  }
+}
+
+/* ============================================================
+   WIN STREAK — comprobación y popup al alcanzar hitos
+============================================================ */
+function checkWinStreakMilestones(client) {
+  if (!client) return;
+  const unclaimed = getUnclaimedWinStreakMilestones(client.id);
+  if (!unclaimed.length) return;
+  // Tomar el hito más alto disponible y mostrar popup
+  const milestone = unclaimed[unclaimed.length - 1]; // el más alto desbloqueado y sin canjear
+  const reward = WIN_STREAK_REWARDS[milestone] || 0;
+  showWinStreakPopup(client, milestone, reward);
+}
+
+function showWinStreakPopup(client, milestone, reward) {
+  const wrap = document.createElement('div');
+  wrap.id = 'winStreakPopup';
+  wrap.className = 'fixed inset-0 z-[150] flex items-center justify-center px-4 py-6';
+  wrap.setAttribute('role','dialog'); wrap.setAttribute('aria-modal','true');
+  wrap.innerHTML = `
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-ws></div>
+    <div class="relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl">
+      <button data-close-ws aria-label="Cerrar" class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-ink-300 hover:bg-white/10 hover:text-white">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="text-center px-6 pt-8 sm:px-8">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-neon/15 border border-accent-neon/40 text-3xl">🔥</div>
+        <h2 class="mt-4 font-display text-2xl font-semibold text-white">¡${milestone} aciertos seguidos!</h2>
+        <p class="mt-1 text-sm text-ink-200/70">Estás en racha. Has desbloqueado una recompensa.</p>
+      </div>
+
+      <div class="mx-5 sm:mx-6 mt-5 rounded-2xl border border-accent-neon/30 bg-accent-neon/[0.06] p-5 text-center">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">Recompensa</div>
+        <div class="mt-2 flex items-center justify-center gap-2">
+          ${typeof mbCoinSVG === 'function' ? mbCoinSVG(28) : ''}
+          <span class="font-display text-4xl font-semibold text-gradient">+${reward}</span>
+        </div>
+        <p class="mt-1 text-xs text-ink-500">MBCoins</p>
+      </div>
+
+      <div class="px-5 py-6 sm:px-6">
+        <button id="claimWinStreakBtn" class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-accent-neon px-5 py-3 text-sm font-semibold text-black hover:bg-emerald-300">
+          ${typeof mbCoinSVG === 'function' ? mbCoinSVG(18) : ''}
+          Canjear ${reward} MBCoins
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+  function close() { wrap.remove(); document.removeEventListener('keydown', esc); }
+  function esc(e) { if (e.key === 'Escape') close(); }
+  wrap.querySelectorAll('[data-close-ws]').forEach(el => el.addEventListener('click', close));
+  document.addEventListener('keydown', esc);
+
+  document.getElementById('claimWinStreakBtn').addEventListener('click', () => {
+    const oldTotal = getTotalMBCoins(client);
+    const claimed = getClaimedWinStreakMilestones(client.id);
+    claimed.push(milestone);
+    setClaimedWinStreakMilestones(client.id, claimed);
+    const btn = document.getElementById('claimWinStreakBtn');
+    btn.disabled = true; btn.style.opacity = '0.7';
+    setTimeout(() => {
+      close();
+      rerenderCurrentClientPanel();
+      const newTotal = getTotalMBCoins(client);
+      setTimeout(() => flyCoinsToTotal(reward, oldTotal, newTotal), 250);
+    }, 400);
+  });
 }
 
 /* ============================================================
