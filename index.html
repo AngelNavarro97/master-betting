@@ -1787,6 +1787,48 @@
   </header>
   <div id="clientStatsContent" class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8"></div>
 </div>
+<!-- MODAL "Elige tu nickname" — obligatorio para clientes sin nickname -->
+<div id="nicknameModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/85 backdrop-blur-md"></div>
+  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 shadow-2xl">
+    <div class="px-6 pt-7 sm:px-8 text-center">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-neon/15 border border-accent-neon/40 text-accent-neon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <h2 class="mt-4 font-display text-xl font-semibold text-white">Elige tu nombre de usuario</h2>
+      <p class="mt-2 text-sm text-ink-200/75">Será cómo te identifican otros miembros en el foro y se mostrará junto a tu avatar. No se puede repetir.</p>
+    </div>
+    <form id="nicknameForm" class="px-6 pb-6 pt-5 sm:px-8 space-y-3">
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Nombre de usuario</span>
+        <input id="nicknameInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" minlength="3" maxlength="20" required placeholder="ej. tipster_javi" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-white/30"/>
+        <p class="mt-1.5 text-[11px] text-ink-500">3-20 caracteres. Solo letras, números, guion y guion bajo.</p>
+      </label>
+      <!-- Preview en vivo del avatar -->
+      <div id="nicknamePreview" class="hidden rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 flex items-center gap-3">
+        <div id="nicknameAvatarBox" class="shrink-0"></div>
+        <div class="min-w-0">
+          <p class="text-[10px] uppercase tracking-[0.18em] text-ink-500">Así te verán</p>
+          <p id="nicknamePreviewName" class="mt-0.5 text-sm font-semibold text-white truncate">—</p>
+        </div>
+      </div>
+      <p id="nicknameStatus" class="hidden rounded-2xl px-3 py-2 text-xs"></p>
+      <button type="submit" id="nicknameSubmitBtn" class="w-full inline-flex items-center justify-center rounded-full bg-accent-neon px-5 py-3 text-sm font-semibold text-black hover:bg-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed">Continuar</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL "Perfil de usuario" -->
+<div id="profileModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-profile></div>
+  <div class="relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-white/10 shadow-2xl">
+    <button data-close-profile aria-label="Cerrar" class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-ink-300 hover:bg-white/10 hover:text-white">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="profileContent" class="px-6 pt-7 pb-6 sm:px-8 sm:pt-9 sm:pb-8"></div>
+  </div>
+</div>
+
 <!-- ONBOARDING — Tour de bienvenida al primer login (cliente) -->
 <div id="onboardingModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/85 backdrop-blur-md"></div>
@@ -3080,6 +3122,11 @@ function showClientView(clientId) {
   }
   document.getElementById('clientStatsContent').innerHTML = statsPanelHTML(c, false);
   window.scrollTo(0, 0);
+  // Si el cliente no tiene nickname, pedirlo OBLIGATORIAMENTE antes de hacer nada
+  if (!c.nickname || !c.nickname.trim()) {
+    setTimeout(() => maybeAskNickname(), 500);
+    return; // No disparamos el resto hasta que tenga nickname
+  }
   // Si es la primera vez que este cliente entra, mostramos el tour de bienvenida
   maybeShowOnboarding();
   // (El confetti + popup de "apuesta acertada" se dispara solo al entrar en
@@ -4086,6 +4133,90 @@ function bookmakersTabHTML() {
 const COINS_BY_DIFFICULTY = { easy: 10, medium: 25, hard: 50 };
 
 // Logo SVG de un MBCoin (moneda verde con "MB" grabado)
+/* ============================================================
+   AVATARES AUTO-GENERADOS — únicos por usuario
+   Cada user_id produce SIEMPRE el mismo avatar (determinista).
+   Combinación de 40 gradientes × 12 ángulos = 480 variantes únicas,
+   suficiente para no repetir entre miles de usuarios.
+============================================================ */
+const AVATAR_GRADIENTS = [
+  ['#FF6B6B','#FFA07A'], ['#4ECDC4','#1ABC9C'], ['#45B7D1','#3498DB'],
+  ['#F7DC6F','#F39C12'], ['#BB8FCE','#8E44AD'], ['#85C1E9','#5DADE2'],
+  ['#F8B739','#E67E22'], ['#52B788','#27AE60'], ['#FF9F40','#E74C3C'],
+  ['#6C5CE7','#5F3DC4'], ['#00B894','#16A085'], ['#FDCB6E','#F39C12'],
+  ['#E17055','#C0392B'], ['#74B9FF','#3498DB'], ['#A29BFE','#8E44AD'],
+  ['#FD79A8','#E84393'], ['#FAD390','#F1C40F'], ['#82E0AA','#2ECC71'],
+  ['#5DADE2','#2980B9'], ['#EC7063','#C0392B'], ['#48C9B0','#16A085'],
+  ['#AF7AC5','#8E44AD'], ['#5499C7','#2874A6'], ['#58D68D','#239B56'],
+  ['#F5B041','#E67E22'], ['#EB984E','#D35400'], ['#DC7633','#A04000'],
+  ['#3498DB','#1F618D'], ['#E74C3C','#922B21'], ['#1ABC9C','#117A65'],
+  ['#F39C12','#9A7D0A'], ['#9B59B6','#5B2C6F'], ['#16A085','#0E6655'],
+  ['#27AE60','#196F3D'], ['#2980B9','#1B4F72'], ['#8E44AD','#4A235A'],
+  ['#D35400','#873600'], ['#C0392B','#7B241C'], ['#7F8C8D','#566573'],
+  ['#FF7675','#D63031'],
+];
+function _strHash(str) {
+  let h = 5381;
+  for (let i = 0; i < (str||'').length; i++) {
+    h = ((h << 5) + h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+function getInitialsFromNickname(nickname) {
+  if (!nickname) return '?';
+  const clean = nickname.trim().replace(/[^a-zA-Z0-9À-ÿ]/g, ' ').trim();
+  if (!clean) return '?';
+  const parts = clean.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+// Devuelve un SVG de avatar determinista para este user_id.
+// nickname se usa solo para las iniciales encima del gradiente.
+function mbAvatarSVG(userId, nickname, size = 44) {
+  const hash = _strHash(userId || '');
+  const grad = AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
+  const angle = (hash * 7) % 360;
+  const initials = getInitialsFromNickname(nickname);
+  const safeId = (userId || 'x').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+  const gid = `mbav_${safeId}_${hash%10000}`;
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:inline-block;flex-shrink:0;border-radius:9999px;overflow:hidden;" aria-label="Avatar ${nickname||''}">
+    <defs>
+      <linearGradient id="${gid}" gradientTransform="rotate(${angle} 50 50)">
+        <stop offset="0%" stop-color="${grad[0]}"/>
+        <stop offset="100%" stop-color="${grad[1]}"/>
+      </linearGradient>
+    </defs>
+    <rect width="100" height="100" fill="url(#${gid})"/>
+    <text x="50" y="52" text-anchor="middle" dy=".35em" fill="white" font-size="42" font-weight="800" font-family="Inter,system-ui,-apple-system,Helvetica,Arial,sans-serif" style="letter-spacing:-0.02em;">${initials}</text>
+  </svg>`;
+}
+
+/* ============================================================
+   NICKNAME — helpers de validación + comprobación de unicidad
+============================================================ */
+// 3-20 chars, sin espacios, letras/números/guion-bajo/guion. Acepta tildes y ñ.
+const NICKNAME_REGEX = /^[a-zA-Z0-9À-ÿ_\-]{3,20}$/;
+function validateNicknameFormat(value) {
+  if (!value) return { ok: false, msg: 'Escribe un nombre de usuario.' };
+  const v = value.trim();
+  if (v.length < 3) return { ok: false, msg: 'Mínimo 3 caracteres.' };
+  if (v.length > 20) return { ok: false, msg: 'Máximo 20 caracteres.' };
+  if (/\s/.test(v)) return { ok: false, msg: 'No se permiten espacios.' };
+  if (!NICKNAME_REGEX.test(v)) return { ok: false, msg: 'Solo letras, números, guion y guion bajo.' };
+  return { ok: true, value: v };
+}
+// Comprueba en Supabase si un nickname ya está cogido (case-insensitive)
+async function isNicknameTaken(nickname, excludeUserId = null) {
+  const v = (nickname || '').trim().toLowerCase();
+  if (!v) return false;
+  let q = sb.from('clients').select('id, nickname').ilike('nickname', v);
+  if (excludeUserId) q = q.neq('id', excludeUserId);
+  const { data, error } = await q.limit(1);
+  if (error) { console.warn('[nickname check]', error); return false; }
+  return !!(data && data.length);
+}
+
 function mbCoinSVG(size = 24) {
   const id = 'mbc-' + Math.random().toString(36).slice(2, 8);
   return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -7541,6 +7672,202 @@ function animateMBCoinsCounter(from, to) {
   setTimeout(() => { target.style.transform = 'scale(1)'; }, 350);
   requestAnimationFrame(tick);
 }
+
+/* ============================================================
+   NICKNAME MODAL — pedir nickname obligatorio al cliente
+============================================================ */
+let _nicknameCheckTimer = null;
+function showNicknameModal(client, onDone) {
+  const modal = document.getElementById('nicknameModal');
+  if (!modal) return;
+  const input  = document.getElementById('nicknameInput');
+  const status = document.getElementById('nicknameStatus');
+  const submit = document.getElementById('nicknameSubmitBtn');
+  const previewBox = document.getElementById('nicknamePreview');
+  const avatarBox  = document.getElementById('nicknameAvatarBox');
+  const previewName = document.getElementById('nicknamePreviewName');
+
+  input.value = client.nickname || '';
+  status.classList.add('hidden');
+  submit.disabled = false;
+
+  function showStatus(text, kind) {
+    status.textContent = text;
+    status.className = 'rounded-2xl px-3 py-2 text-xs ' + (
+      kind === 'ok'    ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-300' :
+      kind === 'error' ? 'border border-red-500/30 bg-red-500/10 text-red-300' :
+                         'border border-white/10 bg-white/[0.02] text-ink-500'
+    );
+    status.classList.remove('hidden');
+  }
+  function hideStatus() { status.classList.add('hidden'); }
+  function updatePreview(value) {
+    if (!value) { previewBox.classList.add('hidden'); return; }
+    previewBox.classList.remove('hidden');
+    avatarBox.innerHTML = mbAvatarSVG(client.id, value, 44);
+    previewName.textContent = value;
+  }
+
+  // Validar en vivo (debounced)
+  input.oninput = () => {
+    const value = input.value.trim();
+    updatePreview(value);
+    submit.disabled = true;
+    clearTimeout(_nicknameCheckTimer);
+    if (!value) { hideStatus(); return; }
+    const fmt = validateNicknameFormat(value);
+    if (!fmt.ok) { showStatus(fmt.msg, 'error'); return; }
+    showStatus('Comprobando disponibilidad…', 'info');
+    _nicknameCheckTimer = setTimeout(async () => {
+      const taken = await isNicknameTaken(value, client.id);
+      if (taken) { showStatus('Ese nombre ya está cogido. Elige otro.', 'error'); submit.disabled = true; }
+      else        { showStatus('¡Disponible!', 'ok'); submit.disabled = false; }
+    }, 400);
+  };
+
+  // Submit
+  document.getElementById('nicknameForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const value = input.value.trim();
+    const fmt = validateNicknameFormat(value);
+    if (!fmt.ok) { showStatus(fmt.msg, 'error'); return; }
+    submit.disabled = true; submit.textContent = 'Guardando…';
+    // Doble-check unicidad (por carrera de tiempo)
+    if (await isNicknameTaken(value, client.id)) {
+      showStatus('Ese nombre se ha cogido mientras escribías. Prueba otro.', 'error');
+      submit.disabled = false; submit.textContent = 'Continuar'; return;
+    }
+    const { error } = await sb.from('clients').update({ nickname: value }).eq('id', client.id);
+    if (error) {
+      showStatus('Error al guardar: ' + error.message, 'error');
+      submit.disabled = false; submit.textContent = 'Continuar'; return;
+    }
+    // Actualizar en memoria
+    client.nickname = value;
+    modal.classList.add('hidden');
+    submit.textContent = 'Continuar';
+    if (typeof showToast === 'function') showToast(`Bienvenido, ${value}`, 'success');
+    if (onDone) onDone(client);
+  };
+
+  // Inicializar preview con valor actual (si lo hubiera)
+  if (input.value) updatePreview(input.value);
+  modal.classList.remove('hidden');
+  setTimeout(() => input.focus(), 100);
+}
+
+// Comprueba si el cliente activo necesita nickname y abre el modal
+function maybeAskNickname() {
+  if (!activeClientId) return;
+  const c = clients.find(x => x.id === activeClientId);
+  if (!c) return;
+  if (c.nickname && c.nickname.trim()) return; // ya tiene
+  showNicknameModal(c, (updated) => {
+    rerenderCurrentClientPanel();
+  });
+}
+
+/* ============================================================
+   PERFIL DE USUARIO — modal con avatar, nickname, plan y stats
+============================================================ */
+async function openUserProfile(userId) {
+  const modal = document.getElementById('profileModal');
+  const content = document.getElementById('profileContent');
+  if (!modal || !content) return;
+
+  // Localizar al cliente. Si no está en memoria, intentamos cargarlo.
+  let target = clients.find(x => x.id === userId);
+  if (!target) {
+    const { data } = await sb.from('clients').select('*').eq('id', userId).maybeSingle();
+    if (data) target = data;
+  }
+  if (!target) {
+    content.innerHTML = `<p class="text-center text-sm text-ink-500">Usuario no encontrado.</p>`;
+    modal.classList.remove('hidden');
+    return;
+  }
+
+  // ¿Es mi perfil o el de otro? Si soy admin veo todo igual.
+  const isOwn   = String(target.id) === String(activeClientId);
+  const isAdmin = !!(typeof currentSessionEmail !== 'undefined' && typeof isAdmin === 'function' && isAdmin(currentSessionEmail));
+
+  // Badge del plan
+  const planBadge = {
+    Basic:     '<span class="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-200">Basic</span>',
+    Pro:       '<span class="rounded-full border border-accent-neon/40 bg-accent-neon/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-accent-neon">Pro</span>',
+    Exclusive: '<span class="rounded-full border border-amber-400/40 bg-amber-400/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Exclusive</span>',
+  }[target.plan] || '<span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-500">Sin plan</span>';
+
+  const joinDate = target.created_at ? new Date(target.created_at) : null;
+  const joinLabel = joinDate ? joinDate.toLocaleDateString('es-ES', { year:'numeric', month:'long' }) : '—';
+  const nickname = target.nickname || target.name || 'Sin nombre';
+
+  // Bloque de stats: solo lo mostramos para uno mismo o si soy admin
+  let statsHTML = '';
+  if (isOwn || isAdmin) {
+    try {
+      // Si es el usuario actual ya tenemos las apuestas en memoria
+      const bets = (typeof getFollowed === 'function') ? getFollowed(target.id) : [];
+      const picksById = {};
+      if (typeof monthlyPicksPool !== 'undefined') monthlyPicksPool.forEach(p => { picksById[p.id] = p; });
+      const resolved = bets.map(b => ({ b, p: picksById[b.pickId] }))
+                           .filter(x => x.p && pickResult(x.p) !== 'pending');
+      const wins  = resolved.filter(x => pickResult(x.p) === 'win').length;
+      const total = resolved.length;
+      const winRate = total ? (wins / total * 100) : 0;
+      const profit = resolved.reduce((sum, x) => {
+        const r = pickResult(x.p);
+        if (r === 'win')  return sum + x.b.amount * (pickTotalOdds(x.p) - 1);
+        if (r === 'loss') return sum - x.b.amount;
+        return sum;
+      }, 0);
+      statsHTML = `
+        <div class="mt-5 grid grid-cols-2 gap-2 text-center">
+          <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+            <div class="text-[10px] uppercase tracking-[0.18em] text-ink-500">Acertadas</div>
+            <div class="mt-1 font-display text-xl font-semibold text-white">${wins}/${total}</div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+            <div class="text-[10px] uppercase tracking-[0.18em] text-ink-500">Tasa</div>
+            <div class="mt-1 font-display text-xl font-semibold text-accent-neon">${winRate.toFixed(0)}%</div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-3 col-span-2">
+            <div class="text-[10px] uppercase tracking-[0.18em] text-ink-500">Beneficio neto</div>
+            <div class="mt-1 font-display text-2xl font-semibold ${profit>=0?'text-accent-neon':'text-red-300'}">${profit>=0?'+':''}${profit.toFixed(2)} €</div>
+          </div>
+        </div>`;
+    } catch (e) { console.warn('[profile stats]', e); }
+  } else {
+    // Otro usuario: solo info básica + nota
+    statsHTML = `<p class="mt-5 text-center text-xs text-ink-500">Las estadísticas detalladas son privadas. Las verás cuando habilitemos el perfil público en una próxima versión.</p>`;
+  }
+
+  content.innerHTML = `
+    <div class="text-center">
+      <div class="mx-auto" style="width:88px;height:88px;border-radius:9999px;overflow:hidden;border:3px solid rgba(255,255,255,0.1);">
+        ${mbAvatarSVG(target.id, nickname, 88)}
+      </div>
+      <h2 class="mt-4 font-display text-2xl font-semibold text-white">${nickname.replace(/[<>]/g,'')}</h2>
+      <div class="mt-2 flex items-center justify-center gap-2">${planBadge}</div>
+      <p class="mt-2 text-xs text-ink-500">Miembro desde ${joinLabel}</p>
+    </div>
+    ${statsHTML}
+  `;
+  modal.classList.remove('hidden');
+}
+// Cierre
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close-profile]')) document.getElementById('profileModal')?.classList.add('hidden');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') document.getElementById('profileModal')?.classList.add('hidden');
+});
+// Listener global: cualquier elemento con data-user-profile="userId" abre el perfil
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-user-profile]'); if (!btn) return;
+  openUserProfile(btn.dataset.userProfile);
+});
+window.openUserProfile = openUserProfile;
 
 /* ============================================================
    POPUP "RACHA DE DÍAS CONECTADOS"
