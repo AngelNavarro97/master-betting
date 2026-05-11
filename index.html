@@ -641,13 +641,15 @@
               <circle cx="160" cy="48" r="14" stroke="#22c55e" stroke-width="1" opacity="0.55"/>
               <circle cx="160" cy="48" r="7" stroke="#00e696" stroke-width="0.9" opacity="0.45"/>
             </svg>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
               <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Pro</h3>
               <span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>
+              <span class="rounded-full border border-accent-neon/40 bg-accent-neon/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent-neon">7 días gratis</span>
             </div>
             <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
             <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">19,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <button type="button" data-stripe-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Suscribirme</button>
+            <p class="mt-1.5 text-[11px] text-accent-neon">Prueba 7 días gratis · cancela sin coste antes de cobrar</p>
+            <button type="button" data-stripe-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Empezar prueba gratis</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>16 pronósticos mensuales</span></li>
@@ -2842,8 +2844,10 @@ function planCardHTML(plan) {
       price: '19,99',
       tagline: 'Lo más popular. Más volumen, más oportunidad.',
       bgClass: 'bg-plan-pro',
-      headerExtra: '<span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>',
+      headerExtra: '<span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span><span class="rounded-full border border-accent-neon/40 bg-accent-neon/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent-neon">7 días gratis</span>',
       btnClass: 'bg-white text-black hover:bg-ink-200',
+      trialNote: 'Prueba 7 días gratis · cancela sin coste antes de cobrar',
+      ctaLabel: 'Empezar prueba gratis',
       // Mismo SVG decorativo que la tarjeta Pro de la home
       decoSVG: `<svg class="pointer-events-none absolute -bottom-4 -right-4 h-40 w-44 sm:h-44 sm:w-52 opacity-[0.22]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
         <path d="M -10 130 Q 70 10 130 70 T 220 60" stroke="#00e696" stroke-width="1.2" stroke-dasharray="3 5" opacity="0.75"/>
@@ -2895,7 +2899,8 @@ function planCardHTML(plan) {
       </div>
       <p class="mt-2 text-sm text-ink-200/70">${data.tagline}</p>
       <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">${data.price}</span><span class="text-sm text-ink-500">€/mes</span></div>
-      <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">Cambiar a ${data.name}</button>
+      ${data.trialNote ? `<p class="mt-1.5 text-[11px] text-accent-neon">${data.trialNote}</p>` : ''}
+      <button type="button" data-upgrade-plan="${plan}" class="mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${data.btnClass}">${data.ctaLabel || `Cambiar a ${data.name}`}</button>
       <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
       <ul class="space-y-3.5 text-sm text-ink-200/85">
         ${data.features.map(f => `<li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>${f}</span></li>`).join('')}
@@ -6962,8 +6967,8 @@ async function loadRetoEnVivo() {
         <div class="flex flex-wrap gap-2 shrink-0">
           <a href="#planes" class="inline-flex items-center justify-center gap-1.5 rounded-full bg-amber-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-amber-300 whitespace-nowrap">Ver Exclusive</a>
           ${ch.stripe_payment_link
-            ? `<a href="${ch.stripe_payment_link}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 whitespace-nowrap">Comprar reto</a>`
-            : `<a href="#planes" class="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 whitespace-nowrap">Comprar reto</a>`
+            ? `<a href="${ch.stripe_payment_link}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 rounded-full bg-accent-neon px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-300 whitespace-nowrap">Comprar reto · ${fmt(ch.price)}</a>`
+            : `<a href="#planes" class="inline-flex items-center justify-center gap-1.5 rounded-full bg-accent-neon px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-300 whitespace-nowrap">Comprar reto · ${fmt(ch.price)}</a>`
           }
         </div>
       </div>
@@ -7100,8 +7105,13 @@ function retosLockedCardHTML(ch, c) {
   return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5">
     <div class="flex items-start justify-between gap-2 flex-wrap">
       <div class="min-w-0">
-        <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
-          <span>RETO</span><span class="text-ink-500/60">·</span><span>${fmtMoneyShort(start)} → ${fmtMoneyShort(goal)}</span>
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Reto</span>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-accent-neon/40 bg-accent-neon/10 px-2.5 py-0.5 text-xs font-semibold text-accent-neon">
+            <span>${fmtMoneyShort(start)}</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <span>${fmtMoneyShort(goal)}</span>
+          </span>
         </div>
         <h4 class="mt-2 font-display text-lg font-semibold text-white break-words">${escapeHtml(ch.title)}</h4>
         ${ch.description ? `<p class="mt-1 text-sm text-ink-500">${escapeHtml(ch.description)}</p>` : ''}
@@ -7120,23 +7130,9 @@ function retosLockedCardHTML(ch, c) {
           <p class="text-xs text-ink-500">Desbloquea el reto y verás cada apuesta paso a paso, con cuota, casa y resultado.</p>
         </div>
       </div>
-      <div class="mt-3 grid grid-cols-3 gap-2">
-        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2 text-center">
-          <div class="text-[9px] uppercase tracking-[0.18em] text-ink-500">Inicio</div>
-          <div class="mt-1 text-sm font-semibold text-white">${fmtMoneyShort(start)}</div>
-        </div>
-        <div class="rounded-lg border border-accent-neon/30 bg-accent-neon/5 p-2 text-center">
-          <div class="text-[9px] uppercase tracking-[0.18em] text-accent-neon">Meta</div>
-          <div class="mt-1 text-sm font-semibold text-gradient">${fmtMoneyShort(goal)}</div>
-        </div>
-        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2 text-center">
-          <div class="text-[9px] uppercase tracking-[0.18em] text-ink-500">Precio</div>
-          <div class="mt-1 text-sm font-semibold text-white">${priceTxt}</div>
-        </div>
-      </div>
     </div>
 
-    <div class="mt-4 flex flex-wrap items-end justify-end gap-2">
+    <div class="mt-5 flex flex-wrap items-end justify-end gap-2">
       ${cta}
     </div>
   </article>`;
