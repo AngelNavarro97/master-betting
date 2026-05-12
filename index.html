@@ -888,29 +888,26 @@
   .mb-monthly-progress > .bar.gold { background: linear-gradient(90deg, #fbbf24, #fcd34d); }
 
   /* === Centro de notificaciones (campana) === */
-  /* Modal "Editar perfil" — bottom-sheet en móvil, modal centrado en desktop */
+  /* Modal "Editar perfil" — ventana emergente centrada en TODOS los tamaños */
   #profileModalPanel {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    max-height: 92vh;
-    max-height: 92dvh;
-    border-radius: 20px 20px 0 0;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100vw - 1.5rem);
+    max-width: 28rem;
+    max-height: calc(92vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(92dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    border-radius: 1.25rem;
     overflow: hidden;
   }
   @media (min-width: 640px) {
     #profileModalPanel {
-      left: 50%;
-      right: auto;
-      bottom: auto;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 28rem;
       max-height: 85vh;
-      border-radius: 1.25rem;
     }
   }
+  /* Bloqueo del scroll del fondo mientras el modal está abierto */
+  body.mb-modal-open { overflow: hidden !important; overscroll-behavior: none; }
 
   /* Panel del centro de notificaciones: posicionado por DEBAJO de la zona del
      notch / Dynamic Island (env(safe-area-inset-top)) + 16px de hueco.
@@ -2620,7 +2617,7 @@
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-profile"></div>
   <div id="profileModalPanel" class="relative bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl flex flex-col">
     <!-- Header sticky (siempre visible mientras se scrollea el contenido) -->
-    <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-3 border-b border-white/8 flex-shrink-0" style="padding-top:max(1rem, env(safe-area-inset-top, 0px));">
+    <div class="flex items-center justify-between gap-3 px-5 pt-4 pb-3 border-b border-white/8 flex-shrink-0">
       <div class="min-w-0">
         <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-accent-neon">Mi cuenta</span>
         <h2 class="mt-0.5 font-display text-lg sm:text-xl font-semibold tracking-tight text-white">Editar perfil</h2>
@@ -2631,7 +2628,7 @@
     </div>
 
     <!-- Contenido scrolleable -->
-    <div class="flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-6" style="padding-bottom:max(1.25rem, env(safe-area-inset-bottom, 0px));">
+    <div class="flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-6">
 
       <!-- SECCIÓN FOTO DE PERFIL -->
       <section>
@@ -7497,6 +7494,8 @@ function openProfileModal() {
   document.getElementById('profileAvatarMsg').classList.add('hidden');
   refreshProfileAvatarPreview();
   document.getElementById('profileModal').classList.remove('hidden');
+  // Bloquear scroll del fondo mientras el modal está abierto
+  document.body.classList.add('mb-modal-open');
 }
 
 // Pinta el preview del avatar en el modal y muestra/oculta el botón "Quitar foto"
@@ -7510,6 +7509,7 @@ function refreshProfileAvatarPreview() {
 }
 function closeProfileModal() {
   document.getElementById('profileModal').classList.add('hidden');
+  document.body.classList.remove('mb-modal-open');
 }
 
 // Abrir desde la pill "Editar perfil" (escritorio) o desde el menú "Más" (móvil/PWA).
