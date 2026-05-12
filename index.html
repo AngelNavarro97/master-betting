@@ -3619,15 +3619,15 @@ function showClientView(clientId) {
   maybeShowOnboarding();
   // (El confetti + popup de "apuesta acertada" se dispara solo al entrar en
   //  la pestaña "Mis apuestas", no aquí.)
-  // Registrar login del día. Si era nuevo (primer login del día), mostrar popup
-  // de racha. Usamos sessionStorage para evitar que reaparezca dentro de la
-  // MISMA sesión del navegador, pero SÍ vuelva a salir si abres y cierras el
-  // navegador o la PWA. Antes usábamos localStorage y si por algún timing el
-  // popup no llegaba a verse, ya no volvía a aparecer hasta el día siguiente.
+  // Registrar login del día. El popup de racha sale UNA SOLA VEZ al día,
+  // independientemente de cuántas veces se abra/cierre la app. Usamos
+  // localStorage para que persista entre sesiones. Como el bug de recursión
+  // infinita ya está corregido, el popup se muestra siempre que sea la primera
+  // vez de hoy.
   const { wasNew } = registerTodayLogin(activeClientId);
-  const seenSessionKey = `mb_streak_popup_seen_session_${activeClientId}_${todayISO()}`;
-  if (!sessionStorage.getItem(seenSessionKey)) {
-    sessionStorage.setItem(seenSessionKey, '1');
+  const seenTodayKey = `mb_streak_popup_seen_${activeClientId}_${todayISO()}`;
+  if (!localStorage.getItem(seenTodayKey)) {
+    localStorage.setItem(seenTodayKey, '1');
     setTimeout(() => showDailyStreakPopup(c, true), 700);
   }
   // Comprobar hitos de win streak no canjeados (después del de racha diaria)
@@ -4306,6 +4306,54 @@ document.getElementById('mobileList').addEventListener('click', onTableAction);
 /* ============================================================
    PANEL DE ESTADÍSTICAS (cliente y admin)
 ============================================================ */
+function winStreakWidgetHTML(client) {
+  const streak  = (typeof computeCurrentWinStreak === 'function') ? computeCurrentWinStreak(client.id) : 0;
+  const milestones = (typeof WIN_STREAK_MILESTONES !== 'undefined') ? WIN_STREAK_MILESTONES : [5,10,15,20,25];
+  const rewards    = (typeof WIN_STREAK_REWARDS    !== 'undefined') ? WIN_STREAK_REWARDS    : {5:10,10:25,15:50,20:100,25:200};
+  const claimed = (typeof getClaimedWinStreakMilestones === 'function') ? getClaimedWinStreakMilestones(client.id) : [];
+  const claimedSet = new Set(claimed);
+
+  // Próximo hito sin alcanzar
+  const nextMilestone = milestones.find(m => streak < m);
+  const lastMilestone = milestones[milestones.length - 1];
+
+  let pillHTML, progressPct, progressLabel;
+  if (!nextMilestone) {
+    pillHTML = `<span class="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-medium text-amber-300">¡Máximo desbloqueado!</span>`;
+    progressPct = 100;
+    progressLabel = `${streak} aciertos seguidos · máximo alcanzado`;
+  } else {
+    const remaining = nextMilestone - streak;
+    pillHTML = `<span class="inline-flex items-center gap-1 rounded-full border border-accent-neon/30 bg-accent-neon/5 px-2.5 py-0.5 text-[10px] font-medium text-accent-neon">+${rewards[nextMilestone]} MBC al llegar a ${nextMilestone}</span>`;
+    progressPct = Math.min(100, (streak / nextMilestone) * 100);
+    progressLabel = `<span class="text-white font-medium">${streak}</span> / ${nextMilestone} aciertos · faltan ${remaining}`;
+  }
+
+  return `<div class="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-400/30 bg-red-400/10 text-red-300">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        </span>
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h4 class="font-display text-sm font-semibold text-white">Tu racha de aciertos</h4>
+            ${pillHTML}
+          </div>
+          <p class="mt-0.5 text-[11px] text-ink-500">${progressLabel}</p>
+        </div>
+      </div>
+      <button type="button" data-action="open-winstreak" onclick="window.openWinStreakPopup && window.openWinStreakPopup(); return false;" class="inline-flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-400/5 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-400/10">
+        Ver progreso
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/5">
+      <div class="h-full rounded-full" style="width:${progressPct}%;background:linear-gradient(90deg,#fbbf24,#f87171);"></div>
+    </div>
+  </div>`;
+}
+
 function streakWidgetHTML(client) {
   const now = new Date();
   const year = now.getFullYear();
@@ -4430,6 +4478,7 @@ function statsPanelHTML(c, forAdmin) {
     forum:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
     profile_edit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     'open-streak': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18"/></svg>',
+    'open-winstreak': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
   };
 
   // Pills de arriba (desktop) — ocultos en móvil
@@ -4459,7 +4508,7 @@ function statsPanelHTML(c, forAdmin) {
   // Renderizar el panel activo
   let panel = '';
   if (tab === 'summary') {
-    panel = summaryKPIsHTML + streakWidgetHTML(c);
+    panel = summaryKPIsHTML + streakWidgetHTML(c) + winStreakWidgetHTML(c);
   } else if (tab === 'picks') {
     panel = availablePicksOnlyHTML(c);
   } else if (tab === 'premium') {
@@ -4504,7 +4553,8 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
   const moreItems = [];
   if (showPremium) moreItems.push({ key: 'premium',  label: 'Exclusive', amber: true });
   moreItems.push({ key: 'missions', label: 'Misiones' });
-  moreItems.push({ key: 'open-streak', label: 'Mi racha de días', isAction: true });
+  moreItems.push({ key: 'open-streak',    label: 'Mi racha de días',     isAction: true });
+  moreItems.push({ key: 'open-winstreak', label: 'Mi racha de aciertos', isAction: true });
   moreItems.push({ key: 'forum',    label: 'Foro' });
   moreItems.push({ key: 'bookies',  label: 'Casas' });
   moreItems.push({ key: 'mystats',  label: 'Mis estadísticas' });
@@ -4561,11 +4611,14 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
       // Las "acciones" (como "Editar perfil") usan data-action en vez de data-ctab
       // y NO cambian de pestaña, abren un modal.
       const dataAttr = it.isAction ? `data-action="${it.key}"` : `data-ctab="${it.key}"`;
-      // Para "open-streak" añadimos onclick inline como fallback, por si la
-      // delegación de eventos no engancha (problema reportado en producción).
-      const inlineHandler = it.key === 'open-streak'
-        ? ` onclick="document.getElementById('moreSheet')?.classList.add('hidden'); window.openStreakPopup && window.openStreakPopup(); return false;"`
-        : '';
+      // Para "open-streak" / "open-winstreak" añadimos onclick inline como
+      // fallback, por si la delegación de eventos no engancha en algún caso.
+      let inlineHandler = '';
+      if (it.key === 'open-streak') {
+        inlineHandler = ` onclick="document.getElementById('moreSheet')?.classList.add('hidden'); window.openStreakPopup && window.openStreakPopup(); return false;"`;
+      } else if (it.key === 'open-winstreak') {
+        inlineHandler = ` onclick="document.getElementById('moreSheet')?.classList.add('hidden'); window.openWinStreakPopup && window.openWinStreakPopup(); return false;"`;
+      }
       return `<button ${dataAttr}${inlineHandler} class="more-sheet-item flex items-center gap-4 w-full rounded-2xl border ${amberCls} px-4 py-3.5 text-left transition${activeRing}">
         <span class="flex h-10 w-10 items-center justify-center rounded-full ${iconColorCls}">${ICON[it.key]}</span>
         <span class="flex-1 min-w-0">
@@ -8623,64 +8676,145 @@ function _runCoinFlight(target, coinsToClaim, oldTotal, newTotal) {
   const targetX = targetRect.left + targetRect.width / 2;
   const targetY = targetRect.top  + targetRect.height / 2;
 
-  // Origen: ARRIBA-CENTRO de la pantalla (las monedas caen hacia el contador).
-  // Así, aunque el contador esté abajo, parece que las monedas vuelan EN PICADO
-  // hacia él. Nunca se ve "ir hacia abajo de forma rara" — caen sobre el contador.
-  const startX = window.innerWidth / 2;
-  const startY = Math.max(80, targetY - 260);
+  // El contador empieza mostrando el oldTotal — se irá incrementando a medida
+  // que cada moneda aterriza. Importante: el rerender del panel ya muestra el
+  // newTotal en el DOM, así que lo "rebajamos" al inicio del show.
+  target.textContent = oldTotal;
 
-  // Lanzamos hasta 12 monedas (más serían ruido visual)
-  const N = Math.min(12, Math.max(6, Math.floor(coinsToClaim / 10) + 4));
+  // Origen: arriba-centro, bien por encima del contador, para que caigan EN
+  // PICADO sobre él con trayectoria visible y dramática.
+  const startX = window.innerWidth / 2;
+  const startY = Math.max(80, targetY - 340);
+
+  // MUCHAS monedas. Mínimo 35, escala con la recompensa para premios grandes.
+  const N = Math.min(60, Math.max(35, Math.floor(coinsToClaim / 4)));
   const root = document.createElement('div');
-  root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:160;';
+  root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:160;overflow:hidden;';
   document.body.appendChild(root);
 
-  // Inyectar keyframes si no existen
+  // Keyframes premium: trayectoria curva, rotación múltiple, escala variable,
+  // y un "burst" radial al aterrizar.
   if (!document.getElementById('coinFlyKeyframes')) {
     const s = document.createElement('style');
     s.id = 'coinFlyKeyframes';
     s.textContent = `
-      @keyframes coin-fly {
-        0%   { transform: translate(-50%, -50%) scale(0.4) rotate(0deg); opacity: 0; }
-        15%  { transform: translate(-50%, -50%) scale(1.15) rotate(45deg); opacity: 1; }
-        100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.5) rotate(720deg); opacity: 0.95; }
+      @keyframes coin-fly-curve {
+        0%   { transform: translate(0,0) scale(0.25) rotate(0deg); opacity: 0; }
+        8%   { transform: translate(calc(var(--bx) * 0.4), calc(var(--dy) * 0.08 - 40px)) scale(1.2) rotate(60deg); opacity: 1; }
+        50%  { transform: translate(calc(var(--dx) * 0.55 + var(--bx)), calc(var(--dy) * 0.55 - 30px)) scale(1.05) rotate(420deg); opacity: 1; }
+        90%  { transform: translate(calc(var(--dx) * 0.96), calc(var(--dy) * 0.96 - 6px)) scale(0.85) rotate(680deg); opacity: 1; }
+        100% { transform: translate(var(--dx), var(--dy)) scale(0.35) rotate(800deg); opacity: 0; }
       }
-      .flying-coin { position: absolute; width: 28px; height: 28px; left: 0; top: 0;
-        will-change: transform, opacity; filter: drop-shadow(0 4px 12px rgba(0,230,150,0.5)); }
+      .flying-coin-fancy {
+        position: absolute;
+        will-change: transform, opacity;
+        filter: drop-shadow(0 6px 18px rgba(0,230,150,0.55));
+      }
+      @keyframes coin-burst-radial {
+        0%   { transform: translate(-50%,-50%) scale(0.3); opacity: 0.95; }
+        100% { transform: translate(-50%,-50%) scale(3.2); opacity: 0; }
+      }
+      .coin-burst {
+        position: absolute;
+        width: 36px; height: 36px;
+        border-radius: 9999px;
+        background: radial-gradient(circle, rgba(167,243,208,0.85) 0%, rgba(0,230,150,0.45) 35%, rgba(0,230,150,0) 70%);
+        animation: coin-burst-radial 0.55s cubic-bezier(.2,.6,.4,1) forwards;
+        pointer-events: none;
+        mix-blend-mode: screen;
+      }
+      @keyframes coin-counter-pop {
+        0%, 100% { transform: scale(1); }
+        50%      { transform: scale(1.18); }
+      }
+      .coin-counter-pop { animation: coin-counter-pop 0.18s ease; }
+      @keyframes coin-counter-final-pulse {
+        0%   { transform: scale(1);    text-shadow: 0 0 0 rgba(0,230,150,0); }
+        45%  { transform: scale(1.3);  text-shadow: 0 0 32px rgba(0,230,150,0.85); }
+        100% { transform: scale(1);    text-shadow: 0 0 0 rgba(0,230,150,0); }
+      }
+      .coin-counter-final-pulse { animation: coin-counter-final-pulse 0.7s cubic-bezier(.18,1.4,.32,1); }
     `;
     document.head.appendChild(s);
   }
 
-  // SVG de la moneda (igual que mbCoinSVG pero con dimensiones controlables)
-  const coinSVG = (typeof mbCoinSVG === 'function')
-    ? mbCoinSVG(28)
-    : '<svg viewBox="0 0 24 24" width="28" height="28" fill="#00e696"><circle cx="12" cy="12" r="10"/></svg>';
+  // Tres tamaños de moneda para variedad visual
+  const sizes = [28, 32, 36];
+  const coinHTMLBySize = {};
+  sizes.forEach(sz => {
+    coinHTMLBySize[sz] = (typeof mbCoinSVG === 'function')
+      ? mbCoinSVG(sz)
+      : `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="#00e696"><circle cx="12" cy="12" r="10"/></svg>`;
+  });
+
+  // Cuánto suma cada moneda al aterrizar
+  const totalDiff = newTotal - oldTotal;
+  let coinsArrived = 0;
 
   for (let i = 0; i < N; i++) {
     const coin = document.createElement('div');
-    const dx = (targetX - startX) + (Math.random() - 0.5) * 30;
-    const dy = (targetY - startY) + (Math.random() - 0.5) * 30;
-    const delay = i * 60; // staggered
-    const duration = 750 + Math.random() * 250;
-    coin.className = 'flying-coin';
-    coin.style.left = startX + 'px';
-    coin.style.top  = startY + 'px';
+    // Dispersión natural: las monedas no caen todas al mismo punto, se
+    // "embudan" hacia el contador con un poco de ruido en X e Y.
+    const dispersionX = (Math.random() - 0.5) * 180;
+    const dispersionY = (Math.random() - 0.5) * 40;
+    const dx = (targetX - startX) + dispersionX;
+    const dy = (targetY - startY) + dispersionY;
+    // Curvatura horizontal del arco
+    const bx = (Math.random() - 0.5) * 90;
+    // Stagger más denso al principio, se va espaciando
+    const delay = Math.pow(i, 0.85) * 32 + Math.random() * 40;
+    const duration = 900 + Math.random() * 500;
+    const sz = sizes[i % sizes.length];
+
+    coin.className = 'flying-coin-fancy';
+    coin.style.width  = sz + 'px';
+    coin.style.height = sz + 'px';
+    coin.style.left = (startX - sz/2) + 'px';
+    coin.style.top  = (startY - sz/2) + 'px';
     coin.style.setProperty('--dx', dx + 'px');
     coin.style.setProperty('--dy', dy + 'px');
-    coin.style.animation = `coin-fly ${duration}ms cubic-bezier(.55,.06,.68,.19) ${delay}ms forwards`;
-    coin.innerHTML = coinSVG;
+    coin.style.setProperty('--bx', bx + 'px');
+    coin.style.animation = `coin-fly-curve ${duration}ms cubic-bezier(.45,.05,.5,.95) ${delay}ms forwards`;
+    coin.innerHTML = coinHTMLBySize[sz];
     root.appendChild(coin);
+
+    // Aterrizaje: incrementa el contador proporcionalmente y crea un burst.
+    const landingTime = delay + duration - 60;
+    setTimeout(() => {
+      coinsArrived++;
+      const progress = coinsArrived / N;
+      const current = (coinsArrived === N)
+        ? newTotal
+        : Math.round(oldTotal + totalDiff * progress);
+      target.textContent = current;
+
+      // Pop micro en cada llegada (sutil pero rítmico)
+      target.classList.remove('coin-counter-pop');
+      void target.offsetWidth;
+      target.classList.add('coin-counter-pop');
+
+      // Burst luminoso en la posición exacta del contador
+      const burst = document.createElement('div');
+      burst.className = 'coin-burst';
+      burst.style.left = (targetX + (Math.random() - 0.5) * 24) + 'px';
+      burst.style.top  = (targetY + (Math.random() - 0.5) * 18) + 'px';
+      root.appendChild(burst);
+      setTimeout(() => burst.remove(), 600);
+    }, landingTime);
   }
 
-  // Cuando aterriza la primera moneda, arrancamos el conteo del total y un pop
-  const firstArrival = 750 + 60; // duration del primer + delay 0
+  // Pulso final fuerte y toast cuando la última moneda ha aterrizado
+  const lastLandingTime = Math.pow(N - 1, 0.85) * 32 + 900 + 500;
   setTimeout(() => {
-    animateMBCoinsCounter(oldTotal, newTotal);
+    target.textContent = newTotal;
+    target.classList.remove('coin-counter-final-pulse');
+    void target.offsetWidth;
+    target.classList.add('coin-counter-final-pulse');
     if (typeof showToast === 'function') showToast(`+${coinsToClaim} MBCoins añadidos a tu total`, 'success');
-  }, firstArrival - 50);
+  }, lastLandingTime);
 
-  // Limpiar tras el último aterrizaje
-  setTimeout(() => root.remove(), N * 60 + 900 + 200);
+  // Limpiar el contenedor tras la animación completa
+  setTimeout(() => root.remove(), lastLandingTime + 800);
 }
 
 // Animar el número grande de MBCoins del panel cliente (Misiones tab) tras canjear.
@@ -9861,6 +9995,133 @@ function _showDailyStreakPopupImpl(client, todayWasNew) {
 /* ============================================================
    WIN STREAK — comprobación y popup al alcanzar hitos
 ============================================================ */
+// Popup VISUAL de progreso de racha de aciertos (equivalente al calendario
+// mensual del daily streak). Muestra el número actual de aciertos, la barra
+// hasta el siguiente hito y la lista de los 5 hitos con su estado.
+window.openWinStreakPopup = function openWinStreakPopup() {
+  try {
+    let c = (typeof clients !== 'undefined' && clients) ? clients.find(x => String(x.id) === String(activeClientId)) : null;
+    if (!c && typeof clients !== 'undefined' && clients && clients.length === 1) c = clients[0];
+    if (!c) { if (window.showToast) showToast('No se pudo abrir la racha de aciertos', 'error'); return; }
+    showWinStreakProgressPopup(c);
+  } catch (err) {
+    console.error('[open-winstreak]', err);
+    if (window.showToast) showToast('Error: ' + (err && err.message ? err.message : err), 'error');
+  }
+};
+
+function showWinStreakProgressPopup(client) {
+  try { return _showWinStreakProgressImpl(client); }
+  catch (err) {
+    console.error('[showWinStreakProgressPopup]', err);
+    if (window.showToast) showToast('Error al pintar la racha: ' + (err && err.message ? err.message : err), 'error');
+  }
+}
+
+function _showWinStreakProgressImpl(client) {
+  const stale = document.getElementById('winStreakProgressPopup');
+  if (stale) stale.remove();
+
+  const streak = (typeof computeCurrentWinStreak === 'function') ? computeCurrentWinStreak(client.id) : 0;
+  const milestones = WIN_STREAK_MILESTONES;
+  const rewards    = WIN_STREAK_REWARDS;
+  const claimedSet = new Set((typeof getClaimedWinStreakMilestones === 'function') ? getClaimedWinStreakMilestones(client.id) : []);
+  const nextMilestone = milestones.find(m => streak < m);
+  const lastMs = milestones[milestones.length - 1];
+
+  // Render de cada hito
+  const milestoneRows = milestones.map((m, idx) => {
+    const reached = streak >= m;
+    const isClaimed = claimedSet.has(m);
+    const reward = rewards[m] || 0;
+    let stateBadge, rowCls, iconHTML;
+    if (isClaimed) {
+      stateBadge = `<span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Canjeado</span>`;
+      rowCls = 'border-white/10 bg-white/[0.02] opacity-60';
+      iconHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    } else if (reached) {
+      stateBadge = `<span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">¡Listo para canjear!</span>`;
+      rowCls = 'border-accent-neon/40 bg-accent-neon/[0.06]';
+      iconHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00e696" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    } else {
+      const remaining = m - streak;
+      stateBadge = `<span class="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-500">faltan ${remaining}</span>`;
+      rowCls = 'border-white/10 bg-white/[0.02]';
+      iconHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+    }
+    return `<div class="flex items-center gap-3 rounded-2xl border ${rowCls} px-4 py-3">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/40">${iconHTML}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between gap-2">
+          <h4 class="font-display text-sm font-semibold text-white">${m} aciertos seguidos</h4>
+          <span class="font-display text-sm font-bold text-accent-neon">+${reward} MBC</span>
+        </div>
+        <div class="mt-0.5">${stateBadge}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Barra de progreso hasta el siguiente hito o hasta el último (si todos completados)
+  let progressInfoHTML;
+  if (!nextMilestone) {
+    progressInfoHTML = `<div class="text-center text-[12px] text-amber-300 mt-2">¡Has llegado al máximo hito!</div>`;
+  } else {
+    const pct = Math.min(100, (streak / nextMilestone) * 100);
+    progressInfoHTML = `
+      <div class="mt-4">
+        <div class="flex items-baseline justify-between text-[11px]">
+          <span class="text-ink-500">Próximo hito: ${nextMilestone} aciertos</span>
+          <span><span class="text-white font-semibold">${streak}</span><span class="text-ink-500">/${nextMilestone}</span></span>
+        </div>
+        <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/5">
+          <div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,#fbbf24,#f87171);"></div>
+        </div>
+      </div>`;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.id = 'winStreakProgressPopup';
+  wrap.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem;';
+  wrap.setAttribute('role','dialog'); wrap.setAttribute('aria-modal','true');
+  wrap.innerHTML = `
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-wsp></div>
+    <div class="relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-red-400/30 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <button data-close-wsp aria-label="Cerrar" class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-ink-300 hover:bg-white/10 hover:text-white">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="text-center px-6 pt-7 sm:px-8">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-400/15 border border-red-400/40 text-red-300">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        </div>
+        <h2 class="mt-3 font-display text-xl font-semibold text-white">Racha de aciertos</h2>
+        <p class="mt-1 text-sm text-ink-200/70">Encadena apuestas ganadoras y desbloquea recompensas crecientes.</p>
+      </div>
+
+      <div class="mx-5 sm:mx-6 mt-5 rounded-2xl border border-red-400/30 bg-red-400/[0.06] p-5 text-center">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.18em] text-red-300">Tu racha actual</div>
+        <div class="mt-1 font-display text-5xl font-semibold text-white">${streak}</div>
+        <div class="text-[11px] text-ink-500">aciertos consecutivos</div>
+        ${progressInfoHTML}
+      </div>
+
+      <div class="mx-5 sm:mx-6 mt-5 space-y-2">
+        ${milestoneRows}
+      </div>
+
+      <div class="px-5 py-5 sm:px-6 text-center">
+        <p class="text-[11px] text-ink-500">Una pérdida corta la racha · las apuestas anuladas no cuentan</p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  function close() { wrap.remove(); document.removeEventListener('keydown', esc); }
+  function esc(e) { if (e.key === 'Escape') close(); }
+  wrap.querySelectorAll('[data-close-wsp]').forEach(el => el.addEventListener('click', close));
+  document.addEventListener('keydown', esc);
+}
+
 function checkWinStreakMilestones(client) {
   if (!client) return;
   const unclaimed = getUnclaimedWinStreakMilestones(client.id);
