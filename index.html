@@ -872,6 +872,42 @@
   @keyframes toast-out { to   { transform: translateY(12px); opacity: 0; } }
   @media (max-width: 640px) { #toastStack { left: 1rem; right: 1rem; bottom: 5.5rem; } .toast { max-width: 100%; } }
 
+  /* === SKELETON LOADERS — para sustituir spinners y mejorar la sensación de velocidad === */
+  .mb-skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+    background-size: 200% 100%;
+    animation: mb-skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: 0.6rem;
+    display: block;
+  }
+  @keyframes mb-skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* === Barra de progreso mensual debajo del header del cliente === */
+  .mb-monthly-progress { position: relative; height: 3px; background: rgba(255,255,255,0.04); overflow: hidden; }
+  .mb-monthly-progress > .bar { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #00e696, #22c55e); transition: width 0.6s cubic-bezier(.22,1,.36,1); }
+  .mb-monthly-progress > .bar.gold { background: linear-gradient(90deg, #fbbf24, #fcd34d); }
+
+  /* === Centro de notificaciones (campana) === */
+  .mb-bell-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+  .mb-bell-btn:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.25); }
+  .mb-bell-dot { position: absolute; top: 7px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #00e696; border: 2px solid #06120c; animation: mb-bell-pulse 2s ease-in-out infinite; }
+  @keyframes mb-bell-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,230,150,0.5); } 50% { box-shadow: 0 0 0 6px rgba(0,230,150,0); } }
+
+  /* === Hero "Hoy" arriba del Resumen === */
+  .mb-hero-today { display: flex; flex-direction: column; gap: 0.85rem; }
+  .mb-hero-card { display: flex; align-items: flex-start; gap: 0.85rem; padding: 1rem 1.1rem; border-radius: 1rem; border: 1px solid rgba(0,230,150,0.18); background: linear-gradient(135deg, rgba(0,230,150,0.06), rgba(255,255,255,0.01)); cursor: pointer; transition: border-color 0.15s, transform 0.15s; text-align: left; width: 100%; }
+  .mb-hero-card:hover { border-color: rgba(0,230,150,0.40); }
+  .mb-hero-card:active { transform: scale(0.99); }
+  .mb-hero-card.amber { border-color: rgba(252,211,77,0.30); background: linear-gradient(135deg, rgba(252,211,77,0.08), rgba(255,255,255,0.01)); }
+  .mb-hero-card.amber:hover { border-color: rgba(252,211,77,0.55); }
+  .mb-hero-icon { flex-shrink: 0; width: 40px; height: 40px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: rgba(0,230,150,0.12); color: #00e696; }
+  .mb-hero-card.amber .mb-hero-icon { background: rgba(252,211,77,0.12); color: #fcd34d; }
+  .mb-hero-body { flex: 1; min-width: 0; }
+  .mb-hero-eyebrow { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,245,247,0.5); }
+  .mb-hero-title { display: block; margin-top: 2px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.95rem; font-weight: 500; color: #fff; }
+  .mb-hero-sub { display: block; margin-top: 2px; font-size: 0.78rem; color: rgba(245,245,247,0.62); }
+  .mb-hero-chevron { flex-shrink: 0; color: rgba(245,245,247,0.4); margin-top: 4px; }
+
   details > summary { list-style: none; cursor: pointer; }
   details > summary::-webkit-details-marker { display: none; }
 
@@ -2204,6 +2240,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.302.952-.14.579.192l-8.533 7.706h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.787l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"/></svg>
           <span class="hidden sm:inline">Telegram</span>
         </a>
+        <button type="button" id="bellBtn" class="mb-bell-btn" aria-label="Notificaciones" onclick="window.openNotificationsCenter && window.openNotificationsCenter(); return false;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="bellDot" class="mb-bell-dot hidden"></span>
+        </button>
         <button id="clientLogoutBtn" aria-label="Cerrar sesión" class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-ink-200 transition hover:border-white/25 hover:bg-white/10 hover:text-white sm:px-4 sm:text-sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <span class="hidden sm:inline">Salir</span>
@@ -2211,8 +2251,28 @@
       </div>
     </div>
   </header>
+  <!-- Barra de progreso del mes (días conectados) — se rellena por JS -->
+  <div id="clientMonthlyProgress" class="mb-monthly-progress mx-auto max-w-[1200px]">
+    <div class="bar" style="width:0%"></div>
+  </div>
   <div id="clientStatsContent" class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8"></div>
 </div>
+
+<!-- MODAL · Centro de notificaciones (campana) -->
+<div id="notifCenterModal" class="hidden fixed inset-0 z-[150] flex items-start justify-end px-4 py-6 sm:py-8" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close-notif-center></div>
+  <div class="relative w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/10 flex-shrink-0">
+      <div>
+        <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">Notificaciones</span>
+        <h2 class="font-display text-lg font-semibold text-white">Tu actividad</h2>
+      </div>
+      <button data-close-notif-center class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white hover:bg-white/10">Cerrar</button>
+    </div>
+    <div id="notifCenterContent" class="flex-1 overflow-y-auto p-5 space-y-2.5"></div>
+  </div>
+</div>
+
 <!-- MODAL "Elige tu nickname" — obligatorio para clientes sin nickname -->
 <div id="nicknameModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/85 backdrop-blur-md"></div>
@@ -3632,6 +3692,9 @@ function showClientView(clientId) {
   }
   // Comprobar hitos de win streak no canjeados (después del de racha diaria)
   setTimeout(() => checkWinStreakMilestones(c), 1800);
+  // Refrescar UI nueva (barra progreso + punto campana) tras la entrada.
+  if (typeof updateMonthlyProgressBar === 'function') updateMonthlyProgressBar(c);
+  if (typeof updateBellDot === 'function') updateBellDot(c);
 }
 
 /* === Modal de mejora de plan === */
@@ -4354,6 +4417,240 @@ function winStreakWidgetHTML(client) {
   </div>`;
 }
 
+/* === HERO "HOY" — bloque accionable arriba del Resumen ===
+   Muestra hasta 3 cards de "lo más importante hoy":
+     · Pick del día (si hay un pick publicado en las últimas 24h)
+     · Misiones por canjear (si hay alguna completada sin canjear)
+     · Hito de racha de aciertos a un paso (si está cerca)
+   Cada card lleva su CTA y al pulsar te lleva al sitio correcto.
+*/
+function todayHeroHTML(client) {
+  const cards = [];
+
+  // Card 1 · Misiones por canjear (alta prioridad)
+  let unclaimed = 0;
+  try { unclaimed = (typeof countUnclaimedCompletedMissions === 'function') ? countUnclaimedCompletedMissions(client) : 0; } catch(_){}
+  if (unclaimed > 0) {
+    cards.push(`<button type="button" class="mb-hero-card amber" onclick="window.__heroGoto && window.__heroGoto('missions');">
+      <span class="mb-hero-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15L2.66 7.14a2 2 0 0 1 0-2L4.81 1.5a2 2 0 0 1 1.73-1h10.92a2 2 0 0 1 1.73 1l2.15 3.64a2 2 0 0 1 0 2L16.79 15"/><circle cx="12" cy="17" r="5"/></svg></span>
+      <span class="mb-hero-body">
+        <span class="mb-hero-eyebrow">Recompensas listas</span>
+        <span class="mb-hero-title">${unclaimed} ${unclaimed===1?'misión':'misiones'} por canjear</span>
+        <span class="mb-hero-sub">Suma MBCoins ahora · pulsa para canjear</span>
+      </span>
+      <svg class="mb-hero-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>`);
+  }
+
+  // Card 2 · Pick del día (el más reciente publicado, si hay)
+  try {
+    const todayStr = (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0,10);
+    let topPick = null;
+    if (typeof availablePicksFor === 'function') {
+      const picks = availablePicksFor(client) || [];
+      // El más reciente con fecha = hoy o reciente
+      const sorted = picks.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      topPick = sorted[0];
+    }
+    if (topPick) {
+      const followed = (typeof getFollowed === 'function') ? getFollowed(client.id).some(b => b.pickId === topPick.id) : false;
+      const fe = (typeof pickFirstEvent === 'function') ? pickFirstEvent(topPick) : null;
+      const matchText = fe?.match_text || topPick.match_text || 'Pick disponible';
+      const odds = (typeof pickTotalOdds === 'function') ? pickTotalOdds(topPick).toFixed(2) : '—';
+      const eyebrow = followed ? 'Ya estás dentro' : 'Pick del día';
+      const titleStr = followed ? '✓ Apuesta seguida' : matchText.split('·')[0];
+      const subStr = followed ? `${matchText} · cuota ${odds}` : `Cuota ${odds} · pulsa para ver el análisis`;
+      cards.push(`<button type="button" class="mb-hero-card" onclick="window.__heroGoto && window.__heroGoto('picks');">
+        <span class="mb-hero-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+        <span class="mb-hero-body">
+          <span class="mb-hero-eyebrow">${eyebrow}</span>
+          <span class="mb-hero-title">${(titleStr||'').replace(/[<>]/g,'')}</span>
+          <span class="mb-hero-sub">${(subStr||'').replace(/[<>]/g,'')}</span>
+        </span>
+        <svg class="mb-hero-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>`);
+    }
+  } catch(e) { console.warn('[heroToday]', e); }
+
+  // Card 3 · Cerca de un hito de racha de aciertos (a 2 o menos)
+  try {
+    if (typeof computeCurrentWinStreak === 'function' && typeof WIN_STREAK_MILESTONES !== 'undefined') {
+      const streak = computeCurrentWinStreak(client.id);
+      const next = WIN_STREAK_MILESTONES.find(m => streak < m);
+      if (next && (next - streak) <= 2 && streak > 0) {
+        const reward = WIN_STREAK_REWARDS[next] || 0;
+        const remaining = next - streak;
+        cards.push(`<button type="button" class="mb-hero-card" onclick="window.openWinStreakPopup && window.openWinStreakPopup();">
+          <span class="mb-hero-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
+          <span class="mb-hero-body">
+            <span class="mb-hero-eyebrow">Estás en racha</span>
+            <span class="mb-hero-title">${remaining} acierto${remaining===1?'':'s'} para +${reward} MBC</span>
+            <span class="mb-hero-sub">Llevas ${streak} acierto${streak===1?'':'s'} consecutivos</span>
+          </span>
+          <svg class="mb-hero-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>`);
+      }
+    }
+  } catch(_) {}
+
+  if (cards.length === 0) return ''; // si no hay nada accionable, no rendereamos nada
+  return `<div class="mb-hero-today mb-6">${cards.join('')}</div>`;
+}
+
+// Helper de navegación interna desde las cards del hero
+window.__heroGoto = function(tab) {
+  if (typeof currentClientTab === 'undefined') return;
+  currentClientTab = tab;
+  if (typeof rerenderCurrentClientPanel === 'function') rerenderCurrentClientPanel();
+  if (typeof renderClientBottomNav === 'function') {
+    try {
+      const c = clients.find(x => String(x.id) === String(activeClientId));
+      if (c) renderClientBottomNav(c, tab, c.plan !== 'Exclusive', countPendingFollowedBets(c.id), countUnfollowedAvailablePicks(c.id), countUnclaimedCompletedMissions(c));
+    } catch(_){}
+  }
+  if (typeof mbHaptic === 'function') mbHaptic('tap');
+};
+
+/* === BARRA DE PROGRESO MENSUAL — días conectados visible en la cabecera === */
+function updateMonthlyProgressBar(client) {
+  const wrap = document.getElementById('clientMonthlyProgress');
+  if (!wrap || !client) return;
+  try {
+    const now = new Date();
+    const total = (typeof daysInMonth === 'function') ? daysInMonth(now.getFullYear(), now.getMonth()) : 30;
+    const visited = (typeof loginDatesThisMonth === 'function') ? loginDatesThisMonth(client.id).length : 0;
+    const pct = total ? Math.min(100, (visited / total) * 100) : 0;
+    const bar = wrap.querySelector('.bar');
+    if (bar) {
+      bar.style.width = pct + '%';
+      bar.classList.toggle('gold', visited >= total);
+    }
+  } catch(_){}
+}
+
+/* === CENTRO DE NOTIFICACIONES — campana arriba derecha === */
+function buildNotificationsList(client) {
+  if (!client) return [];
+  const items = [];
+  try {
+    const unclaimed = (typeof countUnclaimedCompletedMissions === 'function') ? countUnclaimedCompletedMissions(client) : 0;
+    if (unclaimed > 0) {
+      items.push({
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15L2.66 7.14a2 2 0 0 1 0-2L4.81 1.5a2 2 0 0 1 1.73-1h10.92a2 2 0 0 1 1.73 1l2.15 3.64a2 2 0 0 1 0 2L16.79 15"/><circle cx="12" cy="17" r="5"/></svg>',
+        accent: 'amber',
+        title: `${unclaimed} ${unclaimed===1?'misión completada':'misiones completadas'}`,
+        sub: 'Pulsa para canjear tus MBCoins',
+        cta: 'Canjear',
+        action: "window.__heroGoto && window.__heroGoto('missions');"
+      });
+    }
+  } catch(_){}
+  try {
+    if (typeof WIN_STREAK_MILESTONES !== 'undefined' && typeof computeCurrentWinStreak === 'function' && typeof getClaimedWinStreakMilestones === 'function') {
+      const streak = computeCurrentWinStreak(client.id);
+      const claimedSet = new Set(getClaimedWinStreakMilestones(client.id));
+      const unclaimedMs = WIN_STREAK_MILESTONES.filter(m => streak >= m && !claimedSet.has(m));
+      if (unclaimedMs.length > 0) {
+        const top = unclaimedMs[unclaimedMs.length - 1];
+        const reward = WIN_STREAK_REWARDS[top] || 0;
+        items.push({
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+          accent: 'green',
+          title: `${top} aciertos seguidos`,
+          sub: `Recompensa de +${reward} MBC esperando`,
+          cta: 'Ver',
+          action: 'window.openWinStreakPopup && window.openWinStreakPopup();'
+        });
+      }
+    }
+  } catch(_){}
+  try {
+    const now = new Date();
+    const total = (typeof daysInMonth === 'function') ? daysInMonth(now.getFullYear(), now.getMonth()) : 30;
+    const visited = (typeof loginDatesThisMonth === 'function') ? loginDatesThisMonth(client.id).length : 0;
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const claimed = (typeof getClaimedDailyStreakMonths === 'function') ? getClaimedDailyStreakMonths(client.id).includes(monthKey) : false;
+    if (visited >= total && !claimed) {
+      items.push({
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18"/></svg>',
+        accent: 'amber',
+        title: 'Has completado el mes',
+        sub: '+50 MBCoins por la racha de días conectados',
+        cta: 'Canjear',
+        action: 'window.openStreakPopup && window.openStreakPopup();'
+      });
+    }
+  } catch(_){}
+  // Picks pendientes de resolver (apuestas seguidas sin resultado aún)
+  try {
+    const pending = (typeof countPendingFollowedBets === 'function') ? countPendingFollowedBets(client.id) : 0;
+    if (pending > 0) {
+      items.push({
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        accent: 'neutral',
+        title: `${pending} ${pending===1?'apuesta seguida pendiente':'apuestas seguidas pendientes'}`,
+        sub: 'Te avisaremos en cuanto se resuelvan',
+        cta: 'Ver',
+        action: "window.__heroGoto && window.__heroGoto('mybets');"
+      });
+    }
+  } catch(_){}
+  return items;
+}
+
+function updateBellDot(client) {
+  const dot = document.getElementById('bellDot');
+  if (!dot || !client) return;
+  const list = buildNotificationsList(client);
+  // Mostramos el punto solo si hay AL MENOS una notificación accionable (amber o green)
+  const hasAlert = list.some(x => x.accent === 'amber' || x.accent === 'green');
+  dot.classList.toggle('hidden', !hasAlert);
+}
+
+window.openNotificationsCenter = function openNotificationsCenter() {
+  try {
+    const modal = document.getElementById('notifCenterModal');
+    const content = document.getElementById('notifCenterContent');
+    if (!modal || !content) return;
+    const c = (typeof clients !== 'undefined') ? clients.find(x => String(x.id) === String(activeClientId)) : null;
+    if (!c) return;
+    const list = buildNotificationsList(c);
+    if (list.length === 0) {
+      content.innerHTML = `<div class="text-center py-10 px-4">
+        <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/5 border border-white/10">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <p class="text-sm text-ink-200/70">Estás al día.</p>
+        <p class="text-xs text-ink-500 mt-1">Cuando haya novedades aparecerán aquí.</p>
+      </div>`;
+    } else {
+      const accentMap = {
+        amber:  { border: 'border-amber-400/30', bg: 'bg-amber-400/[0.06]', icon: 'text-amber-300 bg-amber-400/10', btn: 'bg-amber-400 text-amber-950 hover:bg-amber-300' },
+        green:  { border: 'border-accent-neon/30', bg: 'bg-accent-neon/[0.06]', icon: 'text-accent-neon bg-accent-neon/10', btn: 'bg-accent-neon text-[#06120c] hover:bg-emerald-300' },
+        neutral:{ border: 'border-white/10', bg: 'bg-white/[0.02]', icon: 'text-ink-200 bg-white/5', btn: 'bg-white/10 text-white hover:bg-white/20' },
+      };
+      content.innerHTML = list.map(it => {
+        const a = accentMap[it.accent] || accentMap.neutral;
+        return `<div class="flex items-start gap-3 rounded-2xl border ${a.border} ${a.bg} p-3.5">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${a.icon}">${it.icon}</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-medium text-sm text-white">${it.title}</p>
+            <p class="mt-0.5 text-[11px] text-ink-200/65">${it.sub}</p>
+          </div>
+          <button onclick="document.getElementById('notifCenterModal')?.classList.add('hidden'); ${it.action}; return false;" class="shrink-0 rounded-full ${a.btn} px-3 py-1 text-[11px] font-semibold transition">${it.cta}</button>
+        </div>`;
+      }).join('');
+    }
+    modal.classList.remove('hidden');
+  } catch (err) { console.error('[notifs]', err); }
+};
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close-notif-center]')) {
+    document.getElementById('notifCenterModal')?.classList.add('hidden');
+  }
+});
+
 function streakWidgetHTML(client) {
   const now = new Date();
   const year = now.getFullYear();
@@ -4508,7 +4805,7 @@ function statsPanelHTML(c, forAdmin) {
   // Renderizar el panel activo
   let panel = '';
   if (tab === 'summary') {
-    panel = summaryKPIsHTML + streakWidgetHTML(c) + winStreakWidgetHTML(c);
+    panel = todayHeroHTML(c) + summaryKPIsHTML + streakWidgetHTML(c) + winStreakWidgetHTML(c);
   } else if (tab === 'picks') {
     panel = availablePicksOnlyHTML(c);
   } else if (tab === 'premium') {
@@ -6768,7 +7065,12 @@ document.addEventListener('change', (e) => {
 function rerenderCurrentClientPanel() {
   if (activeClientId) {
     const c = clients.find(x => String(x.id) === String(activeClientId));
-    if (c) document.getElementById('clientStatsContent').innerHTML = statsPanelHTML(c, false);
+    if (c) {
+      document.getElementById('clientStatsContent').innerHTML = statsPanelHTML(c, false);
+      // Refrescar UI nueva: barra progreso mensual + punto rojo de la campana
+      if (typeof updateMonthlyProgressBar === 'function') updateMonthlyProgressBar(c);
+      if (typeof updateBellDot === 'function') updateBellDot(c);
+    }
     return;
   }
   const detail = document.getElementById('statsDetailView');
@@ -8384,6 +8686,21 @@ window.showToast = showToast;
    alguna apuesta seguida recién ganada que aún no había visto.
    Implementación ligera (sin librerías), 50 partículas, ~2s.
 ============================================================ */
+// === HAPTICS — vibración táctil en móvil al confirmar acciones (sutil, premium) ===
+// Tipos: 'tap' (toque), 'success' (acierto/canje), 'win' (gran logro).
+// Solo dispara si el navegador soporta vibration API (móvil principalmente).
+window.mbHaptic = function mbHaptic(type) {
+  try {
+    if (!navigator.vibrate) return;
+    const patterns = {
+      tap:     [18],
+      success: [25, 35, 25],
+      win:     [40, 60, 40, 60, 80],
+    };
+    navigator.vibrate(patterns[type] || patterns.tap);
+  } catch(_) {}
+};
+
 function fireConfetti(opts = {}) {
   const N = opts.count || 80;
   const duration = opts.durationMs || 2400;
@@ -8608,6 +8925,7 @@ function showMissionsClaimPopup(missions, client) {
 
   // Click en "Canjear"
   document.getElementById('claimMissionsBtn').addEventListener('click', async () => {
+    if (typeof mbHaptic === 'function') mbHaptic('success');
     const btn = document.getElementById('claimMissionsBtn');
     btn.disabled = true; btn.style.opacity = '0.7';
     // 1. Marcar como canjeadas en localStorage
@@ -9977,6 +10295,7 @@ function _showDailyStreakPopupImpl(client, todayWasNew) {
   const claimBtn = document.getElementById('claimStreakBtn');
   if (claimBtn) {
     claimBtn.addEventListener('click', () => {
+      if (typeof mbHaptic === 'function') mbHaptic('win');
       const oldTotal = getTotalMBCoins(client);
       const months = getClaimedDailyStreakMonths(client.id);
       months.push(monthKey);
@@ -10174,6 +10493,7 @@ function showWinStreakPopup(client, milestone, reward) {
   document.addEventListener('keydown', esc);
 
   document.getElementById('claimWinStreakBtn').addEventListener('click', () => {
+    if (typeof mbHaptic === 'function') mbHaptic('win');
     const oldTotal = getTotalMBCoins(client);
     const claimed = getClaimedWinStreakMilestones(client.id);
     claimed.push(milestone);
