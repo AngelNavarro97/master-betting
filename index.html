@@ -9690,9 +9690,6 @@ window.openUserProfile = openUserProfile;
 const _DAY_NAMES = ['L','M','X','J','V','S','D'];
 const _MONTH_NAMES_LONG = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-window.showDailyStreakPopup = function(client, todayWasNew) {
-  return showDailyStreakPopup(client, todayWasNew);
-};
 function showDailyStreakPopup(client, todayWasNew) {
   try {
     return _showDailyStreakPopupImpl(client, todayWasNew);
@@ -9701,6 +9698,9 @@ function showDailyStreakPopup(client, todayWasNew) {
     if (window.showToast) showToast('Error al pintar el calendario: ' + (err && err.message ? err.message : err), 'error');
   }
 }
+// Exponer la MISMA referencia en window (sin wrapper que se llame a sí mismo
+// y provoque recursión infinita, que fue justo el bug que vimos).
+window.showDailyStreakPopup = showDailyStreakPopup;
 function _showDailyStreakPopupImpl(client, todayWasNew) {
   if (!client) {
     if (window.showToast) showToast('Cliente no disponible para abrir el calendario', 'error');
