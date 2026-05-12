@@ -8744,6 +8744,10 @@ async function renderForumPanel() {
   await loadForumData();
   renderForumChannels();
   await openForumChannel(forumCurrentChannelId, /*pushHistory=*/false);
+  // Engancha el seguimiento del viewport visual para que el teclado funcione
+  // como en WhatsApp: solo el composer + mensajes se ajustan, el foro entero
+  // NO se desplaza hacia arriba.
+  setupForumKeyboardHandling();
 }
 
 // Helper centralizado para salir del modo "foro pantalla completa".
@@ -8751,6 +8755,8 @@ async function renderForumPanel() {
 function exitForumFullscreen() {
   // Cierra el drawer si estaba abierto
   if (typeof closeForumDrawer === 'function') closeForumDrawer();
+  // Limpia los estilos que el handler del teclado pudo haber inyectado
+  if (typeof teardownForumKeyboardHandling === 'function') teardownForumKeyboardHandling();
   document.documentElement.classList.remove('mb-forum-fullscreen-html');
   document.body.classList.remove('mb-forum-fullscreen');
   // Devolver el forumRoot a su sitio original (donde estaba el placeholder)
@@ -8761,31 +8767,77 @@ function exitForumFullscreen() {
   }
 }
 
-/* === Teclado en el foro (móvil/PWA) ==========================================
-   Confiamos en `interactive-widget=resizes-content` (meta viewport) para que
-   iOS Safari encoja el viewport y .forum-wrap (height: 100dvh) se adapte solo.
-   Lo único que necesitamos hacer en JS es:
-     · cuando un input/textarea del foro reciba focus, hacer scroll al final
-       de los mensajes para que el último mensaje no quede oculto detrás del
-       composer.
-   Sin trucos de visualViewport, sin variables CSS calculadas a mano. */
-function setupForumKeyboardHandling() {
-  // Ya no hace falta: queda solo por compatibilidad con renderForumPanel().
-  // Mantenemos el listener de focus en el composer para auto-scroll abajo.
-  document.addEventListener('focusin', (e) => {
-    const t = e.target;
-    if (!t) return;
-    const inForum = t.closest('#forumComposerWrap, #forumComposerForm');
-    if (!inForum) return;
-    // El navegador necesita un instante para reacomodar el viewport tras el focus
-    setTimeout(() => {
-      const msgs = document.getElementById('forumMessages');
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
-    }, 250);
-  }, { once: false });
+/* === Teclado en el foro estilo WhatsApp (móvil/PWA) ===========================
+   En iOS Safari standalone (PWA) el navegador a veces hace scroll del layout
+   viewport cuando se enfoca un input — y eso arrastra el .forum-wrap (que es
+   position:fixed) hacia arriba, como si todo el foro "subiera". Para evitarlo
+   medimos el viewport visual real con `window.visualViewport`:
+     · height       → alto realmente visible (ya descontado el teclado)
+     · offsetTop    → cuánto ha scrolleado iOS la página por culpa del focus
+   Aplicamos ambos al .forum-wrap para que el foro siempre coincida con la
+   zona visible, igual que el chat de WhatsApp / Telegram. */
+let _forumKbActive = false;
+function _forumApplyViewport() {
+  const root = document.getElementById('forumRoot');
+  if (!root) return;
+  // Solo en móvil. En escritorio limpiamos cualquier estilo inyectado.
+  if (!window.matchMedia('(max-width: 768px)').matches) {
+    root.style.height = '';
+    root.style.transform = '';
+    return;
+  }
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const h = vv.height;          // alto del viewport visible
+  const top = vv.offsetTop;     // px que iOS ha scrolleado la página por el focus
+  const kbOpen = h < window.innerHeight - 80;
+  // Solo intervenimos si hay teclado o scroll fantasma de iOS.
+  // Si no, dejamos que el CSS (height: 100dvh) haga su trabajo.
+  if (kbOpen || top > 0) {
+    root.style.height = h + 'px';
+    root.style.transform = top > 0 ? `translateY(${top}px)` : '';
+  } else {
+    root.style.height = '';
+    root.style.transform = '';
+  }
+  // Si el teclado acaba de abrirse, scroll al fondo de los mensajes para que
+  // el último no quede oculto detrás del composer.
+  if (kbOpen && !_forumKbActive) {
+    _forumKbActive = true;
+    const msgs = document.getElementById('forumMessages');
+    if (msgs) setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
+  } else if (!kbOpen && _forumKbActive) {
+    _forumKbActive = false;
+  }
 }
-// Lo dejamos colgado para que si se llama desde algún sitio antiguo no rompa:
-setupForumKeyboardHandling();
+function setupForumKeyboardHandling() {
+  if (!window.visualViewport) return;
+  // Idempotente: si ya estaba, no duplicamos listeners
+  if (window._mbForumVVAttached) { _forumApplyViewport(); return; }
+  window._mbForumVVAttached = true;
+  window.visualViewport.addEventListener('resize', _forumApplyViewport);
+  window.visualViewport.addEventListener('scroll', _forumApplyViewport);
+  // Cuando se abre el composer, recalcular tras un pequeño delay (para que iOS
+  // tenga tiempo de notificar el resize del visual viewport).
+  document.addEventListener('focusin', (e) => {
+    if (!e.target.closest('#forumComposerWrap, #forumComposerForm')) return;
+    setTimeout(_forumApplyViewport, 100);
+    setTimeout(_forumApplyViewport, 300);
+  });
+  document.addEventListener('focusout', (e) => {
+    if (!e.target.closest('#forumComposerWrap, #forumComposerForm')) return;
+    setTimeout(_forumApplyViewport, 100);
+    setTimeout(_forumApplyViewport, 300);
+  });
+  _forumApplyViewport();
+}
+function teardownForumKeyboardHandling() {
+  // No quitamos los listeners (idempotentes), pero sí limpiamos los estilos
+  // inyectados en el .forum-wrap para no dejar restos cuando salgas del foro.
+  const root = document.getElementById('forumRoot');
+  if (root) { root.style.height = ''; root.style.transform = ''; }
+  _forumKbActive = false;
+}
 
 function renderForumChannels() {
   // Sidebar (escritorio)
