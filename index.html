@@ -4784,8 +4784,8 @@ function profileTabHTML(c) {
     <h4 class="mt-6 mb-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Mi cuenta</h4>
     <div class="space-y-2">
       ${rowBtn('Editar perfil', 'Foto, email y contraseña', ICONS.edit, 'data-action="profile_edit"')}
-      ${rowBtn('Suscripción', 'Gestionar facturación en Stripe', ICONS.sub, 'onclick="document.getElementById(\\'manageBillingBtn\\')?.click();return false;"')}
-      ${!isExclusive ? rowBtn('Mejorar plan', 'Más picks, mejor recompensa', ICONS.upgrade, 'onclick="document.getElementById(\\'upgradeBtn\\')?.click();return false;"', 'amber') : ''}
+      ${rowBtn('Suscripción', 'Gestionar facturación en Stripe', ICONS.sub, 'data-profile-action="billing"')}
+      ${!isExclusive ? rowBtn('Mejorar plan', 'Más picks, mejor recompensa', ICONS.upgrade, 'data-profile-action="upgrade"', 'amber') : ''}
     </div>
 
     <h4 class="mt-6 mb-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Master Betting</h4>
@@ -4794,11 +4794,11 @@ function profileTabHTML(c) {
       ${rowBtn('Casas recomendadas', 'Bookies con mejor cuota', ICONS.bookies, 'data-ctab="bookies"')}
       ${rowBtn('Retos', 'Sube de 10€ a 300€ paso a paso', ICONS.retos, 'data-ctab="retos"')}
       ${rowBtn('Mis estadísticas', 'Histórico completo, export CSV', ICONS.stats, 'data-ctab="mystats"')}
-      ${rowBtn('Canal de Telegram', 'Picks y avisos gratis', ICONS.tg, 'onclick="document.getElementById(\\'telegramBtn\\')?.click();return false;"')}
+      ${rowBtn('Canal de Telegram', 'Picks y avisos gratis', ICONS.tg, 'data-profile-action="telegram"')}
     </div>
 
     <div class="mt-8 pb-4">
-      <button type="button" onclick="document.getElementById('clientLogoutBtn')?.click();return false;" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-500/10">
+      <button type="button" data-profile-action="logout" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-500/10">
         ${ICONS.out}
         Cerrar sesión
       </button>
@@ -7091,6 +7091,19 @@ document.addEventListener('click', (e) => {
 
 // Función global expuesta para abrir el calendario de racha sin depender de
 // event delegation. La llamamos desde onclick inline en el HTML del botón.
+// Acciones del tab Perfil: dispara botones globales (billing/upgrade/etc.) sin
+// onclick inline con escapes (que rompía el script entero).
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-profile-action]');
+  if (!btn) return;
+  e.preventDefault();
+  const action = btn.dataset.profileAction;
+  if (action === 'billing')   document.getElementById('manageBillingBtn')?.click();
+  else if (action === 'upgrade')  document.getElementById('upgradeBtn')?.click();
+  else if (action === 'telegram') document.getElementById('telegramBtn')?.click();
+  else if (action === 'logout')   document.getElementById('clientLogoutBtn')?.click();
+});
+
 window.openStreakPopup = function openStreakPopup() {
   try {
     let c = (typeof clients !== 'undefined' && clients) ? clients.find(x => String(x.id) === String(activeClientId)) : null;
