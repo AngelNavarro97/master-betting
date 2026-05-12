@@ -448,15 +448,85 @@
       background: #06120c;
       display: flex;
       flex-direction: column;
+      box-sizing: border-box;
+      /* Reserva la zona de Dynamic Island / notch arriba */
+      padding-top: env(safe-area-inset-top, 0px);
     }
-    .forum-sidebar { display: none !important; }
-    .forum-sidebar.mobile-open { display: block !important; position: absolute; inset: 0; z-index: 5; background: rgba(6,18,12,0.96); }
     .forum-main {
       flex: 1;
       min-height: 0;
       display: flex;
       flex-direction: column;
     }
+    /* === DRAWER LATERAL estilo Discord (sustituye al selector horizontal) === */
+    .forum-channels-mobile { display: none !important; }
+    .forum-sidebar {
+      display: flex !important;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 82%;
+      max-width: 320px;
+      z-index: 10001;
+      background: rgba(6,18,12,0.98);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 8px 0 32px rgba(0,0,0,0.45);
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.22,1,0.36,1);
+      box-sizing: border-box;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      overflow: hidden;
+    }
+    .forum-sidebar.mobile-open { transform: translateX(0); }
+    /* Backdrop oscuro cuando el drawer está abierto */
+    .forum-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .forum-drawer-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /* Header del drawer: botón "← Volver al panel" */
+    .forum-drawer-header {
+      padding: 0.85rem 1rem 0.6rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .forum-drawer-back {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.5rem 0.85rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(0,230,150,0.30);
+      background: rgba(0,230,150,0.08);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .forum-drawer-back:hover { background: rgba(0,230,150,0.16); }
+    .forum-sidebar .forum-sidebar-header {
+      flex-shrink: 0;
+    }
+    .forum-sidebar .forum-channels-list {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  @media (min-width: 769px) {
+    /* En escritorio, el backdrop nunca se muestra */
+    .forum-drawer-backdrop { display: none; }
   }
   .forum-sidebar { background: rgba(255,255,255,0.02); border-right: 1px solid rgba(255,255,255,0.06); overflow-y: auto; }
   .forum-sidebar-header { padding: 0.85rem 1rem; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,245,247,0.5); border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -539,32 +609,30 @@
   .forum-header-leave:hover { color: #fff; background: rgba(248,113,113,0.10); border-color: rgba(248,113,113,0.30); }
   .forum-header-leave.show { display: inline-flex; }
   .forum-header { padding: 0.85rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); flex-shrink: 0; }
-  @media (max-width: 768px) {
-    .forum-header { padding-top: max(0.85rem, env(safe-area-inset-top, 0px)); }
-  }
   .forum-header-title { display: flex; align-items: center; gap: 0.5rem; }
   .forum-header-title h3 { margin: 0; font-family: Inter, sans-serif; font-size: 1rem; font-weight: 600; color: #fff; }
   .forum-header-emoji { font-size: 1.1em; }
   .forum-header-desc { margin: 0.2rem 0 0; font-size: 0.75rem; color: rgba(245,245,247,0.5); }
 
-  /* Botón "← Volver" del header (solo en móvil/foro pantalla completa) */
-  .forum-back-btn {
+  /* Botón hamburguesa circular (solo móvil/foro pantalla completa) — abre el drawer */
+  .forum-menu-btn {
     display: none;
-    align-items: center; gap: 0.3rem;
-    margin-right: 0.4rem;
-    padding: 0.4rem 0.55rem;
-    border-radius: 9999px;
+    width: 38px; height: 38px;
+    border-radius: 50%;
     border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.06);
     color: #fff;
-    font-size: 0.78rem;
-    font-weight: 500;
     cursor: pointer;
+    align-items: center; justify-content: center;
     flex-shrink: 0;
+    transition: background 0.15s;
   }
-  .forum-back-btn:hover { background: rgba(255,255,255,0.10); }
+  .forum-menu-btn:hover, .forum-menu-btn:active { background: rgba(255,255,255,0.12); }
+  .forum-menu-btn svg { width: 18px; height: 18px; }
+  /* Ya no usamos el botón "Volver" del header: lo dejamos como display:none por compat */
+  .forum-back-btn { display: none !important; }
   @media (max-width: 768px) {
-    .forum-back-btn { display: inline-flex; }
+    .forum-menu-btn { display: inline-flex; }
   }
 
   .forum-messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 0.85rem 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
@@ -8602,7 +8670,16 @@ function forumTabHTML(c) {
       <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Foro</span>
     </div>
     <div id="forumRoot" class="forum-wrap">
+      <!-- Backdrop oscuro del drawer (solo móvil) -->
+      <div id="forumDrawerBackdrop" class="forum-drawer-backdrop"></div>
+      <!-- DRAWER lateral de canales (oculto por defecto en móvil, sidebar fijo en escritorio) -->
       <aside id="forumSidebar" class="forum-sidebar">
+        <div class="forum-drawer-header">
+          <button type="button" data-action="forum-back" class="forum-drawer-back" aria-label="Volver al panel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Volver al panel</span>
+          </button>
+        </div>
         <div class="forum-sidebar-header">
           <span>Canales</span>
         </div>
@@ -8611,7 +8688,7 @@ function forumTabHTML(c) {
         </ul>
       </aside>
       <main class="forum-main">
-        <!-- Selector de canales horizontal (solo móvil/PWA) -->
+        <!-- Selector horizontal (en desuso: lo sustituye el drawer en móvil) -->
         <div id="forumChannelsMobile" class="forum-channels-mobile"></div>
         <div id="forumHeader" class="forum-header">
           <p class="text-ink-500">Cargando…</p>
@@ -8672,6 +8749,8 @@ async function renderForumPanel() {
 // Helper centralizado para salir del modo "foro pantalla completa".
 // Lo llaman: el botón "← Volver", cambiar de pestaña y hideClientView.
 function exitForumFullscreen() {
+  // Cierra el drawer si estaba abierto
+  if (typeof closeForumDrawer === 'function') closeForumDrawer();
   document.documentElement.classList.remove('mb-forum-fullscreen-html');
   document.body.classList.remove('mb-forum-fullscreen');
   // Devolver el forumRoot a su sitio original (donde estaba el placeholder)
@@ -8777,13 +8856,12 @@ async function openForumChannel(channelId, options = {}) {
   if (headerEl) {
     const showLeave = forumMyChannelIds.has(channel.id) && !channel.is_default;
     headerEl.innerHTML = `
-      <div class="forum-header-title" style="display:flex;align-items:center;gap:0.5rem;">
-        <button type="button" class="forum-back-btn" data-action="forum-back" aria-label="Volver">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          <span>Volver</span>
+      <div class="forum-header-title" style="display:flex;align-items:center;gap:0.55rem;min-width:0;">
+        <button type="button" class="forum-menu-btn" data-action="forum-toggle-drawer" aria-label="Abrir menú de canales">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <span class="forum-header-emoji">${channel.emoji || '#'}</span>
-        <h3>${(channel.name || '').replace(/[<>]/g,'')}</h3>
+        <h3 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(channel.name || '').replace(/[<>]/g,'')}</h3>
         <button type="button" class="forum-header-leave ${showLeave ? 'show' : ''}" data-forum-channel-menu="${channel.id}" aria-label="Abandonar canal">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Abandonar
@@ -9073,14 +9151,47 @@ function subscribeForumChannelRealtime(channelId) {
     .subscribe();
 }
 
+// === DRAWER del foro (estilo Discord móvil) =================================
+// Helpers: abrir/cerrar el drawer lateral de canales en móvil
+function openForumDrawer() {
+  const sb = document.getElementById('forumSidebar');
+  const bd = document.getElementById('forumDrawerBackdrop');
+  sb?.classList.add('mobile-open');
+  bd?.classList.add('show');
+}
+function closeForumDrawer() {
+  const sb = document.getElementById('forumSidebar');
+  const bd = document.getElementById('forumDrawerBackdrop');
+  sb?.classList.remove('mobile-open');
+  bd?.classList.remove('show');
+}
+function toggleForumDrawer() {
+  const sb = document.getElementById('forumSidebar');
+  if (sb?.classList.contains('mobile-open')) closeForumDrawer();
+  else openForumDrawer();
+}
+
 // Click handlers globales del foro (delegated)
 document.addEventListener('click', async (e) => {
+  // Botón hamburguesa del header → abre/cierra drawer
+  if (e.target.closest('[data-action="forum-toggle-drawer"]')) {
+    e.preventDefault();
+    toggleForumDrawer();
+    return;
+  }
+  // Click en el backdrop oscuro → cierra drawer
+  if (e.target.id === 'forumDrawerBackdrop' || e.target.closest('#forumDrawerBackdrop')) {
+    closeForumDrawer();
+    return;
+  }
   // Click en un canal
   const chBtn = e.target.closest('[data-forum-channel]');
   if (chBtn) {
     // Si pulsó los "..." NO abrimos canal — eso es para el menú
     if (e.target.closest('[data-forum-channel-menu]')) return;
     openForumChannel(chBtn.dataset.forumChannel);
+    // En móvil, cerrar drawer al elegir canal (mejor UX, como Discord)
+    if (window.matchMedia('(max-width: 768px)').matches) closeForumDrawer();
     return;
   }
   // Click en los "..." de un canal → menú abandonar
