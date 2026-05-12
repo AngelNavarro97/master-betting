@@ -888,6 +888,30 @@
   .mb-monthly-progress > .bar.gold { background: linear-gradient(90deg, #fbbf24, #fcd34d); }
 
   /* === Centro de notificaciones (campana) === */
+  /* Modal "Editar perfil" — bottom-sheet en móvil, modal centrado en desktop */
+  #profileModalPanel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+  }
+  @media (min-width: 640px) {
+    #profileModalPanel {
+      left: 50%;
+      right: auto;
+      bottom: auto;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 28rem;
+      max-height: 85vh;
+      border-radius: 1.25rem;
+    }
+  }
+
   /* Panel del centro de notificaciones: posicionado por DEBAJO de la zona del
      notch / Dynamic Island (env(safe-area-inset-top)) + 16px de hueco.
      En móvil ocupa todo el ancho con margen 12px. En desktop, ancho fijo a la derecha. */
@@ -2591,79 +2615,79 @@
   </div>
 </div>
 
-<!-- EDIT PROFILE MODAL (cliente) -->
-<div id="profileModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 overflow-y-auto" role="dialog" aria-modal="true">
+<!-- EDIT PROFILE MODAL (cliente) — bottom-sheet en móvil, modal centrado en desktop -->
+<div id="profileModal" class="hidden fixed inset-0 z-[100]" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-action="close-profile"></div>
-  <div class="gradient-border relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 p-7 shadow-2xl sm:p-8">
-    <div class="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#00e696,#22c55e);"></div>
-    <div class="relative">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi cuenta</span>
-          <h2 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white">Editar perfil</h2>
-        </div>
-        <button data-action="close-profile" class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button>
+  <div id="profileModalPanel" class="relative bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl flex flex-col">
+    <!-- Header sticky (siempre visible mientras se scrollea el contenido) -->
+    <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-3 border-b border-white/8 flex-shrink-0" style="padding-top:max(1rem, env(safe-area-inset-top, 0px));">
+      <div class="min-w-0">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-accent-neon">Mi cuenta</span>
+        <h2 class="mt-0.5 font-display text-lg sm:text-xl font-semibold tracking-tight text-white">Editar perfil</h2>
       </div>
-      <p class="mt-2 text-sm text-ink-200/70">Cambia tu foto, email o contraseña. Los cambios se sincronizan al instante.</p>
+      <button data-action="close-profile" aria-label="Cerrar" class="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white hover:bg-white/10">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Contenido scrolleable -->
+    <div class="flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-6" style="padding-bottom:max(1.25rem, env(safe-area-inset-bottom, 0px));">
 
       <!-- SECCIÓN FOTO DE PERFIL -->
-      <div class="mt-6">
-        <h3 class="font-display text-base font-semibold text-white">Foto de perfil</h3>
-        <p class="mt-1 text-xs text-ink-500">PNG, JPG o WEBP · máximo 2 MB. La imagen se cuadra y comprime automáticamente.</p>
-        <div class="mt-4 flex items-center gap-4">
+      <section>
+        <h3 class="text-sm font-semibold text-white">Foto de perfil</h3>
+        <p class="mt-1 text-[11px] text-ink-500">PNG, JPG o WEBP · máx. 2 MB · se recorta automáticamente.</p>
+        <div class="mt-3 flex items-center gap-3">
           <div id="profileAvatarPreview" class="shrink-0"></div>
-          <div class="flex-1 flex flex-col gap-2">
+          <div class="flex-1 flex flex-col gap-2 min-w-0">
             <input id="profileAvatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"/>
-            <button type="button" id="profileAvatarUploadBtn" class="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-ink-200">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <button type="button" id="profileAvatarUploadBtn" class="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-semibold text-black hover:bg-ink-200">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Subir foto
             </button>
-            <button type="button" id="profileAvatarRemoveBtn" class="hidden inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-white hover:bg-white/10">
-              Quitar foto (volver al avatar)
+            <button type="button" id="profileAvatarRemoveBtn" class="hidden inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-[11px] font-medium text-white hover:bg-white/10">
+              Quitar foto
             </button>
           </div>
         </div>
-        <p id="profileAvatarMsg" class="hidden mt-3 rounded-xl border px-3 py-2 text-xs"></p>
-      </div>
-
-      <div class="my-6 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+        <p id="profileAvatarMsg" class="hidden mt-2.5 rounded-xl border px-3 py-2 text-[11px]"></p>
+      </section>
 
       <!-- SECCIÓN EMAIL -->
-      <div class="mt-6">
-        <h3 class="font-display text-base font-semibold text-white">Email</h3>
-        <p id="profileCurrentEmail" class="mt-1 text-xs text-ink-500">Email actual: <span class="text-ink-200/85"></span></p>
-        <label class="mt-3 block">
-          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Nuevo email</span>
-          <input id="profileNewEmail" type="email" autocomplete="email" placeholder="nuevo@email.com" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+      <section>
+        <h3 class="text-sm font-semibold text-white">Email</h3>
+        <p id="profileCurrentEmail" class="mt-1 text-[11px] text-ink-500">Email actual: <span class="text-ink-200/85"></span></p>
+        <label class="mt-2.5 block">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">Nuevo email</span>
+          <input id="profileNewEmail" type="email" autocomplete="email" placeholder="nuevo@email.com" class="mt-1.5 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/>
         </label>
-        <p id="profileEmailMsg" class="hidden mt-2 rounded-xl border px-3 py-2 text-xs"></p>
-        <button type="button" id="profileEmailBtn" class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-ink-200">Actualizar email</button>
-        <p class="mt-2 text-[11px] text-ink-500">Recibirás un enlace de confirmación en el nuevo correo. El cambio se aplicará al pulsarlo.</p>
-      </div>
-
-      <div class="my-6 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+        <p id="profileEmailMsg" class="hidden mt-2 rounded-xl border px-3 py-2 text-[11px]"></p>
+        <button type="button" id="profileEmailBtn" class="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-black hover:bg-ink-200">Actualizar email</button>
+        <p class="mt-2 text-[11px] text-ink-500">Recibirás un email para confirmar el cambio.</p>
+      </section>
 
       <!-- SECCIÓN CONTRASEÑA -->
-      <div>
-        <h3 class="font-display text-base font-semibold text-white">Contraseña</h3>
-        <p class="mt-1 text-xs text-ink-500">Mínimo 6 caracteres.</p>
-        <label class="mt-3 block">
-          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Nueva contraseña</span>
-          <div class="relative mt-2">
-            <input id="profileNewPw" type="password" autocomplete="new-password" placeholder="••••••••" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 pr-12 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
-            <button type="button" id="profileTogglePw" aria-label="Mostrar contraseña" class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-white/5 hover:text-white">
-              <svg id="profileEyeShow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg id="profileEyeHide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      <section>
+        <h3 class="text-sm font-semibold text-white">Contraseña</h3>
+        <p class="mt-1 text-[11px] text-ink-500">Mínimo 6 caracteres.</p>
+        <label class="mt-2.5 block">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">Nueva contraseña</span>
+          <div class="relative mt-1.5">
+            <input id="profileNewPw" type="password" autocomplete="new-password" placeholder="••••••••" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 pr-11 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/>
+            <button type="button" id="profileTogglePw" aria-label="Mostrar contraseña" class="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-500 hover:bg-white/5 hover:text-white">
+              <svg id="profileEyeShow" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg id="profileEyeHide" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
             </button>
           </div>
         </label>
-        <label class="mt-3 block">
-          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Repetir contraseña</span>
-          <input id="profileNewPw2" type="password" autocomplete="new-password" placeholder="••••••••" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-white/30 focus:bg-black/60"/>
+        <label class="mt-2.5 block">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">Repetir contraseña</span>
+          <input id="profileNewPw2" type="password" autocomplete="new-password" placeholder="••••••••" class="mt-1.5 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-ink-500 outline-none focus:border-white/30 focus:bg-black/60"/>
         </label>
-        <p id="profilePwMsg" class="hidden mt-2 rounded-xl border px-3 py-2 text-xs"></p>
-        <button type="button" id="profilePwBtn" class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-ink-200">Actualizar contraseña</button>
-      </div>
+        <p id="profilePwMsg" class="hidden mt-2 rounded-xl border px-3 py-2 text-[11px]"></p>
+        <button type="button" id="profilePwBtn" class="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-black hover:bg-ink-200">Actualizar contraseña</button>
+      </section>
+
     </div>
   </div>
 </div>
