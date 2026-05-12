@@ -4580,7 +4580,7 @@ function buildNotificationsList(client) {
         title: `${unclaimed} ${unclaimed===1?'misión completada':'misiones completadas'}`,
         sub: 'Pulsa para canjear tus MBCoins',
         cta: 'Canjear',
-        action: "window.__heroGoto && window.__heroGoto('missions');"
+        actionType: 'goto', actionTarget: 'missions'
       });
     }
   } catch(_){}
@@ -4598,7 +4598,7 @@ function buildNotificationsList(client) {
           title: `${top} aciertos seguidos`,
           sub: `Recompensa de +${reward} MBC esperando`,
           cta: 'Ver',
-          action: 'window.openWinStreakPopup && window.openWinStreakPopup();'
+          actionType: 'popup', actionTarget: 'winstreak'
         });
       }
     }
@@ -4616,7 +4616,7 @@ function buildNotificationsList(client) {
         title: 'Has completado el mes',
         sub: '+50 MBCoins por la racha de días conectados',
         cta: 'Canjear',
-        action: 'window.openStreakPopup && window.openStreakPopup();'
+        actionType: 'popup', actionTarget: 'streak'
       });
     }
   } catch(_){}
@@ -4630,7 +4630,7 @@ function buildNotificationsList(client) {
         title: `${pending} ${pending===1?'apuesta seguida pendiente':'apuestas seguidas pendientes'}`,
         sub: 'Te avisaremos en cuanto se resuelvan',
         cta: 'Ver',
-        action: "window.__heroGoto && window.__heroGoto('mybets');"
+        actionType: 'goto', actionTarget: 'mybets'
       });
     }
   } catch(_){}
@@ -4676,7 +4676,7 @@ window.openNotificationsCenter = function openNotificationsCenter() {
             <p class="font-medium text-sm text-white">${it.title}</p>
             <p class="mt-0.5 text-[11px] text-ink-200/65">${it.sub}</p>
           </div>
-          <button onclick="document.getElementById('notifCenterModal')?.classList.add('hidden'); ${it.action}; return false;" class="shrink-0 rounded-full ${a.btn} px-3 py-1 text-[11px] font-semibold transition">${it.cta}</button>
+          <button type="button" data-notif-action-type="${it.actionType || ''}" data-notif-action-target="${it.actionTarget || ''}" class="shrink-0 rounded-full ${a.btn} px-3 py-1 text-[11px] font-semibold transition">${it.cta}</button>
         </div>`;
       }).join('');
     }
@@ -4687,6 +4687,27 @@ window.openNotificationsCenter = function openNotificationsCenter() {
 document.addEventListener('click', (e) => {
   if (e.target.closest('[data-close-notif-center]')) {
     document.getElementById('notifCenterModal')?.classList.add('hidden');
+  }
+});
+
+// Handler de las acciones del centro de notificaciones: cierra el modal y
+// ejecuta la acción según el tipo (goto:tab → cambia pestaña; popup:streak →
+// abre calendario; popup:winstreak → abre racha de aciertos).
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-notif-action-type]');
+  if (!btn) return;
+  e.preventDefault();
+  const type   = btn.dataset.notifActionType;
+  const target = btn.dataset.notifActionTarget;
+  // Cerrar el centro de notificaciones primero
+  document.getElementById('notifCenterModal')?.classList.add('hidden');
+  // Ejecutar la acción según tipo
+  if (type === 'goto' && target) {
+    if (typeof window.__heroGoto === 'function') window.__heroGoto(target);
+  } else if (type === 'popup' && target === 'streak') {
+    if (typeof window.openStreakPopup === 'function') window.openStreakPopup();
+  } else if (type === 'popup' && target === 'winstreak') {
+    if (typeof window.openWinStreakPopup === 'function') window.openWinStreakPopup();
   }
 });
 
@@ -5018,14 +5039,14 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
   if (unclaimedMissions > 0) moreBadge = `<span class="cli-bnav-badge">${unclaimedMissions}</span>`;
   else if (showPremium)      moreBadge = '<span class="cli-bnav-badge" style="background:#fbbf24;color:#111;">·</span>';
 
-  // 4 botones consolidados: Inicio · Picks · Recompensas · Perfil
-  // (Retos, Foro, Casas, Mis estadísticas y Editar perfil viven dentro de "Perfil".
-  //  Mis apuestas dentro de "Picks" en futuras versiones; ahora accesible vía perfil.)
+  // 5 botones: Inicio · Picks · Mis apuestas · Recompensas · Perfil
+  // (Retos, Foro, Casas, Mis estadísticas y Editar perfil viven dentro de "Perfil".)
   const profileBadge = (unclaimedMissions > 0)
     ? `<span class="cli-bnav-badge">${unclaimedMissions}</span>` : '';
   nav.innerHTML = `<div class="cli-bnav-grid">
     ${bnavBtn('summary',  'Inicio')}
     ${bnavBtn('picks',    'Picks')}
+    ${bnavBtn('mybets',   'Mis apuestas')}
     ${bnavBtn('missions', 'Recompensas')}
     <button data-ctab="profile" class="cli-bnav-btn${activeTab==='profile' ? ' active' : ''}">${ICON.profile}${profileBadge}<span class="label">Perfil</span></button>
   </div>`;
