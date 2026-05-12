@@ -4715,6 +4715,97 @@ function streakWidgetHTML(client) {
   </div>`;
 }
 
+/* === TAB PERFIL — pantalla completa con todas las opciones secundarias ===
+   Sustituye al actual menú "Más" en móvil con una pantalla nativa de perfil. */
+function profileTabHTML(c) {
+  const s = (typeof statsFor === 'function') ? statsFor(c) : { totalEarnings: 0, roi: 0 };
+  const totalCoins = (typeof getTotalMBCoins === 'function') ? getTotalMBCoins(c) : 0;
+  const planBadge = {
+    Basic:     '<span class="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-200">Basic</span>',
+    Pro:       '<span class="rounded-full border border-accent-neon/40 bg-accent-neon/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-accent-neon">Pro</span>',
+    Exclusive: '<span class="rounded-full border border-amber-400/40 bg-amber-400/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Exclusive</span>',
+  }[c.plan] || '<span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-500">Sin plan</span>';
+  const isExclusive = c.plan === 'Exclusive';
+
+  // Cada item es {key, label, icon, action}
+  const rowBtn = (label, sub, icon, action, accent='') => `<button type="button" ${action} class="flex w-full items-center gap-3 rounded-2xl border ${accent ? 'border-amber-400/30 bg-amber-400/[0.04] hover:bg-amber-400/[0.08]' : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.05]'} px-4 py-3 text-left transition">
+    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${accent ? 'bg-amber-400/15 text-amber-300' : 'bg-accent-neon/10 text-accent-neon'}">${icon}</span>
+    <span class="flex-1 min-w-0">
+      <span class="block text-sm font-medium ${accent ? 'text-amber-200' : 'text-white'}">${label}</span>
+      ${sub ? `<span class="block text-[11px] text-ink-200/55 mt-0.5">${sub}</span>` : ''}
+    </span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-ink-500"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>`;
+
+  const ICONS = {
+    edit:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    sub:    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
+    upgrade:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>',
+    forum:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    bookies:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-9h6v9"/></svg>',
+    stats:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>',
+    retos:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-2 8 4 10H4l4-10z"/><path d="M9 11h6"/></svg>',
+    tg:     '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.302.952-.14.579.192l-8.533 7.706h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.787l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"/></svg>',
+    out:    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+  };
+
+  return `<div>
+    <div class="flex items-center gap-2 mb-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Mi perfil</span></div>
+    <h3 class="font-display text-2xl font-semibold tracking-tight text-white">Tu cuenta</h3>
+
+    <div class="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+      <div class="flex items-center gap-4">
+        <div class="shrink-0">${mbAvatarHTML(c, 64)}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h4 class="font-display text-lg font-semibold text-white">${(c.name||'').replace(/[<>]/g,'')}</h4>
+            ${planBadge}
+          </div>
+          ${c.nickname ? `<p class="text-sm text-accent-neon font-medium">@${(c.nickname||'').replace(/[<>]/g,'')}</p>` : ''}
+          <p class="text-xs text-ink-500 mt-0.5">${c.email||''}</p>
+        </div>
+      </div>
+      <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-2">
+          <div class="text-[9px] uppercase tracking-[0.18em] text-ink-500">MBCoins</div>
+          <div class="mt-0.5 font-display text-base font-semibold text-accent-neon">${totalCoins}</div>
+        </div>
+        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-2">
+          <div class="text-[9px] uppercase tracking-[0.18em] text-ink-500">Ganancias</div>
+          <div class="mt-0.5 font-display text-base font-semibold ${s.totalEarnings>=0?'text-accent-neon':'text-red-300'}">${fmtEuro(s.totalEarnings||0)}</div>
+        </div>
+        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-2">
+          <div class="text-[9px] uppercase tracking-[0.18em] text-ink-500">ROI</div>
+          <div class="mt-0.5 font-display text-base font-semibold text-white">${((s.roi||0)*100).toFixed(1)}%</div>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="mt-6 mb-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Mi cuenta</h4>
+    <div class="space-y-2">
+      ${rowBtn('Editar perfil', 'Foto, email y contraseña', ICONS.edit, 'data-action="profile_edit"')}
+      ${rowBtn('Suscripción', 'Gestionar facturación en Stripe', ICONS.sub, 'onclick="document.getElementById(\\'manageBillingBtn\\')?.click();return false;"')}
+      ${!isExclusive ? rowBtn('Mejorar plan', 'Más picks, mejor recompensa', ICONS.upgrade, 'onclick="document.getElementById(\\'upgradeBtn\\')?.click();return false;"', 'amber') : ''}
+    </div>
+
+    <h4 class="mt-6 mb-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Master Betting</h4>
+    <div class="space-y-2">
+      ${rowBtn('Foro de la comunidad', 'Habla con otros suscriptores', ICONS.forum, 'data-ctab="forum"')}
+      ${rowBtn('Casas recomendadas', 'Bookies con mejor cuota', ICONS.bookies, 'data-ctab="bookies"')}
+      ${rowBtn('Retos', 'Sube de 10€ a 300€ paso a paso', ICONS.retos, 'data-ctab="retos"')}
+      ${rowBtn('Mis estadísticas', 'Histórico completo, export CSV', ICONS.stats, 'data-ctab="mystats"')}
+      ${rowBtn('Canal de Telegram', 'Picks y avisos gratis', ICONS.tg, 'onclick="document.getElementById(\\'telegramBtn\\')?.click();return false;"')}
+    </div>
+
+    <div class="mt-8 pb-4">
+      <button type="button" onclick="document.getElementById('clientLogoutBtn')?.click();return false;" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-500/10">
+        ${ICONS.out}
+        Cerrar sesión
+      </button>
+    </div>
+  </div>`;
+}
+
 function statsPanelHTML(c, forAdmin) {
   const s = statsFor(c);
   const status = statusInfo[c.status];
@@ -4794,23 +4885,24 @@ function statsPanelHTML(c, forAdmin) {
     profile_edit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     'open-streak': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18"/></svg>',
     'open-winstreak': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+    profile: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
   };
 
-  // Pills de arriba (desktop) — ocultos en móvil
+  // Pills de arriba (desktop) — alineadas con la nueva navegación de 4 botones
+  // del bottom nav. Mantenemos accesibles los tabs secundarios para escritorio.
   const pills = `
     <div class="mb-6 pills-scroller hidden sm:block">
       <div class="inline-flex flex-nowrap whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] p-1">
-        <button data-ctab="summary"  class="cli-tab ${tab==='summary'?'active':''}">Resumen</button>
-        <button data-ctab="picks"    class="cli-tab ${tab==='picks'?'active':''}">Apuestas${unfollowedCount>0?`<span class="cli-badge amber">${unfollowedCount}</span>`:''}</button>
+        <button data-ctab="summary"  class="cli-tab ${tab==='summary'?'active':''}">Inicio</button>
+        <button data-ctab="picks"    class="cli-tab ${tab==='picks'?'active':''}">Picks${unfollowedCount>0?`<span class="cli-badge amber">${unfollowedCount}</span>`:''}</button>
         ${showPremium ? `<button data-ctab="premium" class="cli-tab amber ${tab==='premium'?'active':''}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
           Exclusive</button>` : ''}
         <button data-ctab="retos"    class="cli-tab ${tab==='retos'?'active':''}">Retos</button>
         <button data-ctab="mybets"   class="cli-tab ${tab==='mybets'?'active':''}">Mis apuestas${pendingCount>0?`<span class="cli-badge">${pendingCount}</span>`:''}</button>
-        <button data-ctab="missions" class="cli-tab ${tab==='missions'?'active':''}">Misiones${unclaimedMissions>0?`<span class="cli-badge">${unclaimedMissions}</span>`:''}</button>
+        <button data-ctab="missions" class="cli-tab ${tab==='missions'?'active':''}">Recompensas${unclaimedMissions>0?`<span class="cli-badge">${unclaimedMissions}</span>`:''}</button>
         <button data-ctab="forum"    class="cli-tab ${tab==='forum'?'active':''}">Foro</button>
-        <button data-ctab="bookies"  class="cli-tab ${tab==='bookies'?'active':''}">Casas</button>
-        <button data-ctab="mystats"  class="cli-tab ${tab==='mystats'?'active':''}">Mis estadísticas</button>
+        <button data-ctab="profile"  class="cli-tab ${tab==='profile'?'active':''}">Perfil</button>
       </div>
     </div>`;
 
@@ -4823,7 +4915,10 @@ function statsPanelHTML(c, forAdmin) {
   // Renderizar el panel activo
   let panel = '';
   if (tab === 'summary') {
-    panel = todayHeroHTML(c) + summaryKPIsHTML + streakWidgetHTML(c) + winStreakWidgetHTML(c);
+    // En Resumen ya no metemos las rachas (están en Recompensas), solo el Hero + KPIs
+    panel = todayHeroHTML(c) + summaryKPIsHTML;
+  } else if (tab === 'profile') {
+    panel = profileTabHTML(c);
   } else if (tab === 'picks') {
     panel = availablePicksOnlyHTML(c);
   } else if (tab === 'premium') {
@@ -4902,12 +4997,16 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
   if (unclaimedMissions > 0) moreBadge = `<span class="cli-bnav-badge">${unclaimedMissions}</span>`;
   else if (showPremium)      moreBadge = '<span class="cli-bnav-badge" style="background:#fbbf24;color:#111;">·</span>';
 
+  // 4 botones consolidados: Inicio · Picks · Recompensas · Perfil
+  // (Retos, Foro, Casas, Mis estadísticas y Editar perfil viven dentro de "Perfil".
+  //  Mis apuestas dentro de "Picks" en futuras versiones; ahora accesible vía perfil.)
+  const profileBadge = (unclaimedMissions > 0)
+    ? `<span class="cli-bnav-badge">${unclaimedMissions}</span>` : '';
   nav.innerHTML = `<div class="cli-bnav-grid">
-    ${bnavBtn('summary', 'Resumen')}
-    ${bnavBtn('picks',   'Apuestas')}
-    ${bnavBtn('retos',   'Retos')}
-    ${bnavBtn('mybets',  'Mis apuestas')}
-    <button data-action="open-more-sheet" class="cli-bnav-btn${moreActive ? ' active' : ''}">${moreIcon}${moreBadge}<span class="label">Más</span></button>
+    ${bnavBtn('summary',  'Inicio')}
+    ${bnavBtn('picks',    'Picks')}
+    ${bnavBtn('missions', 'Recompensas')}
+    <button data-ctab="profile" class="cli-bnav-btn${activeTab==='profile' ? ' active' : ''}">${ICON.profile}${profileBadge}<span class="label">Perfil</span></button>
   </div>`;
 
   // Rellenamos también la hoja "Más" con las opciones secundarias
@@ -5637,6 +5736,13 @@ function missionCardHTML(mission) {
 
 // Panel completo de misiones
 function missionsTabHTML(client) {
+  // Cabecera "Recompensas" con las dos rachas arriba (eran widgets sueltos)
+  const headHTML = `<div class="flex items-center gap-2 mb-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Recompensas</span></div>
+    <h3 class="font-display text-2xl font-semibold tracking-tight text-white">Misiones y rachas</h3>
+    <p class="mt-1 text-sm text-ink-500">Todas las formas de ganar MBCoins en un solo sitio.</p>
+    ${streakWidgetHTML(client)}
+    ${winStreakWidgetHTML(client)}
+    <div class="mt-7"></div>`;
   const evaluated = evaluateMissions(client);
   const completed = evaluated.filter(m => m.completed);
   const totalCoins = completed.reduce((s, m) => s + m.coins, 0);
@@ -5691,6 +5797,7 @@ function missionsTabHTML(client) {
     </div>` : '';
 
   return `<div>
+    ${headHTML}
     <!-- Header con MBCoins totales -->
     <div class="flex items-center gap-2"><span class="inline-block h-1.5 w-1.5 rounded-full bg-accent-neon"></span><span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-accent-neon">Misiones</span></div>
     <h3 class="mt-2 font-display text-2xl font-semibold tracking-tight text-white">Tu progreso</h3>
