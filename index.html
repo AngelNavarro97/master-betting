@@ -1886,9 +1886,40 @@
           <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Base de datos de clientes</h1>
         </div>
       </div>
-      <button id="logoutBtn" class="inline-flex items-center justify-center self-start rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10">Cerrar sesión</button>
+      <div class="flex flex-wrap items-center gap-2 self-start">
+        <button id="adminNicknameBtn" class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-medium text-amber-200 transition hover:border-amber-400/50 hover:bg-amber-400/15">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span id="adminNicknameBtnLabel">Mi nickname</span>
+        </button>
+        <button id="logoutBtn" class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10">Cerrar sesión</button>
+      </div>
     </div>
   </header>
+
+  <!-- MODAL: editar nickname del admin -->
+  <div id="adminNicknameModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close-admin-nick></div>
+    <div class="relative my-auto w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-amber-400/30 p-6 shadow-2xl sm:p-8">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-300">Mi identidad de admin</span>
+          <h2 class="mt-1 font-display text-2xl font-semibold tracking-tight text-white">Tu nickname</h2>
+        </div>
+        <button data-close-admin-nick class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white transition hover:bg-white/10">Cerrar</button>
+      </div>
+      <p class="mt-3 text-sm text-ink-200/75">Este es el nombre que verán los demás en el <span class="text-amber-300">foro</span> cuando escribas como admin. 3-20 caracteres, sin espacios.</p>
+      <label class="mt-5 block">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Nickname</span>
+        <input id="adminNicknameInput" type="text" maxlength="20" placeholder="AngelMB" class="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder-ink-500 outline-none transition focus:border-amber-400/40 focus:bg-black/60"/>
+      </label>
+      <p id="adminNicknameError" class="hidden mt-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"></p>
+      <p id="adminNicknameOk"    class="hidden mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300"></p>
+      <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+        <button data-close-admin-nick class="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-sm font-medium text-white hover:bg-white/10">Cancelar</button>
+        <button id="adminNicknameSaveBtn" class="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-5 py-2 text-sm font-semibold text-black transition hover:bg-amber-300">Guardar</button>
+      </div>
+    </div>
+  </div>
 
   <div class="mx-auto mt-6 max-w-[1600px] px-5 sm:px-8 hidden sm:block">
     <div class="pills-scroller">
@@ -3498,6 +3529,8 @@ function showAdmin() {
   document.body.classList.add('admin-active');
   document.getElementById('adminBottomNav')?.classList.remove('hidden');
   switchTab('clients'); window.scrollTo(0, 0); renderAdmin();
+  // Refrescar el texto del botón "Mi nickname" con el nickname actual del admin
+  if (typeof refreshAdminNicknameButton === 'function') refreshAdminNicknameButton();
 }
 function hideAdmin() {
   adminPanel.classList.add('hidden'); publicSite.classList.remove('hidden');
@@ -8994,11 +9027,19 @@ async function renderForumMessages() {
     const avatar = mbAvatarHTML(u ? { id: g.user_id, nickname, avatar_url: u.avatar_url } : g.user_id, nickname, 36);
     const time = new Date(g.firstAt).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
     const itemsHTML = g.items.map(m => forumSingleMessageHTML(m, isAdmn)).join('');
+    // Si el autor es admin, ni avatar ni nombre son clicables: no abren el
+    // popup de estadísticas. Para usuarios normales sí (button + data-user-profile).
+    const avatarEl = isAuthorAdmin
+      ? `<span class="forum-msg-avatar" style="cursor:default;">${avatar}</span>`
+      : `<button class="forum-msg-avatar" data-user-profile="${g.user_id}" aria-label="Ver perfil de ${nickname}">${avatar}</button>`;
+    const nameEl = isAuthorAdmin
+      ? `<span class="forum-msg-author is-admin">${(nickname||'').replace(/[<>]/g,'')}</span>`
+      : `<button class="forum-msg-author" data-user-profile="${g.user_id}">${(nickname||'').replace(/[<>]/g,'')}</button>`;
     return `<div class="forum-msg-group">
-      <button class="forum-msg-avatar" data-user-profile="${g.user_id}" aria-label="Ver perfil de ${nickname}">${avatar}</button>
+      ${avatarEl}
       <div class="forum-msg-body">
         <div class="forum-msg-header">
-          <button class="forum-msg-author ${isAuthorAdmin ? 'is-admin' : ''}" data-user-profile="${g.user_id}">${(nickname||'').replace(/[<>]/g,'')}</button>
+          ${nameEl}
           ${adminBadge}
           ${planBadge}
           <span class="forum-msg-time">${time}</span>
@@ -9466,9 +9507,13 @@ async function openUserProfile(userId) {
     return;
   }
 
-  // ¿Es mi perfil o el de otro? Si soy admin veo todo igual.
-  const isOwn   = String(target.id) === String(activeClientId);
-  const isAdmin = !!(typeof currentSessionEmail !== 'undefined' && typeof isAdmin === 'function' && isAdmin(currentSessionEmail));
+  // ¿Es mi perfil o el de otro? Si quien mira es admin, ve todo igual.
+  // OJO: NO usar el nombre "isAdmin" como variable local porque sombrea la
+  // función global del mismo nombre y rompe la inicialización (TDZ).
+  const isOwn = String(target.id) === String(activeClientId);
+  const viewerClient = clients.find(x => String(x.id) === String(activeClientId));
+  const viewerEmail = viewerClient?.email || '';
+  const viewerIsAdmin = !!(viewerEmail && isAdmin(viewerEmail));
 
   // Badge del plan
   const planBadge = {
@@ -9481,9 +9526,9 @@ async function openUserProfile(userId) {
   const joinLabel = joinDate ? joinDate.toLocaleDateString('es-ES', { year:'numeric', month:'long' }) : '—';
   const nickname = target.nickname || target.name || 'Sin nombre';
 
-  // Bloque de stats: solo lo mostramos para uno mismo o si soy admin
+  // Bloque de stats: solo lo mostramos para uno mismo o si quien mira es admin
   let statsHTML = '';
-  if (isOwn || isAdmin) {
+  if (isOwn || viewerIsAdmin) {
     try {
       // Si es el usuario actual ya tenemos las apuestas en memoria
       const bets = (typeof getFollowed === 'function') ? getFollowed(target.id) : [];
@@ -10822,6 +10867,81 @@ async function enterForoAsAdmin() {
   mountEl.innerHTML = forumTabHTML(clients.find(c => c.id === row.id));
   // Render efectivo del foro
   setTimeout(() => renderForumPanel(), 50);
+}
+
+/* ============================================================
+   ADMIN · Editar mi nickname (para participar en el foro)
+============================================================ */
+async function openAdminNicknameModal() {
+  const { data: { session } } = await sb.auth.getSession();
+  const email = (session?.user?.email || '').toLowerCase();
+  if (!isAdmin(email)) return;
+  // Recuperar el nickname actual del admin desde clients
+  const { data: row } = await sb.from('clients').select('nickname').eq('email', email).maybeSingle();
+  document.getElementById('adminNicknameInput').value = row?.nickname || '';
+  document.getElementById('adminNicknameError').classList.add('hidden');
+  document.getElementById('adminNicknameOk').classList.add('hidden');
+  document.getElementById('adminNicknameModal').classList.remove('hidden');
+}
+function closeAdminNicknameModal() {
+  document.getElementById('adminNicknameModal')?.classList.add('hidden');
+}
+
+// Actualiza el texto del botón con el nickname actual (si lo hay)
+async function refreshAdminNicknameButton() {
+  const btnLabel = document.getElementById('adminNicknameBtnLabel');
+  if (!btnLabel) return;
+  const { data: { session } } = await sb.auth.getSession();
+  const email = (session?.user?.email || '').toLowerCase();
+  if (!isAdmin(email)) return;
+  const { data: row } = await sb.from('clients').select('nickname').eq('email', email).maybeSingle();
+  btnLabel.textContent = row?.nickname ? `@${row.nickname}` : 'Elegir nickname';
+}
+
+document.getElementById('adminNicknameBtn')?.addEventListener('click', openAdminNicknameModal);
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close-admin-nick]')) closeAdminNicknameModal();
+});
+
+document.getElementById('adminNicknameSaveBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('adminNicknameError');
+  const okEl  = document.getElementById('adminNicknameOk');
+  errEl.classList.add('hidden'); okEl.classList.add('hidden');
+  const raw = document.getElementById('adminNicknameInput').value;
+  const v = validateNicknameFormat(raw);
+  if (!v.ok) { errEl.textContent = v.msg; errEl.classList.remove('hidden'); return; }
+  const { data: { session } } = await sb.auth.getSession();
+  const email = (session?.user?.email || '').toLowerCase();
+  if (!isAdmin(email)) return;
+  // Buscar fila del admin en clients
+  const { data: row, error: rowErr } = await sb.from('clients').select('id, nickname').eq('email', email).maybeSingle();
+  if (rowErr || !row) {
+    errEl.textContent = 'Tu cuenta admin no tiene ficha de cliente. Crea una primero o pide a Angel que te dé de alta.';
+    errEl.classList.remove('hidden'); return;
+  }
+  // Comprobar unicidad (excluyendo mi propio id)
+  const taken = await isNicknameTaken(v.value, row.id);
+  if (taken) {
+    errEl.textContent = 'Ese nickname ya está cogido. Elige otro.';
+    errEl.classList.remove('hidden'); return;
+  }
+  const btn = document.getElementById('adminNicknameSaveBtn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const { error } = await sb.from('clients').update({ nickname: v.value }).eq('id', row.id);
+  btn.disabled = false; btn.textContent = 'Guardar';
+  if (error) { errEl.textContent = 'Error: ' + error.message; errEl.classList.remove('hidden'); return; }
+  okEl.textContent = '✓ Nickname guardado. Así aparecerás en el foro.';
+  okEl.classList.remove('hidden');
+  // Limpiar cache del foro para que se vea actualizado
+  if (typeof forumUserInfoCache === 'object') delete forumUserInfoCache[row.id];
+  refreshAdminNicknameButton();
+  setTimeout(closeAdminNicknameModal, 1200);
+});
+
+// Cuando el admin se loguea/entra al panel, actualizar el label del botón
+if (typeof refreshAdminNicknameButton === 'function') {
+  // Lo llamamos al cargar (después de que la sesión esté lista)
+  setTimeout(refreshAdminNicknameButton, 1500);
 }
 
 async function onForoAdminAction(e) {
