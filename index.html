@@ -4,7 +4,7 @@
 <!-- Background inline para evitar flash blanco al navegar entre páginas -->
 <style>html, body { background-color: #000 !important; }</style>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
 <meta name="theme-color" content="#000000" />
 <title>Master Betting</title>
 <link rel="icon" type="image/png" href="Recurso%201.png" />
@@ -390,9 +390,12 @@
   }
 
   /* === FORO estilo Discord ================================================
-     Sidebar de canales + área de chat + composer abajo.
-     Usamos 100dvh (dynamic viewport height) en móvil para que NO afecte a la
-     altura real cuando la URL bar de iOS aparece/desaparece. */
+     ESCRITORIO: card con sidebar de canales + área de chat + composer.
+     MÓVIL/PWA: vista pantalla completa (position:fixed; height:100dvh).
+     Confiamos en `interactive-widget=resizes-content` (meta viewport) para que
+     iOS encoja el viewport cuando se abre el teclado. Así el composer queda
+     siempre pegado al borde inferior SIN trucos de visualViewport.
+  ============================================================ */
   .forum-wrap {
     display: grid;
     grid-template-columns: 220px 1fr;
@@ -405,26 +408,36 @@
     background: rgba(6,18,12,0.6);
     overflow: hidden;
   }
+  /* En MÓVIL, cuando el body lleva .mb-forum-fullscreen, el foro ocupa toda
+     la pantalla, se oculta el bottom nav del cliente y se bloquea el scroll
+     del documento para que el teclado funcione bien (iOS/Android/PWA). */
   @media (max-width: 768px) {
-    /* En móvil el foro se "ancla" al viewport visual con position fixed:
-       así, cuando se abre el teclado iOS no puede mover el chat hacia arriba.
-       El composer queda siempre pegado al borde inferior visible. */
+    body.mb-forum-fullscreen { overflow: hidden; overscroll-behavior: none; }
+    body.mb-forum-fullscreen #clientBottomNav { display: none !important; }
+  }
+  @media (max-width: 768px) {
     .forum-wrap {
       grid-template-columns: 1fr;
       position: fixed;
-      top: 64px;       /* hueco para el saludo del cliente */
-      left: 0; right: 0;
-      bottom: var(--mb-keyboard-bottom, 64px);  /* JS lo ajusta cuando se abre el teclado */
-      height: auto !important;
+      inset: 0;                    /* top:0; right:0; bottom:0; left:0 */
+      height: 100dvh;              /* dvh = dynamic viewport height (encoge con el teclado) */
       max-height: none;
       min-height: 0;
       border-radius: 0;
-      border-left: none;
-      border-right: none;
-      z-index: 30;
+      border: none;
+      z-index: 60;                 /* por encima del bottom nav cliente */
+      background: #06120c;
+      display: flex;
+      flex-direction: column;
     }
     .forum-sidebar { display: none !important; }
     .forum-sidebar.mobile-open { display: block !important; position: absolute; inset: 0; z-index: 5; background: rgba(6,18,12,0.96); }
+    .forum-main {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
   }
   .forum-sidebar { background: rgba(255,255,255,0.02); border-right: 1px solid rgba(255,255,255,0.06); overflow-y: auto; }
   .forum-sidebar-header { padding: 0.85rem 1rem; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,245,247,0.5); border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -454,7 +467,7 @@
   .forum-channel-more:hover { background: rgba(255,255,255,0.1); color: #fff; }
   .forum-loading { padding: 1rem; text-align: center; color: rgba(245,245,247,0.4); font-size: 0.8rem; }
 
-  .forum-main { display: flex; flex-direction: column; min-width: 0; }
+  .forum-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
   /* Selector de canales horizontal — solo móvil/PWA */
   .forum-channels-mobile {
@@ -466,6 +479,7 @@
     -webkit-overflow-scrolling: touch;
     white-space: nowrap;
     scrollbar-width: none;
+    flex-shrink: 0;
   }
   .forum-channels-mobile::-webkit-scrollbar { display: none; }
   @media (max-width: 768px) {
@@ -504,17 +518,37 @@
     cursor: pointer;
   }
   .forum-header-leave:hover { color: #fff; background: rgba(248,113,113,0.10); border-color: rgba(248,113,113,0.30); }
+  .forum-header-leave.show { display: inline-flex; }
+  .forum-header { padding: 0.85rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); flex-shrink: 0; }
   @media (max-width: 768px) {
-    .forum-header { display: flex; align-items: center; gap: 0.5rem; }
-    .forum-header-leave.show { display: inline-flex; }
+    .forum-header { padding-top: max(0.85rem, env(safe-area-inset-top, 0px)); }
   }
-  .forum-header { padding: 0.85rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
   .forum-header-title { display: flex; align-items: center; gap: 0.5rem; }
   .forum-header-title h3 { margin: 0; font-family: Inter, sans-serif; font-size: 1rem; font-weight: 600; color: #fff; }
   .forum-header-emoji { font-size: 1.1em; }
   .forum-header-desc { margin: 0.2rem 0 0; font-size: 0.75rem; color: rgba(245,245,247,0.5); }
 
-  .forum-messages { flex: 1; overflow-y: auto; padding: 0.85rem 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
+  /* Botón "← Volver" del header (solo en móvil/foro pantalla completa) */
+  .forum-back-btn {
+    display: none;
+    align-items: center; gap: 0.3rem;
+    margin-right: 0.4rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .forum-back-btn:hover { background: rgba(255,255,255,0.10); }
+  @media (max-width: 768px) {
+    .forum-back-btn { display: inline-flex; }
+  }
+
+  .forum-messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 0.85rem 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
   .forum-empty { text-align: center; padding: 2.5rem 1rem; color: rgba(245,245,247,0.5); font-size: 0.85rem; }
 
   .forum-msg-group { display: flex; gap: 0.7rem; align-items: flex-start; }
@@ -538,7 +572,20 @@
   .forum-msg-delete:hover { opacity: 1; }
   .forum-mention { color: #00e696; background: rgba(0,230,150,0.10); padding: 0 0.2rem; border-radius: 0.2rem; font-weight: 600; }
 
-  .forum-composer-wrap { border-top: 1px solid rgba(255,255,255,0.06); padding: 0.7rem 0.85rem; background: rgba(255,255,255,0.02); position: relative; }
+  .forum-composer-wrap {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 0.7rem 0.85rem;
+    background: rgba(6,18,12,0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    flex-shrink: 0;
+  }
+  @media (max-width: 768px) {
+    /* En móvil reservamos el safe-area inferior — pero SOLO cuando el teclado
+       NO está abierto (si está abierto, iOS encoge el viewport y no hace falta). */
+    .forum-composer-wrap { padding-bottom: max(0.7rem, env(safe-area-inset-bottom, 0px)); }
+  }
   .forum-composer { display: flex; align-items: flex-end; gap: 0.55rem; position: relative; }
   .forum-composer textarea {
     flex: 1; min-height: 38px; max-height: 140px; resize: none;
@@ -3373,6 +3420,12 @@ function showClientView(clientId) {
   publicSite.classList.add('hidden'); adminPanel.classList.add('hidden'); clientPanel.classList.remove('hidden');
   // Marca el body para que en móvil reserve hueco inferior por el bottom nav
   document.body.classList.add('client-active');
+  // Si entramos al panel cliente, garantizamos que NO arrastramos el modo
+  // "foro pantalla completa" desde una sesión anterior (puede haber quedado
+  // pegado si la sesión se cerró estando en el foro).
+  if (currentClientTab !== 'forum') {
+    document.body.classList.remove('mb-forum-fullscreen');
+  }
   // Mostrar la barra inferior. En iOS PWA, cuando una pantalla cambia, el cálculo
   // de position:fixed se hace ANTES de pintar y a veces queda mal hasta el primer
   // scroll. Forzamos un reflow + un repaint con doble RAF para que se asiente bien.
@@ -3524,6 +3577,7 @@ function hideClientView() {
   clientPanel.classList.add('hidden');
   publicSite.classList.remove('hidden');
   document.body.classList.remove('client-active');
+  document.body.classList.remove('mb-forum-fullscreen');
   const nav = document.getElementById('clientBottomNav');
   if (nav) { nav.innerHTML = ''; nav.classList.add('hidden'); }
   // Cerrar sesión también en OneSignal
@@ -6353,11 +6407,26 @@ document.addEventListener('click', (e) => {
 // (los antiguos pills de meses ya no existen — ahora son <details> nativos
 //  que se abren/cierran solos sin necesidad de listeners JS)
 
+// Botón "← Volver" del foro (solo móvil): regresa al resumen
+document.addEventListener('click', (e) => {
+  const back = e.target.closest('[data-action="forum-back"]');
+  if (!back) return;
+  e.preventDefault();
+  document.body.classList.remove('mb-forum-fullscreen');
+  currentClientTab = 'summary';
+  rerenderCurrentClientPanel();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+});
+
 // Pills de la navegación principal del cliente (Resumen / Apuestas / Premium / Mis apuestas / ...)
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-ctab]'); if (!btn) return;
   const newTab = btn.dataset.ctab;
   if (currentClientTab === newTab) return;
+  // Salir del modo foro pantalla completa cuando se cambia a OTRA pestaña
+  if (currentClientTab === 'forum' && newTab !== 'forum') {
+    document.body.classList.remove('mb-forum-fullscreen');
+  }
   currentClientTab = newTab;
   // Pestañas que dependen de datos frescos (picks + followed_bets)
   // Si el admin borra/cierra picks, las misiones y stats deben actualizarse al instante.
@@ -8522,47 +8591,41 @@ async function loadForumData() {
 // Renderiza el panel del foro DESPUÉS de que el DOM esté inyectado
 async function renderForumPanel() {
   if (!document.getElementById('forumRoot')) return; // no estamos en el tab Foro
+  // En móvil/PWA convertimos el foro en pantalla completa: el body se marca
+  // con .mb-forum-fullscreen para que se oculte el bottom nav y se bloquee
+  // el scroll del documento. Así, cuando se abre el teclado, iOS encoge el
+  // dvh y el composer queda siempre justo encima del teclado.
+  document.body.classList.add('mb-forum-fullscreen');
   await loadForumData();
   renderForumChannels();
   await openForumChannel(forumCurrentChannelId, /*pushHistory=*/false);
-  setupForumKeyboardHandling();
 }
 
-/* Maneja el teclado virtual en móvil: cuando se abre, ajustamos la variable CSS
-   --mb-keyboard-bottom para que el composer quede justo encima del teclado.
-   Solo se aplica si el panel del foro está visible. */
-let _forumViewportHandler = null;
+/* === Teclado en el foro (móvil/PWA) ==========================================
+   Confiamos en `interactive-widget=resizes-content` (meta viewport) para que
+   iOS Safari encoja el viewport y .forum-wrap (height: 100dvh) se adapte solo.
+   Lo único que necesitamos hacer en JS es:
+     · cuando un input/textarea del foro reciba focus, hacer scroll al final
+       de los mensajes para que el último mensaje no quede oculto detrás del
+       composer.
+   Sin trucos de visualViewport, sin variables CSS calculadas a mano. */
 function setupForumKeyboardHandling() {
-  if (!window.visualViewport) return;
-  if (_forumViewportHandler) return; // ya está
-  _forumViewportHandler = () => {
-    const wrap = document.getElementById('forumRoot');
-    if (!wrap) {
-      document.documentElement.style.setProperty('--mb-keyboard-bottom', '64px');
-      return;
-    }
-    if (!window.matchMedia('(max-width: 768px)').matches) {
-      document.documentElement.style.setProperty('--mb-keyboard-bottom', '64px');
-      return;
-    }
-    const vv = window.visualViewport;
-    // Espacio "comido" por el teclado = innerHeight - visualViewport.height
-    const keyboardHeight = Math.max(0, window.innerHeight - vv.height);
-    // bottom de la zona visible (encima del teclado o del bottom nav)
-    // Si NO hay teclado, usamos 64px para dejar hueco al bottom nav del cliente
-    const bottom = keyboardHeight > 0 ? keyboardHeight + 4 : 64;
-    document.documentElement.style.setProperty('--mb-keyboard-bottom', bottom + 'px');
-    // Cuando se abre el teclado, hacer scroll al fondo de los mensajes para
-    // que el último mensaje no quede detrás del composer
-    if (keyboardHeight > 0) {
+  // Ya no hace falta: queda solo por compatibilidad con renderForumPanel().
+  // Mantenemos el listener de focus en el composer para auto-scroll abajo.
+  document.addEventListener('focusin', (e) => {
+    const t = e.target;
+    if (!t) return;
+    const inForum = t.closest('#forumComposerWrap, #forumComposerForm');
+    if (!inForum) return;
+    // El navegador necesita un instante para reacomodar el viewport tras el focus
+    setTimeout(() => {
       const msgs = document.getElementById('forumMessages');
-      if (msgs) setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
-    }
-  };
-  window.visualViewport.addEventListener('resize', _forumViewportHandler);
-  window.visualViewport.addEventListener('scroll', _forumViewportHandler);
-  _forumViewportHandler();
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }, 250);
+  }, { once: false });
 }
+// Lo dejamos colgado para que si se llama desde algún sitio antiguo no rompa:
+setupForumKeyboardHandling();
 
 function renderForumChannels() {
   // Sidebar (escritorio)
@@ -8633,15 +8696,19 @@ async function openForumChannel(channelId, options = {}) {
   if (headerEl) {
     const showLeave = forumMyChannelIds.has(channel.id) && !channel.is_default;
     headerEl.innerHTML = `
-      <div class="forum-header-title">
+      <div class="forum-header-title" style="display:flex;align-items:center;gap:0.5rem;">
+        <button type="button" class="forum-back-btn" data-action="forum-back" aria-label="Volver">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Volver</span>
+        </button>
         <span class="forum-header-emoji">${channel.emoji || '#'}</span>
         <h3>${(channel.name || '').replace(/[<>]/g,'')}</h3>
+        <button type="button" class="forum-header-leave ${showLeave ? 'show' : ''}" data-forum-channel-menu="${channel.id}" aria-label="Abandonar canal">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Abandonar
+        </button>
       </div>
       ${channel.description ? `<p class="forum-header-desc">${channel.description.replace(/[<>]/g,'')}</p>` : ''}
-      <button type="button" class="forum-header-leave ${showLeave ? 'show' : ''}" data-forum-channel-menu="${channel.id}" aria-label="Abandonar canal">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Abandonar
-      </button>
     `;
   }
   // Carga mensajes
