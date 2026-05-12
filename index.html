@@ -888,6 +888,24 @@
   .mb-monthly-progress > .bar.gold { background: linear-gradient(90deg, #fbbf24, #fcd34d); }
 
   /* === Centro de notificaciones (campana) === */
+  /* Panel del centro de notificaciones: posicionado por DEBAJO de la zona del
+     notch / Dynamic Island (env(safe-area-inset-top)) + 16px de hueco.
+     En móvil ocupa todo el ancho con margen 12px. En desktop, ancho fijo a la derecha. */
+  #notifCenterPanel {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    left: 12px;
+    right: 12px;
+    max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
+  }
+  @media (min-width: 640px) {
+    #notifCenterPanel {
+      left: auto;
+      right: 1.5rem;
+      width: 380px;
+    }
+  }
   .mb-bell-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
   .mb-bell-btn:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.25); }
   .mb-bell-dot { position: absolute; top: 7px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #00e696; border: 2px solid #06120c; animation: mb-bell-pulse 2s ease-in-out infinite; }
@@ -2259,9 +2277,9 @@
 </div>
 
 <!-- MODAL · Centro de notificaciones (campana) -->
-<div id="notifCenterModal" class="hidden fixed inset-0 z-[150] flex items-start justify-end px-4 py-6 sm:py-8" role="dialog" aria-modal="true">
+<div id="notifCenterModal" class="hidden fixed inset-0 z-[150]" role="dialog" aria-modal="true">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close-notif-center></div>
-  <div class="relative w-full max-w-md overflow-hidden rounded-3xl bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl max-h-[85vh] flex flex-col">
+  <div id="notifCenterPanel" class="relative overflow-hidden rounded-3xl bg-[#06120c]/95 border border-accent-neon/30 shadow-2xl flex flex-col">
     <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/10 flex-shrink-0">
       <div>
         <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">Notificaciones</span>
