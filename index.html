@@ -4341,7 +4341,7 @@ function streakWidgetHTML(client) {
           <p class="mt-0.5 text-[11px] text-ink-500"><span class="text-white font-medium">${visited}</span> / ${total} días conectado</p>
         </div>
       </div>
-      <button type="button" data-action="open-streak" class="inline-flex items-center gap-1.5 rounded-full border border-accent-neon/30 bg-accent-neon/5 px-3 py-1.5 text-xs font-medium text-accent-neon hover:bg-accent-neon/10">
+      <button type="button" data-action="open-streak" onclick="window.openStreakPopup && window.openStreakPopup(); return false;" class="inline-flex items-center gap-1.5 rounded-full border border-accent-neon/30 bg-accent-neon/5 px-3 py-1.5 text-xs font-medium text-accent-neon hover:bg-accent-neon/10">
         Ver calendario
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
@@ -4561,7 +4561,12 @@ function updateClientBottomNav(c, activeTab, showPremium, pendingCount, unfollow
       // Las "acciones" (como "Editar perfil") usan data-action en vez de data-ctab
       // y NO cambian de pestaña, abren un modal.
       const dataAttr = it.isAction ? `data-action="${it.key}"` : `data-ctab="${it.key}"`;
-      return `<button ${dataAttr} class="more-sheet-item flex items-center gap-4 w-full rounded-2xl border ${amberCls} px-4 py-3.5 text-left transition${activeRing}">
+      // Para "open-streak" añadimos onclick inline como fallback, por si la
+      // delegación de eventos no engancha (problema reportado en producción).
+      const inlineHandler = it.key === 'open-streak'
+        ? ` onclick="document.getElementById('moreSheet')?.classList.add('hidden'); window.openStreakPopup && window.openStreakPopup(); return false;"`
+        : '';
+      return `<button ${dataAttr}${inlineHandler} class="more-sheet-item flex items-center gap-4 w-full rounded-2xl border ${amberCls} px-4 py-3.5 text-left transition${activeRing}">
         <span class="flex h-10 w-10 items-center justify-center rounded-full ${iconColorCls}">${ICON[it.key]}</span>
         <span class="flex-1 min-w-0">
           <span class="block text-sm font-medium ${labelCls}">${it.label}</span>
@@ -6609,15 +6614,37 @@ document.addEventListener('click', (e) => {
 // (los antiguos pills de meses ya no existen — ahora son <details> nativos
 //  que se abren/cierran solos sin necesidad de listeners JS)
 
-// Botón "Ver calendario" del widget de racha: abre el popup manual del calendario
+// Función global expuesta para abrir el calendario de racha sin depender de
+// event delegation. La llamamos desde onclick inline en el HTML del botón.
+window.openStreakPopup = function openStreakPopup() {
+  try {
+    let c = (typeof clients !== 'undefined' && clients) ? clients.find(x => String(x.id) === String(activeClientId)) : null;
+    if (!c && typeof clients !== 'undefined' && clients && clients.length === 1) c = clients[0];
+    if (!c) {
+      if (window.showToast) showToast('No se pudo identificar tu cuenta. Recarga la página.', 'error');
+      else alert('No se pudo identificar tu cuenta. Recarga la página.');
+      return;
+    }
+    if (typeof showDailyStreakPopup !== 'function') {
+      if (window.showToast) showToast('Función no cargada. Recarga la página.', 'error');
+      else alert('Función no cargada. Recarga la página.');
+      return;
+    }
+    showDailyStreakPopup(c, false);
+  } catch (err) {
+    console.error('[open-streak]', err);
+    if (window.showToast) showToast('Error: ' + (err && err.message ? err.message : err), 'error');
+    else alert('Error: ' + (err && err.message ? err.message : err));
+  }
+};
+
+// Listener delegado como backup (por si el onclick inline no se ejecuta).
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action="open-streak"]');
   if (!btn) return;
   e.preventDefault();
-  const c = clients.find(x => String(x.id) === String(activeClientId));
-  if (c && typeof showDailyStreakPopup === 'function') {
-    showDailyStreakPopup(c, false);
-  }
+  e.stopPropagation();
+  window.openStreakPopup();
 });
 
 // Botón "← Volver" del foro (solo móvil): regresa al resumen o al panel admin.
@@ -9667,7 +9694,18 @@ window.showDailyStreakPopup = function(client, todayWasNew) {
   return showDailyStreakPopup(client, todayWasNew);
 };
 function showDailyStreakPopup(client, todayWasNew) {
-  if (!client) return;
+  try {
+    return _showDailyStreakPopupImpl(client, todayWasNew);
+  } catch (err) {
+    console.error('[showDailyStreakPopup]', err);
+    if (window.showToast) showToast('Error al pintar el calendario: ' + (err && err.message ? err.message : err), 'error');
+  }
+}
+function _showDailyStreakPopupImpl(client, todayWasNew) {
+  if (!client) {
+    if (window.showToast) showToast('Cliente no disponible para abrir el calendario', 'error');
+    return;
+  }
   // Garantía: si quedó un popup viejo en el DOM (por error de render previo),
   // lo borramos antes de crear el nuevo. Evita duplicados invisibles.
   const stale = document.getElementById('streakPopup');
