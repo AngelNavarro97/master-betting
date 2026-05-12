@@ -410,22 +410,35 @@
   }
   /* En MÓVIL, cuando el body lleva .mb-forum-fullscreen, el foro ocupa toda
      la pantalla, se oculta el bottom nav del cliente y se bloquea el scroll
-     del documento para que el teclado funcione bien (iOS/Android/PWA). */
+     del documento (html + body) para que el teclado funcione bien en PWA. */
   @media (max-width: 768px) {
-    body.mb-forum-fullscreen { overflow: hidden; overscroll-behavior: none; }
+    html.mb-forum-fullscreen-html,
+    body.mb-forum-fullscreen {
+      overflow: hidden !important;
+      overscroll-behavior: none;
+      height: 100%;
+      position: fixed;
+      width: 100%;
+    }
     body.mb-forum-fullscreen #clientBottomNav { display: none !important; }
   }
   @media (max-width: 768px) {
     .forum-wrap {
       grid-template-columns: 1fr;
       position: fixed;
-      inset: 0;                    /* top:0; right:0; bottom:0; left:0 */
-      height: 100dvh;              /* dvh = dynamic viewport height (encoge con el teclado) */
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;               /* fallback navegadores viejos */
+      height: 100svh;               /* small viewport (sin teclado) */
+      height: 100dvh;               /* dynamic viewport — encoge con teclado */
       max-height: none;
       min-height: 0;
       border-radius: 0;
       border: none;
-      z-index: 60;                 /* por encima del bottom nav cliente */
+      z-index: 9999;                /* por encima de TODO (nav, modales) */
       background: #06120c;
       display: flex;
       flex-direction: column;
@@ -3424,7 +3437,7 @@ function showClientView(clientId) {
   // "foro pantalla completa" desde una sesión anterior (puede haber quedado
   // pegado si la sesión se cerró estando en el foro).
   if (currentClientTab !== 'forum') {
-    document.body.classList.remove('mb-forum-fullscreen');
+    if (typeof exitForumFullscreen === 'function') exitForumFullscreen();
   }
   // Mostrar la barra inferior. En iOS PWA, cuando una pantalla cambia, el cálculo
   // de position:fixed se hace ANTES de pintar y a veces queda mal hasta el primer
@@ -3577,7 +3590,7 @@ function hideClientView() {
   clientPanel.classList.add('hidden');
   publicSite.classList.remove('hidden');
   document.body.classList.remove('client-active');
-  document.body.classList.remove('mb-forum-fullscreen');
+  if (typeof exitForumFullscreen === 'function') exitForumFullscreen();
   const nav = document.getElementById('clientBottomNav');
   if (nav) { nav.innerHTML = ''; nav.classList.add('hidden'); }
   // Cerrar sesión también en OneSignal
@@ -6412,7 +6425,7 @@ document.addEventListener('click', (e) => {
   const back = e.target.closest('[data-action="forum-back"]');
   if (!back) return;
   e.preventDefault();
-  document.body.classList.remove('mb-forum-fullscreen');
+  if (typeof exitForumFullscreen === 'function') exitForumFullscreen();
   currentClientTab = 'summary';
   rerenderCurrentClientPanel();
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -6425,7 +6438,7 @@ document.addEventListener('click', async (e) => {
   if (currentClientTab === newTab) return;
   // Salir del modo foro pantalla completa cuando se cambia a OTRA pestaña
   if (currentClientTab === 'forum' && newTab !== 'forum') {
-    document.body.classList.remove('mb-forum-fullscreen');
+    if (typeof exitForumFullscreen === 'function') exitForumFullscreen();
   }
   currentClientTab = newTab;
   // Pestañas que dependen de datos frescos (picks + followed_bets)
@@ -8591,14 +8604,20 @@ async function loadForumData() {
 // Renderiza el panel del foro DESPUÉS de que el DOM esté inyectado
 async function renderForumPanel() {
   if (!document.getElementById('forumRoot')) return; // no estamos en el tab Foro
-  // En móvil/PWA convertimos el foro en pantalla completa: el body se marca
-  // con .mb-forum-fullscreen para que se oculte el bottom nav y se bloquee
-  // el scroll del documento. Así, cuando se abre el teclado, iOS encoge el
-  // dvh y el composer queda siempre justo encima del teclado.
+  // Pantalla completa en móvil: bloqueamos scroll en <html> y <body> para
+  // que el viewport no se mueva y el .forum-wrap ocupe el 100% (con dvh).
+  document.documentElement.classList.add('mb-forum-fullscreen-html');
   document.body.classList.add('mb-forum-fullscreen');
   await loadForumData();
   renderForumChannels();
   await openForumChannel(forumCurrentChannelId, /*pushHistory=*/false);
+}
+
+// Helper centralizado para salir del modo "foro pantalla completa".
+// Lo llaman: el botón "← Volver", cambiar de pestaña y hideClientView.
+function exitForumFullscreen() {
+  document.documentElement.classList.remove('mb-forum-fullscreen-html');
+  document.body.classList.remove('mb-forum-fullscreen');
 }
 
 /* === Teclado en el foro (móvil/PWA) ==========================================
@@ -10312,9 +10331,12 @@ let _foroAdminState = {
 };
 
 async function openForoAdmin() {
-  // Asegurar que solo los admins pueden ver el panel.
-  // Reutilizamos el helper que ya existe en la sección del foro.
-  if (typeof _forumIsCurrentUserAdmin === 'function' && !_forumIsCurrentUserAdmin()) {
+  // Validamos admin con el EMAIL DE LA SESIÓN actual. No usamos activeClientId
+  // porque cuando se entra directamente al panel admin esa variable no apunta
+  // al propio admin (puede ser null o apuntar a otro cliente abierto antes).
+  const { data: { session } } = await sb.auth.getSession();
+  const email = (session?.user?.email || '').toLowerCase();
+  if (!isAdmin(email)) {
     document.getElementById('foroAdminTab').innerHTML =
       '<div class="mx-auto mt-8 max-w-md px-5"><div class="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-300">No tienes permisos para ver esta sección.</div></div>';
     return;
