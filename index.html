@@ -9668,6 +9668,10 @@ window.showDailyStreakPopup = function(client, todayWasNew) {
 };
 function showDailyStreakPopup(client, todayWasNew) {
   if (!client) return;
+  // Garantía: si quedó un popup viejo en el DOM (por error de render previo),
+  // lo borramos antes de crear el nuevo. Evita duplicados invisibles.
+  const stale = document.getElementById('streakPopup');
+  if (stale) stale.remove();
   const now = new Date();
   const year = now.getFullYear();
   const monthIdx = now.getMonth();
@@ -9725,7 +9729,10 @@ function showDailyStreakPopup(client, todayWasNew) {
 
   const wrap = document.createElement('div');
   wrap.id = 'streakPopup';
-  wrap.className = 'fixed inset-0 z-[150] flex items-center justify-center px-4 py-6';
+  wrap.className = 'fixed inset-0 flex items-center justify-center px-4 py-6';
+  // Z-index inline para garantizar que aparece por encima de TODO (bottom navs,
+  // foros pantalla completa, etc.) — independiente de Tailwind JIT.
+  wrap.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem;';
   wrap.setAttribute('role','dialog'); wrap.setAttribute('aria-modal','true');
   wrap.innerHTML = `
     <div class="absolute inset-0 bg-black/80 backdrop-blur-md" data-close-streak></div>
