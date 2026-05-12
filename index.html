@@ -408,19 +408,25 @@
     background: rgba(6,18,12,0.6);
     overflow: hidden;
   }
-  /* En MÓVIL, cuando el body lleva .mb-forum-fullscreen, el foro ocupa toda
-     la pantalla, se oculta el bottom nav del cliente y se bloquea el scroll
-     del documento (html + body) para que el teclado funcione bien en PWA. */
+  /* En MÓVIL, cuando el body lleva .mb-forum-fullscreen:
+       · bloqueamos scroll del documento (overflow:hidden)
+       · ocultamos bottom nav, header del cliente y el resto del clientPanel
+     NO usamos position:fixed en html/body: en iOS PWA con notch eso recorta
+     el viewport y el foro sale "cortado" porque inset:0 se mide contra el
+     body achicado en vez de la pantalla real. */
   @media (max-width: 768px) {
     html.mb-forum-fullscreen-html,
     body.mb-forum-fullscreen {
       overflow: hidden !important;
       overscroll-behavior: none;
-      height: 100%;
-      position: fixed;
-      width: 100%;
+      touch-action: none;
     }
-    body.mb-forum-fullscreen #clientBottomNav { display: none !important; }
+    body.mb-forum-fullscreen #clientBottomNav,
+    body.mb-forum-fullscreen #clientPanel > header { display: none !important; }
+    /* Ocultamos el saludo/tabs/contenido del clientPanel para no verlo "detrás" */
+    body.mb-forum-fullscreen #clientStatsContent > div > *:not(#forumRoot):not(.flex) {
+      visibility: hidden;
+    }
   }
   @media (max-width: 768px) {
     .forum-wrap {
@@ -574,6 +580,21 @@
   .forum-msg-plan { font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.3rem; border-radius: 0.25rem; letter-spacing: 0.05em; }
   .forum-msg-plan.accent { background: rgba(0,230,150,0.15); color: #00e696; }
   .forum-msg-plan.amber  { background: rgba(252,211,77,0.15); color: #fcd34d; }
+  /* Badge especial cuando el autor es admin: degradado dorado con estrella */
+  .forum-msg-admin-badge {
+    display: inline-flex; align-items: center; gap: 0.22rem;
+    font-size: 0.62rem; font-weight: 800;
+    padding: 0.12rem 0.42rem; border-radius: 0.3rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    background: linear-gradient(135deg, #fde68a, #f59e0b);
+    color: #422006;
+    border: 1px solid rgba(245,158,11,0.55);
+    box-shadow: 0 0 12px rgba(245,158,11,0.25);
+  }
+  .forum-msg-admin-badge svg { width: 10px; height: 10px; }
+  /* El nickname de un admin se ve dorado en el header del mensaje */
+  .forum-msg-author.is-admin { color: #fcd34d; }
+  .forum-msg-author.is-admin:hover { color: #fbbf24; }
   .forum-msg-time { font-size: 0.65rem; color: rgba(245,245,247,0.4); }
   .forum-msg-admin { display: inline-flex; align-items: center; justify-content: center; margin-left: auto; width: 22px; height: 22px; border: 1px solid rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); border-radius: 9999px; color: #f87171; cursor: pointer; opacity: 0.6; }
   .forum-msg-admin:hover { opacity: 1; }
@@ -1976,13 +1997,29 @@
     </div>
   </div>
 
-  <!-- TAB: FORO (admin moderación) -->
+  <!-- TAB: FORO (admin moderación + participación) -->
   <div id="foroAdminTab" class="hidden">
     <div class="mx-auto mt-8 max-w-[1200px] px-5 pb-12 sm:px-8 space-y-6">
       <div>
-        <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Moderación del foro</h2>
-        <p class="mt-1 text-sm text-ink-500">Revisa los últimos mensajes de todos los canales, borra mensajes problemáticos y gestiona usuarios bloqueados.</p>
+        <h2 class="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">Foro</h2>
+        <p class="mt-1 text-sm text-ink-500">Modera los mensajes o entra al foro como participante con tu identidad de <span class="text-amber-300">admin</span>.</p>
       </div>
+
+      <!-- Sub-tabs: Moderar / Participar -->
+      <div class="flex flex-wrap gap-2">
+        <button id="foroAdminSubtabMod" type="button" class="adm-subtab active rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-medium text-white hover:bg-white/15">Moderar</button>
+        <button id="foroAdminSubtabPart" type="button" class="adm-subtab rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-ink-200 hover:bg-white/10">Participar como Admin</button>
+      </div>
+
+      <!-- VISTA: Participar (entra al foro como admin) -->
+      <div id="foroAdminParticipateView" class="hidden">
+        <div id="adminForumMount" class="rounded-2xl border border-amber-400/20 bg-amber-400/[0.03] p-1">
+          <p class="text-center text-sm text-ink-500 py-8">Cargando foro...</p>
+        </div>
+      </div>
+
+      <!-- VISTA: Moderar (lista mensajes + bloqueados) -->
+      <div id="foroAdminModerateView">
 
       <!-- Filtros + acciones -->
       <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex flex-wrap items-center gap-3">
@@ -2019,6 +2056,7 @@
           <p class="text-sm text-ink-500">Cargando...</p>
         </div>
       </div>
+      </div> <!-- /#foroAdminModerateView -->
     </div>
   </div>
 
@@ -6420,12 +6458,18 @@ document.addEventListener('click', (e) => {
 // (los antiguos pills de meses ya no existen — ahora son <details> nativos
 //  que se abren/cierran solos sin necesidad de listeners JS)
 
-// Botón "← Volver" del foro (solo móvil): regresa al resumen
+// Botón "← Volver" del foro (solo móvil): regresa al resumen o al panel admin.
 document.addEventListener('click', (e) => {
   const back = e.target.closest('[data-action="forum-back"]');
   if (!back) return;
   e.preventDefault();
   if (typeof exitForumFullscreen === 'function') exitForumFullscreen();
+  // Si el admin estaba participando desde su panel, volvemos al subtab Moderar
+  const adminPanel = document.getElementById('adminPanel');
+  if (adminPanel && !adminPanel.classList.contains('hidden')) {
+    if (typeof switchForoAdminSubtab === 'function') switchForoAdminSubtab('mod');
+    return;
+  }
   currentClientTab = 'summary';
   rerenderCurrentClientPanel();
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -8604,8 +8648,20 @@ async function loadForumData() {
 // Renderiza el panel del foro DESPUÉS de que el DOM esté inyectado
 async function renderForumPanel() {
   if (!document.getElementById('forumRoot')) return; // no estamos en el tab Foro
-  // Pantalla completa en móvil: bloqueamos scroll en <html> y <body> para
-  // que el viewport no se mueva y el .forum-wrap ocupe el 100% (con dvh).
+  // Pantalla completa en móvil: TELETRANSPORTAMOS el forumRoot al <body> y
+  // dejamos un placeholder en su sitio para devolverlo al salir. Así ningún
+  // ancestor (clientPanel, clientStatsContent, container con padding…) puede
+  // recortarlo en iOS PWA con notch.
+  const root = document.getElementById('forumRoot');
+  if (root && window.matchMedia('(max-width: 768px)').matches && root.parentNode !== document.body) {
+    if (!document.getElementById('forumRootPlaceholder')) {
+      const ph = document.createElement('div');
+      ph.id = 'forumRootPlaceholder';
+      ph.style.display = 'none';
+      root.parentNode.insertBefore(ph, root);
+    }
+    document.body.appendChild(root);
+  }
   document.documentElement.classList.add('mb-forum-fullscreen-html');
   document.body.classList.add('mb-forum-fullscreen');
   await loadForumData();
@@ -8618,6 +8674,12 @@ async function renderForumPanel() {
 function exitForumFullscreen() {
   document.documentElement.classList.remove('mb-forum-fullscreen-html');
   document.body.classList.remove('mb-forum-fullscreen');
+  // Devolver el forumRoot a su sitio original (donde estaba el placeholder)
+  const root = document.getElementById('forumRoot');
+  const ph = document.getElementById('forumRootPlaceholder');
+  if (root && ph && root.parentNode === document.body) {
+    ph.parentNode.replaceChild(root, ph);
+  }
 }
 
 /* === Teclado en el foro (móvil/PWA) ==========================================
@@ -8788,10 +8850,16 @@ async function renderForumMessages() {
     const u = forumUserInfoCache[g.user_id];
     const nickname = (u && u.nickname) ? u.nickname : 'usuario';
     const plan = u && u.plan;
-    const planBadge = plan === 'Exclusive'
+    const isAuthorAdmin = !!(u && u.is_admin);
+    // Si el autor es admin, el badge de plan se sustituye por el badge Admin
+    const adminBadge = isAuthorAdmin
+      ? `<span class="forum-msg-admin-badge" title="Administrador">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Admin
+        </span>` : '';
+    const planBadge = !isAuthorAdmin && plan === 'Exclusive'
       ? '<span class="forum-msg-plan amber">EX</span>'
-      : plan === 'Pro' ? '<span class="forum-msg-plan accent">PRO</span>'
-      : '';
+      : (!isAuthorAdmin && plan === 'Pro' ? '<span class="forum-msg-plan accent">PRO</span>' : '');
     // Si el cache tiene avatar_url usamos foto custom; si no, SVG generado
     const avatar = mbAvatarHTML(u ? { id: g.user_id, nickname, avatar_url: u.avatar_url } : g.user_id, nickname, 36);
     const time = new Date(g.firstAt).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
@@ -8800,10 +8868,11 @@ async function renderForumMessages() {
       <button class="forum-msg-avatar" data-user-profile="${g.user_id}" aria-label="Ver perfil de ${nickname}">${avatar}</button>
       <div class="forum-msg-body">
         <div class="forum-msg-header">
-          <button class="forum-msg-author" data-user-profile="${g.user_id}">${(nickname||'').replace(/[<>]/g,'')}</button>
+          <button class="forum-msg-author ${isAuthorAdmin ? 'is-admin' : ''}" data-user-profile="${g.user_id}">${(nickname||'').replace(/[<>]/g,'')}</button>
+          ${adminBadge}
           ${planBadge}
           <span class="forum-msg-time">${time}</span>
-          ${isAdmn ? `<button class="forum-msg-admin" data-forum-block-user="${g.user_id}" title="Bloquear usuario">
+          ${isAdmn && !isAuthorAdmin ? `<button class="forum-msg-admin" data-forum-block-user="${g.user_id}" title="Bloquear usuario">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
           </button>` : ''}
         </div>
@@ -10341,6 +10410,12 @@ async function openForoAdmin() {
       '<div class="mx-auto mt-8 max-w-md px-5"><div class="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-300">No tienes permisos para ver esta sección.</div></div>';
     return;
   }
+  // Listeners para los sub-tabs Moderar / Participar (idempotente)
+  if (!_foroAdminState.subtabInit) {
+    document.getElementById('foroAdminSubtabMod')?.addEventListener('click', () => switchForoAdminSubtab('mod'));
+    document.getElementById('foroAdminSubtabPart')?.addEventListener('click', () => switchForoAdminSubtab('part'));
+    _foroAdminState.subtabInit = true;
+  }
   // Listeners (idempotentes: solo se enganchan una vez)
   if (!_foroAdminState.initialized) {
     document.getElementById('foroAdminRefreshBtn')?.addEventListener('click', loadForoAdminData);
@@ -10443,8 +10518,14 @@ function renderForoAdminMessages() {
     const u  = _foroAdminState.userInfoById[m.user_id];
     const ch = channelsById[m.channel_id];
     const nickname = u?.nickname || '(sin nickname)';
+    const isAuthorAdmin = !!(u && u.is_admin);
     const avatar = mbAvatarHTML(u ? { id: m.user_id, nickname, avatar_url: u.avatar_url } : m.user_id, nickname, 36);
-    const planBadge = u?.plan
+    const adminBadge = isAuthorAdmin
+      ? `<span class="ml-1 inline-flex items-center gap-1 rounded-md border border-amber-400/50 bg-gradient-to-br from-amber-200 to-amber-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-950 shadow">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Admin
+        </span>` : '';
+    const planBadge = !isAuthorAdmin && u?.plan
       ? `<span class="ml-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink-300">${u.plan}</span>`
       : '';
     const channelTag = ch
@@ -10458,16 +10539,19 @@ function renderForoAdminMessages() {
     const deleteBtn = !isDeleted
       ? `<button data-foro-admin-action="delete-msg" data-msg-id="${m.id}" class="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-medium text-red-300 hover:bg-red-500/20">Borrar</button>`
       : `<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-ink-500">Borrado</span>`;
-    const blockBtn = !isBlocked
-      ? `<button data-foro-admin-action="block-user" data-user-id="${m.user_id}" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-200 hover:bg-amber-400/20">Bloquear usuario</button>`
-      : `<span class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] text-amber-200">Ya bloqueado</span>`;
+    const blockBtn = isAuthorAdmin
+      ? '' // a un admin no se le bloquea desde el panel
+      : !isBlocked
+        ? `<button data-foro-admin-action="block-user" data-user-id="${m.user_id}" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-200 hover:bg-amber-400/20">Bloquear usuario</button>`
+        : `<span class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] text-amber-200">Ya bloqueado</span>`;
 
     return `<div class="rounded-2xl border ${isDeleted ? 'border-red-500/20 bg-red-500/[0.04]' : 'border-white/10 bg-white/[0.02]'} p-4">
       <div class="flex items-start gap-3">
         <div class="shrink-0">${avatar}</div>
         <div class="flex-1 min-w-0">
           <div class="flex flex-wrap items-center gap-1">
-            <span class="font-medium text-white text-sm">${nickname}</span>
+            <span class="font-medium ${isAuthorAdmin ? 'text-amber-300' : 'text-white'} text-sm">${nickname}</span>
+            ${adminBadge}
             ${planBadge}
             ${channelTag}
             <span class="ml-2 text-[11px] text-ink-500">${dateStr}</span>
@@ -10507,6 +10591,74 @@ function renderForoAdminBlocks() {
       <button data-foro-admin-action="unblock-user" data-block-id="${b.id}" class="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-400/20">Desbloquear</button>
     </div>`;
   }).join('');
+}
+
+// Alterna entre las dos vistas del panel Foro admin
+function switchForoAdminSubtab(which) {
+  const modBtn  = document.getElementById('foroAdminSubtabMod');
+  const partBtn = document.getElementById('foroAdminSubtabPart');
+  const modView  = document.getElementById('foroAdminModerateView');
+  const partView = document.getElementById('foroAdminParticipateView');
+  const activeCls = ['bg-white/10','text-white'];
+  const inactiveCls = ['bg-white/5','text-ink-200'];
+  if (which === 'part') {
+    modBtn?.classList.remove(...activeCls);  modBtn?.classList.add(...inactiveCls);
+    partBtn?.classList.add(...activeCls);    partBtn?.classList.remove(...inactiveCls);
+    modView?.classList.add('hidden');
+    partView?.classList.remove('hidden');
+    enterForoAsAdmin();
+  } else {
+    partBtn?.classList.remove(...activeCls); partBtn?.classList.add(...inactiveCls);
+    modBtn?.classList.add(...activeCls);     modBtn?.classList.remove(...inactiveCls);
+    partView?.classList.add('hidden');
+    modView?.classList.remove('hidden');
+  }
+}
+
+// Inicializa el panel del foro DENTRO del admin para que el admin participe
+// con su propia identidad (de su fila en `clients`). Para no chocar con la
+// lógica existente del foro (que asume activeClientId), seteamos
+// `activeClientId` a la id del admin de forma temporal.
+async function enterForoAsAdmin() {
+  const mountEl = document.getElementById('adminForumMount');
+  if (!mountEl) return;
+
+  const { data: { session } } = await sb.auth.getSession();
+  const email = session?.user?.email;
+  if (!email || !isAdmin(email)) {
+    mountEl.innerHTML = '<p class="text-sm text-red-300 p-6">No autorizado.</p>';
+    return;
+  }
+
+  // Buscar la fila del admin en clients
+  const { data: row, error } = await sb.from('clients')
+    .select('id, email, name, plan, status, nickname, avatar_url')
+    .eq('email', email).maybeSingle();
+  if (error || !row) {
+    mountEl.innerHTML = `<div class="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5 text-sm text-amber-200">
+      Tu usuario admin no tiene una ficha de cliente todavía. Pídele a Angel que te cree una con tu email para participar en el foro.
+    </div>`;
+    return;
+  }
+
+  // Asegurar que está en el array global `clients` (para que clients.find lo encuentre)
+  if (!clients.find(c => c.id === row.id)) {
+    clients.push({
+      id: row.id, email: row.email, name: row.name || 'Admin',
+      plan: row.plan || 'Exclusive', status: row.status || 'active',
+      nickname: row.nickname || null, avatar_url: row.avatar_url || null,
+      verified: true,
+    });
+  }
+
+  // Asignar activeClientId temporalmente al admin para que la UI del foro
+  // (renderForumPanel, openForumChannel, composer, realtime…) use su id.
+  activeClientId = row.id;
+
+  // Montamos el HTML del foro dentro del admin
+  mountEl.innerHTML = forumTabHTML(clients.find(c => c.id === row.id));
+  // Render efectivo del foro
+  setTimeout(() => renderForumPanel(), 50);
 }
 
 async function onForoAdminAction(e) {
