@@ -2970,30 +2970,20 @@
         <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Fecha del partido</span><input id="sfBetDate" type="datetime-local" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
       </div>
 
-      <!-- Bloque "evento" — mismo diseño que en el modal de pronóstico -->
-      <div class="event-row gradient-border rounded-xl bg-white/[0.02] p-4">
-        <div class="space-y-3">
-          <fieldset>
-            <legend class="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-500">Deporte</legend>
-            <div id="sfSportGroup" class="grid grid-cols-3 gap-2">
-              <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Fútbol"><input type="radio" name="sf-sport" value="Fútbol" class="hidden" checked/><span class="ev-sport-icon"></span> Fútbol</label>
-              <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Tenis"><input type="radio" name="sf-sport" value="Tenis" class="hidden"/><span class="ev-sport-icon"></span> Tenis</label>
-              <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Baloncesto"><input type="radio" name="sf-sport" value="Baloncesto" class="hidden"/><span class="ev-sport-icon"></span> Baloncesto</label>
-            </div>
-          </fieldset>
-          <input id="sfCompetition" list="sfCompetitionsList" type="text" placeholder="Competición (ej. Champions League)" class="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30"/>
-          <div class="grid grid-cols-2 gap-2">
-            <input id="sfTeam1" list="sfTeamsList" type="text" required maxlength="60" placeholder="Local" class="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30"/>
-            <input id="sfTeam2" list="sfTeamsList" type="text" required maxlength="60" placeholder="Visitante" class="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30"/>
-          </div>
-          <input id="sfBet" type="text" required maxlength="120" placeholder="Pronóstico (ej. Más de 2.5 goles)" class="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30"/>
-          <input id="sfOdd" type="number" step="0.01" min="1" required placeholder="Cuota (ej. 1.85)" class="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30"/>
+      <!-- Eventos (lista dinámica) — permite combinar 2+ picks en un solo paso -->
+      <div>
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Picks de este paso</span>
+          <button type="button" id="sfAddEventBtn" class="rounded-full border border-accent-neon/40 bg-accent-neon/5 px-3 py-1 text-[11px] font-medium text-accent-neon hover:bg-accent-neon/15">+ Combinar otro pick</button>
         </div>
+        <div id="sfEventsContainer" class="space-y-3"></div>
       </div>
 
-      <!-- Datalists locales: se rellenan al abrir el modal según deporte/competición elegidos -->
-      <datalist id="sfCompetitionsList"></datalist>
-      <datalist id="sfTeamsList"></datalist>
+      <!-- Cuota combinada total (visible solo cuando hay 2+ picks) -->
+      <div id="sfTotalOddsDisplay" class="hidden rounded-2xl border border-accent-neon/30 bg-accent-neon/5 p-4 text-center">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Cuota combinada total</div>
+        <div id="sfTotalOddsValue" class="mt-1 font-display text-3xl font-semibold text-gradient">0,00</div>
+      </div>
 
       <label class="block"><span class="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-ink-500">Stake (€) — cuánto se apuesta en este paso</span><input id="sfStake" type="number" step="0.01" min="0" required placeholder="10" class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"/></label>
 
@@ -8851,6 +8841,121 @@ function renderStepMatch(matchText, showNames = false) {
   return singleEventLine({ competition, team1, team2 }, showNames);
 }
 
+// HTML de una fila de evento dentro del modal de paso. Reutiliza las mismas
+// clases (.ev-*) que el modal de Nuevo Pronóstico para que las funciones
+// auxiliares (refreshRowCompetitionList, refreshRowTeamsList, renderQuickPicks)
+// se puedan reutilizar.
+function stepEventRowHTML(idx) {
+  return `<div class="event-row sf-event-row rounded-xl border border-white/10 bg-white/[0.02] p-4" data-event-idx="${idx}">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Pick <span class="event-num">1</span></span>
+      <button type="button" class="event-remove hidden text-[11px] font-medium text-red-300 hover:text-red-200">Eliminar</button>
+    </div>
+    <div class="space-y-3">
+      <fieldset>
+        <legend class="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-500">Deporte</legend>
+        <div class="grid grid-cols-3 gap-2">
+          <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Fútbol"><input type="radio" name="sf-sport-${idx}" value="Fútbol" class="hidden" checked/><span class="ev-sport-icon"></span> Fútbol</label>
+          <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Tenis"><input type="radio" name="sf-sport-${idx}" value="Tenis" class="hidden"/><span class="ev-sport-icon"></span> Tenis</label>
+          <label class="ev-sport flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[12px] text-white cursor-pointer transition" data-sport="Baloncesto"><input type="radio" name="sf-sport-${idx}" value="Baloncesto" class="hidden"/><span class="ev-sport-icon"></span> Baloncesto</label>
+        </div>
+      </fieldset>
+      <input type="text" class="ev-competition w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Competición (ej. Champions League)"/>
+      <div class="grid grid-cols-2 gap-2">
+        <input type="text" maxlength="60" class="ev-team1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Local"/>
+        <input type="text" maxlength="60" class="ev-team2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Visitante"/>
+      </div>
+      <input type="text" maxlength="120" class="ev-pick w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Pronóstico (ej. Más de 2.5 goles)"/>
+      <input type="number" step="0.01" min="1.01" class="ev-odds w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-white/30" placeholder="Cuota (ej. 1.85)"/>
+    </div>
+  </div>`;
+}
+
+function setupStepEventRow(rowEl) {
+  // Reutilizamos funciones que ya existen para el modal de "Nuevo Pronóstico"
+  if (typeof paintEventSportIcons === 'function') paintEventSportIcons(rowEl);
+  rowEl.querySelectorAll('input[type="radio"]').forEach(r => {
+    r.addEventListener('change', () => {
+      rowEl.querySelectorAll('.ev-sport').forEach(el => el.classList.toggle('active', el.dataset.sport === r.value));
+      if (typeof refreshRowCompetitionList === 'function') refreshRowCompetitionList(rowEl);
+      if (typeof renderQuickPicks === 'function') renderQuickPicks(rowEl);
+    });
+  });
+  const checked = rowEl.querySelector('input[type="radio"]:checked');
+  if (checked) rowEl.querySelectorAll('.ev-sport').forEach(el => el.classList.toggle('active', el.dataset.sport === checked.value));
+  rowEl.querySelector('.ev-odds').addEventListener('input', updateStepTotalOdds);
+  const compInput = rowEl.querySelector('.ev-competition');
+  if (compInput && typeof refreshRowTeamsList === 'function') compInput.addEventListener('input', () => refreshRowTeamsList(rowEl));
+  if (typeof refreshRowCompetitionList === 'function') refreshRowCompetitionList(rowEl);
+  if (typeof refreshRowTeamsList === 'function') refreshRowTeamsList(rowEl);
+  if (typeof renderQuickPicks === 'function') renderQuickPicks(rowEl);
+  // Botón eliminar (oculto si solo hay 1 fila)
+  rowEl.querySelector('.event-remove').addEventListener('click', () => {
+    rowEl.remove();
+    renumberStepEvents();
+    updateStepTotalOdds();
+    updateStepEventControls();
+  });
+}
+
+function renumberStepEvents() {
+  document.querySelectorAll('#sfEventsContainer .sf-event-row').forEach((r, i) => {
+    r.querySelector('.event-num').textContent = (i + 1);
+    r.dataset.eventIdx = i;
+  });
+}
+
+function updateStepEventControls() {
+  const rows = document.querySelectorAll('#sfEventsContainer .sf-event-row');
+  rows.forEach(r => {
+    const removeBtn = r.querySelector('.event-remove');
+    if (removeBtn) removeBtn.classList.toggle('hidden', rows.length === 1);
+  });
+}
+
+function updateStepTotalOdds() {
+  const rows = document.querySelectorAll('#sfEventsContainer .sf-event-row');
+  const display = document.getElementById('sfTotalOddsDisplay');
+  const value = document.getElementById('sfTotalOddsValue');
+  if (rows.length < 2) {
+    display?.classList.add('hidden');
+    return;
+  }
+  let total = 1;
+  rows.forEach(r => {
+    const odd = parseFloat(r.querySelector('.ev-odds').value) || 0;
+    if (odd > 0) total *= odd;
+  });
+  display?.classList.remove('hidden');
+  if (value) value.textContent = total.toFixed(2).replace('.', ',');
+  // También sincroniza el return suggestion (si se canjea, se basa en cuota total)
+  if (typeof updateReturnVisibility === 'function') updateReturnVisibility();
+}
+
+function addStepEventRow(prefill = null) {
+  const container = document.getElementById('sfEventsContainer');
+  const idx = container.children.length;
+  container.insertAdjacentHTML('beforeend', stepEventRowHTML(idx));
+  const rowEl = container.lastElementChild;
+  setupStepEventRow(rowEl);
+  if (prefill) {
+    // Precargamos campos (sport, competition, team1, team2, bet, odd)
+    if (prefill.sport) {
+      const radio = rowEl.querySelector(`input[type="radio"][value="${prefill.sport}"]`);
+      if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
+    }
+    rowEl.querySelector('.ev-competition').value = prefill.competition || '';
+    rowEl.querySelector('.ev-team1').value       = prefill.team1 || '';
+    rowEl.querySelector('.ev-team2').value       = prefill.team2 || '';
+    rowEl.querySelector('.ev-pick').value        = prefill.bet || '';
+    rowEl.querySelector('.ev-odds').value        = prefill.odd || '';
+    if (typeof refreshRowTeamsList === 'function') refreshRowTeamsList(rowEl);
+  }
+  renumberStepEvents();
+  updateStepEventControls();
+  updateStepTotalOdds();
+}
+
 function openStepModal(stepId) {
   const m = document.getElementById('stepModal');
   const isEdit = !!stepId;
@@ -8861,40 +8966,38 @@ function openStepModal(stepId) {
   document.getElementById('sfError').classList.add('hidden');
   document.getElementById('sfChallengeId').value = cId;
   document.getElementById('sfId').value = stepId || '';
+  // Limpiamos el contenedor de eventos
+  const container = document.getElementById('sfEventsContainer');
+  if (container) container.innerHTML = '';
+
   if (isEdit) {
     const s = (challengeSteps[cId]||[]).find(x => x.id === stepId);
     if (!s) return;
     document.getElementById('sfStepNumber').value = s.step_number;
-    // El competición + equipos vienen codificados en match_text → los extraemos
-    const { competition, team1, team2 } = parseMatchText(s.match_text);
-    document.getElementById('sfTeam1').value      = team1;
-    document.getElementById('sfTeam2').value      = team2;
-    document.getElementById('sfCompetition').value = competition;
-    document.getElementById('sfBet').value        = s.bet_description;
-    document.getElementById('sfOdd').value        = s.odd;
     document.getElementById('sfStake').value      = s.stake_amount;
     document.getElementById('sfBookmaker').value  = s.bookmaker || '';
     document.getElementById('sfBetDate').value    = s.bet_date ? new Date(s.bet_date).toISOString().slice(0,16) : '';
-    // El deporte lo deducimos de la competición (o lo dejamos en Fútbol si no se sabe)
-    const sport = sportFromCompetition(competition);
-    const sportRadio = document.querySelector(`#sfSportGroup input[type="radio"][value="${sport}"]`);
-    if (sportRadio) sportRadio.checked = true;
     document.querySelector(`input[name="sf-status"][value="${s.status||'pending'}"]`).checked = true;
     document.getElementById('sfReturn').value     = s.return_amount != null ? s.return_amount : '';
+    // Cargamos el paso como UN solo evento (no podemos saber si era combinada
+    // porque el schema no guarda los picks individuales). El admin puede
+    // editar y añadir más combinadas si quiere.
+    const { competition, team1, team2 } = parseMatchText(s.match_text);
+    const sport = sportFromCompetition(competition);
+    addStepEventRow({ sport, competition, team1, team2, bet: s.bet_description, odd: s.odd });
   } else {
     document.getElementById('stepForm').reset();
     const next = ((challengeSteps[cId]||[]).reduce((m,x)=>Math.max(m,x.step_number),0)) + 1;
     document.getElementById('sfStepNumber').value = next;
-    document.querySelector('#sfSportGroup input[type="radio"][value="Fútbol"]').checked = true;
     document.querySelector('input[name="sf-status"][value="pending"]').checked = true;
+    addStepEventRow();
   }
-  paintStepSportPills();
-  // Rellena los datalists con competiciones del deporte elegido y equipos de la competición elegida
-  refreshStepDatalists();
-  // Suggerir return_amount = stake * cuota
   updateReturnVisibility();
   m.classList.remove('hidden');
 }
+
+// Botón "+ Combinar otro pick"
+document.getElementById('sfAddEventBtn')?.addEventListener('click', () => addStepEventRow());
 function closeStepModal() { document.getElementById('stepModal').classList.add('hidden'); }
 document.querySelectorAll('[data-action="close-step"]').forEach(b => b.addEventListener('click', closeStepModal));
 
@@ -8903,19 +9006,24 @@ function updateReturnVisibility() {
   const wrap = document.getElementById('sfReturnWrap');
   if (status === 'won') {
     wrap.classList.remove('hidden');
-    // sugerir stake * odd si está vacío
+    // Sugerir stake * cuota_total (combinada) si está vacío
     const ret = document.getElementById('sfReturn');
     if (!ret.value) {
       const stake = Number(document.getElementById('sfStake').value || 0);
-      const odd   = Number(document.getElementById('sfOdd').value || 0);
-      if (stake && odd) ret.value = (stake * odd).toFixed(2);
+      // Cuota total: producto de las cuotas de cada evento del contenedor
+      let totalOdd = 1;
+      document.querySelectorAll('#sfEventsContainer .sf-event-row .ev-odds').forEach(inp => {
+        const o = parseFloat(inp.value) || 0;
+        if (o > 0) totalOdd *= o;
+      });
+      if (stake && totalOdd > 1) ret.value = (stake * totalOdd).toFixed(2);
     }
   } else {
     wrap.classList.add('hidden');
   }
 }
 document.querySelectorAll('input[name="sf-status"]').forEach(r => r.addEventListener('change', updateReturnVisibility));
-['sfStake','sfOdd'].forEach(id => document.getElementById(id).addEventListener('input', updateReturnVisibility));
+document.getElementById('sfStake')?.addEventListener('input', updateReturnVisibility);
 
 document.getElementById('sfDeleteBtn').addEventListener('click', async () => {
   const stepId = document.getElementById('sfId').value;
@@ -8933,29 +9041,65 @@ document.getElementById('stepForm').addEventListener('submit', async (e) => {
   const cId = document.getElementById('sfChallengeId').value;
   const status = document.querySelector('input[name="sf-status"]:checked')?.value || 'pending';
   const betDateRaw = document.getElementById('sfBetDate').value;
-  const team1       = document.getElementById('sfTeam1').value.trim();
-  const team2       = document.getElementById('sfTeam2').value.trim();
-  const competition = document.getElementById('sfCompetition').value.trim();
-  // Componemos el match_text incluyendo la competición si la han puesto:
-  //   "LaLiga · Real Madrid – Barcelona"
-  //   "Real Madrid – Barcelona" (si no hay competición)
-  const teamsPart = (team1 && team2) ? `${team1} – ${team2}` : (team1 || team2);
-  const matchText = competition ? `${competition} · ${teamsPart}` : teamsPart;
+  const err = document.getElementById('sfError');
+
+  // Recoger todos los eventos del contenedor
+  const rows = Array.from(document.querySelectorAll('#sfEventsContainer .sf-event-row'));
+  if (rows.length === 0) {
+    err.textContent = 'Añade al menos un pick.';
+    err.classList.remove('hidden');
+    return;
+  }
+  const events = rows.map(r => ({
+    sport: r.querySelector('input[type="radio"]:checked')?.value || 'Fútbol',
+    competition: r.querySelector('.ev-competition').value.trim(),
+    team1: r.querySelector('.ev-team1').value.trim(),
+    team2: r.querySelector('.ev-team2').value.trim(),
+    bet:   r.querySelector('.ev-pick').value.trim(),
+    odd:   parseFloat(r.querySelector('.ev-odds').value) || 0,
+  }));
+  // Validar cada evento
+  for (let i = 0; i < events.length; i++) {
+    const ev = events[i];
+    if (!ev.team1 || !ev.team2 || !ev.bet || !ev.odd || ev.odd < 1.01) {
+      err.textContent = `Faltan datos en el pick ${i+1}. Revisa Local, Visitante, Pronóstico y Cuota.`;
+      err.classList.remove('hidden');
+      return;
+    }
+  }
+
+  // Generar match_text, bet_description y cuota total según haya 1 o varias picks
+  let matchText, betDescription, totalOdd;
+  if (events.length === 1) {
+    const e0 = events[0];
+    const teamsPart = `${e0.team1} – ${e0.team2}`;
+    matchText      = e0.competition ? `${e0.competition} · ${teamsPart}` : teamsPart;
+    betDescription = e0.bet;
+    totalOdd       = e0.odd;
+  } else {
+    // Combinada de N picks
+    matchText = '🔗 Combinada · ' + events.map(ev => {
+      const teamsPart = `${ev.team1} – ${ev.team2}`;
+      return ev.competition ? `${ev.competition} · ${teamsPart}` : teamsPart;
+    }).join(' | ');
+    betDescription = events.map((ev, i) => `${i+1}. ${ev.bet} (cuota ${ev.odd.toFixed(2)})`).join(' + ');
+    totalOdd = events.reduce((acc, ev) => acc * ev.odd, 1);
+  }
+
   const payload = {
     challenge_id: cId,
     step_number: parseInt(document.getElementById('sfStepNumber').value, 10),
     match_text: matchText,
-    bet_description: document.getElementById('sfBet').value.trim(),
-    odd: Number(document.getElementById('sfOdd').value),
+    bet_description: betDescription,
+    odd: Number(totalOdd.toFixed(2)),
     stake_amount: Number(document.getElementById('sfStake').value),
     bookmaker: document.getElementById('sfBookmaker').value.trim() || null,
     status: status,
     bet_date: betDateRaw ? new Date(betDateRaw).toISOString() : null,
     return_amount: status === 'won' ? Number(document.getElementById('sfReturn').value) : null,
   };
-  const err = document.getElementById('sfError');
-  if (!team1 || !team2 || !payload.bet_description || isNaN(payload.odd) || isNaN(payload.stake_amount) || isNaN(payload.step_number)) {
-    err.textContent = 'Faltan datos del paso o tienen un formato incorrecto. Revisa Local, Visitante, Apuesta, Cuota y Stake.';
+  if (isNaN(payload.stake_amount) || isNaN(payload.step_number)) {
+    err.textContent = 'Revisa el Paso nº y el Stake.';
     err.classList.remove('hidden');
     return;
   }
