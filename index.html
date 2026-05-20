@@ -1392,15 +1392,15 @@
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
                 Edición especial
               </span>
-              <!-- Logo prominente del Mundial al lado del título -->
-              <div class="mt-4 flex items-center gap-3">
+              <!-- Logo + título centrados horizontalmente -->
+              <div class="mt-4 flex items-center justify-center gap-4">
                 <img src="logo-mundial.cc.png" alt="Logo Mundial 2026" class="h-16 w-16 sm:h-20 sm:w-20 object-contain shrink-0" style="filter: drop-shadow(0 6px 18px rgba(220,38,38,0.35)) drop-shadow(0 0 12px rgba(252,211,77,0.25));" onerror="this.style.display='none'"/>
-                <div class="min-w-0 flex-1">
+                <div class="text-left">
                   <h3 class="font-fifa text-3xl sm:text-4xl tracking-tight text-white leading-[0.95]" style="letter-spacing:0.02em;">MUNDIAL</h3>
                   <h3 class="font-fifa text-5xl sm:text-6xl tracking-tight leading-[0.95] mundial-text-gradient" style="letter-spacing:0.02em;">26</h3>
                 </div>
               </div>
-              <p class="mt-4 text-sm text-ink-200/80">El pase completo del torneo más grande del mundo.</p>
+              <p class="mt-4 text-center text-sm text-ink-200/80">El pase completo del torneo más grande del mundo.</p>
               <!-- Precio (24,99 €). Se oculta visualmente cuando aún quedan plazas gratis -->
               <div class="mt-7 flex items-baseline gap-1.5" id="mundialPriceWrap">
                 <span class="font-display text-5xl font-semibold tracking-tight text-white" id="mundialPriceMain">24,99</span>
@@ -1498,7 +1498,7 @@
         banner.classList.remove('hidden');
         priceWrap.style.display = 'none'; // ocultamos el precio
         remainEl.textContent = remaining;
-        ctaText.innerHTML = 'Reclamar mi plaza <span class="font-fifa">GRATIS</span>';
+        ctaText.textContent = 'Reclamar mi plaza GRATIS';
         ctaBtn.dataset.mundialMode = 'free';
       } else {
         // Plazas agotadas: pasamos al flujo de pago
