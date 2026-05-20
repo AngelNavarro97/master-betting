@@ -334,6 +334,97 @@
   }
   .bg-plan-basic     { background: linear-gradient(135deg, rgba(110,231,183,0.16), rgba(110,231,183,0.03)); }
   .bg-plan-pro       { background: linear-gradient(135deg, rgba(34,197,94,0.26),  rgba(16,185,129,0.10)); }
+
+  /* === FONT FIFA-26 === fuente oficial subida en la raíz. Intenta woff2 → woff → ttf */
+  @font-face {
+    font-family: 'fifa-26';
+    src: url('fifa-26.woff2') format('woff2'),
+         url('fifa-26.woff')  format('woff'),
+         url('fifa-26.ttf')   format('truetype'),
+         url('fifa-26.otf')   format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+  .font-fifa { font-family: 'fifa-26', 'Inter', sans-serif; }
+
+  /* === PLAN MUNDIAL 2026 — estética oficial del torneo === */
+  /* Paleta inspirada en la identidad oficial FIFA Mundial 2026: morado eléctrico,
+     rojo intenso, naranja vibrante, dorado y toques verdes (las 3 anfitrionas:
+     USA · Canadá · México). Se aplica solo a este plan/retos. */
+  .bg-plan-mundial {
+    background:
+      radial-gradient(circle at 12% 18%, rgba(124,58,237,0.55) 0%, transparent 45%),
+      radial-gradient(circle at 88% 84%, rgba(245,158,11,0.45) 0%, transparent 50%),
+      radial-gradient(circle at 70% 14%, rgba(220,38,38,0.40) 0%, transparent 42%),
+      linear-gradient(135deg, #1a0a1f 0%, #2a0814 50%, #1a0a07 100%);
+    position: relative;
+  }
+  .bg-plan-mundial::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(115deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(25deg, rgba(255,255,255,0.020) 0 1px, transparent 1px 80px);
+    pointer-events: none;
+  }
+  .mundial-border {
+    background:
+      linear-gradient(135deg, #7c3aed, #dc2626, #f59e0b) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    padding: 2px; border-radius: 1.25rem;
+  }
+  .mundial-text-gradient {
+    background: linear-gradient(135deg, #fcd34d 0%, #f97316 40%, #ef4444 75%, #c026d3 100%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+  .mundial-chip {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.25rem 0.7rem; border-radius: 9999px;
+    background: linear-gradient(135deg, rgba(252,211,77,0.18), rgba(220,38,38,0.18));
+    border: 1px solid rgba(252,211,77,0.45);
+    color: #fcd34d; font-size: 0.65rem; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .mundial-cta {
+    background: linear-gradient(135deg, #fcd34d 0%, #f97316 50%, #ef4444 100%);
+    color: #1a0a07; font-weight: 700;
+    box-shadow: 0 8px 24px -8px rgba(245,158,11,0.55), 0 0 0 1px rgba(252,211,77,0.4) inset;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .mundial-cta:hover { transform: translateY(-1px); box-shadow: 0 12px 32px -8px rgba(245,158,11,0.7), 0 0 0 1px rgba(252,211,77,0.55) inset; }
+  .mundial-feature-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: linear-gradient(135deg, #fcd34d, #ef4444);
+    color: #1a0a07; font-weight: 800; font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  /* === Toggle Mensual / Anual de los planes === */
+  .billing-toggle {
+    display: inline-flex; padding: 4px; border-radius: 9999px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10);
+  }
+  .billing-toggle button {
+    padding: 0.45rem 1.1rem; border-radius: 9999px;
+    font-size: 0.8rem; font-weight: 500;
+    color: rgba(245,245,247,0.6); transition: color 0.15s, background 0.15s;
+    cursor: pointer; background: transparent; border: 0;
+    position: relative;
+  }
+  .billing-toggle button.active {
+    background: #fff; color: #06120c;
+  }
+  .billing-toggle .save-badge {
+    margin-left: 0.4rem; padding: 0.05rem 0.4rem; border-radius: 9999px;
+    background: rgba(0,230,150,0.15); color: #00e696;
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.05em;
+  }
+  .billing-toggle button.active .save-badge {
+    background: rgba(220,38,38,0.15); color: #dc2626;
+  }
   .bg-plan-exclusive { background: linear-gradient(135deg, rgba(0,230,150,0.32), rgba(6,78,59,0.20)); }
 
   /* Borde de tarjetas: simple, sin trucos de máscara CSS (que fallan en iOS PWA
@@ -1220,12 +1311,19 @@
 
   <!-- PLANES -->
   <section id="planes" class="relative section overflow-hidden">
-    <!-- (overlay de la sección eliminado para no crear bloques visibles) -->
     <div class="mx-auto max-w-6xl px-5 sm:px-6">
-      <div class="mb-10 text-center sm:mb-16">
+      <div class="mb-8 text-center sm:mb-10">
         <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">Planes</span>
         <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl lg:text-6xl">Elige el plan que <span class="text-gradient">se adapta a ti</span></h2>
-        <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Tres niveles pensados para distintos perfiles. Cancela cuando quieras. Sin permanencia.</p>
+        <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Cancela cuando quieras. Sin permanencia. <span class="text-accent-neon font-medium">Ahorra 25%</span> con el pago anual.</p>
+      </div>
+
+      <!-- Toggle Mensual / Anual -->
+      <div class="mb-10 flex justify-center sm:mb-12">
+        <div class="billing-toggle" role="tablist" aria-label="Periodo de facturación">
+          <button type="button" data-billing="monthly" class="active">Mensual</button>
+          <button type="button" data-billing="yearly">Anual <span class="save-badge">−25%</span></button>
+        </div>
       </div>
 
       <div class="grid gap-5 sm:gap-6 md:grid-cols-3 md:items-stretch">
@@ -1239,7 +1337,11 @@
             </svg>
             <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Basic</h3></div>
             <p class="mt-2 text-sm text-ink-200/70">Empieza con la disciplina correcta.</p>
-            <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">9,99</span><span class="text-sm text-ink-500">€/mes</span></div>
+            <div class="mt-8 flex items-baseline gap-1.5">
+              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="9,99" data-price-yearly="7,49">9,99</span>
+              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+            </div>
+            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">89,99 €/año</span> · ahorras 30 €</p>
             <button type="button" data-stripe-plan="Basic" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
@@ -1265,47 +1367,181 @@
               <span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>
             </div>
             <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
-            <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">19,99</span><span class="text-sm text-ink-500">€/mes</span></div>
+            <div class="mt-8 flex items-baseline gap-1.5">
+              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="19,99" data-price-yearly="14,99">19,99</span>
+              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+            </div>
+            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">179,99 €/año</span> · ahorras 60 €</p>
             <button type="button" data-stripe-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>16 pronósticos mensuales</span></li>
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>1 pronóstico del plan EXCLUSIVE incluido</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>1 pronóstico premium del Mundial incluido</span></li>
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Acceso al chat privado de Telegram</span></li>
               <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Soporte prioritario y comunidad activa</span></li>
             </ul>
           </div>
         </div>
-        <!-- EXCLUSIVE -->
+        <!-- MUNDIAL 2026 — sustituye temporalmente al plan Exclusive -->
         <div class="relative">
-          <div class="lift gradient-border bg-plan-exclusive relative h-full overflow-hidden p-6 sm:p-8">
-            <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-40 blur-3xl" style="background: linear-gradient(135deg,#00e696,#10b981,#064e3b);"></div>
-            <svg class="pointer-events-none absolute -bottom-4 -right-4 h-40 w-44 sm:h-44 sm:w-52 opacity-[0.22]" viewBox="0 0 200 140" fill="none" aria-hidden="true">
-              <g stroke="#00e696" stroke-width="1" opacity="0.6">
-                <polygon points="50,30 78,46 78,78 50,94 22,78 22,46"/>
-                <polygon points="106,62 134,78 134,110 106,126 78,110 78,78"/>
-                <polygon points="106,-2 134,14 134,46 106,62 78,46 78,14"/>
-                <polygon points="162,30 190,46 190,78 162,94 134,78 134,46"/>
-              </g>
-            </svg>
-            <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Exclusive</h3></div>
-            <p class="mt-2 text-sm text-ink-200/70">El círculo cerrado. Reembolso garantizado.</p>
-            <div class="mt-8 flex items-baseline gap-1.5"><span class="font-display text-5xl font-semibold tracking-tight text-white">34,99</span><span class="text-sm text-ink-500">€/mes</span></div>
-            <button type="button" data-stripe-plan="Exclusive" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</button>
-            <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
-            <ul class="space-y-3.5 text-sm text-ink-200/85">
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>25 pronósticos mensuales</span></li>
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>2 funbets exclusivas al mes</span></li>
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Acceso gratuito a retos durante la suscripción</span></li>
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Acceso al chat privado de Telegram</span></li>
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Reembolso directo si no obtienes ganancias</span></li>
-            </ul>
+          <div class="lift relative h-full overflow-hidden rounded-2xl bg-plan-mundial p-6 sm:p-8" style="border:1.5px solid rgba(252,211,77,0.4);">
+            <!-- Patrón decorativo + logo del mundial -->
+            <img src="mundial2026.png" alt="Mundial 2026" class="pointer-events-none absolute -bottom-8 -right-8 h-48 w-48 sm:h-56 sm:w-56 opacity-25 object-contain" onerror="this.style.display='none'"/>
+            <div class="relative">
+              <span class="mundial-chip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+                Edición especial
+              </span>
+              <h3 class="mt-3 font-fifa text-4xl font-semibold tracking-tight text-white" style="letter-spacing:-0.02em;">Mundial <span class="mundial-text-gradient">2026</span></h3>
+              <p class="mt-2 text-sm text-ink-200/80">El pase completo del torneo más grande del mundo.</p>
+              <!-- Precio (24,99 €). Se oculta visualmente cuando aún quedan plazas gratis -->
+              <div class="mt-7 flex items-baseline gap-1.5" id="mundialPriceWrap">
+                <span class="font-display text-5xl font-semibold tracking-tight text-white" id="mundialPriceMain">24,99</span>
+                <span class="text-sm text-ink-300">€ pase único</span>
+              </div>
+              <p class="mt-1 text-[11px] text-amber-200/85"><span class="text-white font-medium">11 jun – 19 jul 2026</span> · todo el torneo</p>
+
+              <!-- Contador de plazas gratis (solo visible si quedan disponibles) -->
+              <div id="mundialFreeBanner" class="hidden mt-5 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-red-500/15 px-4 py-3 text-center">
+                <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Oferta de lanzamiento</div>
+                <div class="mt-1 text-sm font-medium text-white">
+                  <span id="mundialFreeRemaining" class="font-display text-2xl font-semibold text-amber-300">—</span>
+                  <span class="text-amber-200/80">de 20 plazas <span class="font-fifa">GRATIS</span></span>
+                </div>
+                <div class="mt-1 text-[11px] text-amber-100/70">Los 20 primeros se llevan el pase entero del Mundial sin pagar</div>
+              </div>
+
+              <button type="button" id="mundialCtaBtn" class="mundial-cta mt-5 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm">
+                <span id="mundialCtaText">Conseguir mi pase</span>
+              </button>
+              <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(252,211,77,0.30), transparent);"></div>
+              <ul class="space-y-3.5 text-sm text-white/85">
+                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">∞</span><span><span class="text-white font-medium">Pronósticos ilimitados</span> durante toda la temporada del Mundial</span></li>
+                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">★</span><span>Canal de <span class="text-amber-300 font-medium">Telegram exclusivo Mundial 2026</span></span></li>
+                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">🏆</span><span>Acceso a <span class="text-amber-300 font-medium">todos los retos del Mundial</span></span></li>
+                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">€</span><span><span class="text-white font-medium">Reembolso del 100%</span> si no obtienes beneficios al final del torneo</span></li>
+                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">✓</span><span>Análisis pre-partido y comunidad activa 24/7</span></li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
-      <p class="mt-10 text-center text-xs text-ink-500 sm:mt-12">Los precios están en euros, IVA incluido. Renovación mensual automática.</p>
+      <p class="mt-10 text-center text-xs text-ink-500 sm:mt-12">Los precios están en euros, IVA incluido. <span class="text-amber-300/80">El pase Mundial 2026 es válido hasta el final del torneo.</span></p>
     </div>
   </section>
+
+  <script>
+    // Toggle Mensual / Anual: cambia los precios y muestra "ahorro anual"
+    (function() {
+      const toggle = document.querySelector('.billing-toggle');
+      if (!toggle) return;
+      toggle.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-billing]');
+        if (!btn) return;
+        const period = btn.dataset.billing;
+        toggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+        // Cambia todos los precios y labels
+        document.querySelectorAll('[data-price-monthly]').forEach(el => {
+          const m = el.dataset.priceMonthly, y = el.dataset.priceYearly;
+          el.textContent = (period === 'yearly' ? y : m);
+        });
+        document.querySelectorAll('[data-period-label]').forEach(el => {
+          el.textContent = (period === 'yearly' ? '€/mes en plan anual' : '€/mes');
+        });
+        document.querySelectorAll('[data-yearly-extra]').forEach(el => {
+          el.style.display = (period === 'yearly' ? 'block' : 'none');
+        });
+      });
+    })();
+  </script>
+
+  <script>
+    /* === MUNDIAL 2026 · OFERTA DE LANZAMIENTO ===
+       Los 20 primeros suscriptores se llevan el pase GRATIS.
+       Cuando ya hay 20 inscritos, el botón redirige al Stripe Checkout con el
+       price ID configurado. */
+    const MUNDIAL_FREE_LIMIT     = 20;
+    const MUNDIAL_PLAN_NAME      = 'Mundial2026';
+    // Stripe Price ID del pase de pago (24,99 €). Si tienes un Payment Link
+    // creado en el dashboard de Stripe con este price, pega aquí esa URL
+    // (https://buy.stripe.com/xxxxx) para redirección directa sin edge function.
+    const MUNDIAL_STRIPE_PRICE_ID    = 'price_1TZ4ZQ7VRxyml9kJmeFgOORs';
+    const MUNDIAL_STRIPE_PAYMENT_URL = 'https://buy.stripe.com/4gM6oB7Bz4xx7RS4DW6sw01';
+
+    async function updateMundialAvailability() {
+      const banner = document.getElementById('mundialFreeBanner');
+      const priceWrap = document.getElementById('mundialPriceWrap');
+      const remainEl  = document.getElementById('mundialFreeRemaining');
+      const ctaText   = document.getElementById('mundialCtaText');
+      const ctaBtn    = document.getElementById('mundialCtaBtn');
+      if (!banner || !priceWrap || !remainEl || !ctaText || !ctaBtn) return;
+      let inscritos = 0;
+      try {
+        // Si Supabase está disponible (sb global), contamos clientes con plan Mundial2026
+        if (typeof sb !== 'undefined' && sb && sb.from) {
+          const { count, error } = await sb.from('clients')
+            .select('id', { count: 'exact', head: true })
+            .eq('plan', MUNDIAL_PLAN_NAME);
+          if (!error) inscritos = count || 0;
+        }
+      } catch(e) { console.warn('[mundial avail]', e); }
+      const remaining = Math.max(0, MUNDIAL_FREE_LIMIT - inscritos);
+      if (remaining > 0) {
+        // Quedan plazas gratis
+        banner.classList.remove('hidden');
+        priceWrap.style.display = 'none'; // ocultamos el precio
+        remainEl.textContent = remaining;
+        ctaText.innerHTML = 'Reclamar mi plaza <span class="font-fifa">GRATIS</span>';
+        ctaBtn.dataset.mundialMode = 'free';
+      } else {
+        // Plazas agotadas: pasamos al flujo de pago
+        banner.classList.add('hidden');
+        priceWrap.style.display = '';
+        ctaText.textContent = 'Conseguir mi pase · 24,99 €';
+        ctaBtn.dataset.mundialMode = 'paid';
+      }
+    }
+
+    document.getElementById('mundialCtaBtn')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const mode = e.currentTarget.dataset.mundialMode || 'free';
+      if (mode === 'paid') {
+        // Flujo de pago — preferimos Payment Link directo si está configurado;
+        // si no, caemos al flujo Stripe Checkout estándar (vía edge function).
+        if (MUNDIAL_STRIPE_PAYMENT_URL) {
+          window.location.href = MUNDIAL_STRIPE_PAYMENT_URL;
+          return;
+        }
+        // Flujo edge function: la función stripe-checkout debe reconocer
+        // 'Mundial2026' y usar el price ID. Reusa el flujo estándar:
+        if (typeof pendingCheckout !== 'undefined') {
+          window.pendingCheckout = { plan: MUNDIAL_PLAN_NAME, email: null };
+        }
+        if (typeof openAgeModal === 'function') openAgeModal();
+        return;
+      }
+      // Flujo GRATIS: abre el modal de registro con plan Mundial2026 preseleccionado
+      if (typeof pendingCheckout !== 'undefined') {
+        window.pendingCheckout = { plan: MUNDIAL_PLAN_NAME, email: null, isFree: true };
+      }
+      if (typeof openAgeModal === 'function') openAgeModal();
+    });
+
+    // Comprueba disponibilidad al cargar la página (y cada vez que se reabra Visibility)
+    function _mundialBootstrap() {
+      if (typeof sb !== 'undefined' && sb && sb.from) {
+        updateMundialAvailability();
+      } else {
+        setTimeout(_mundialBootstrap, 500);
+      }
+    }
+    _mundialBootstrap();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') updateMundialAvailability();
+    });
+    // Exponemos también la función por si la quieres llamar tras un nuevo registro
+    window.updateMundialAvailability = updateMundialAvailability;
+  </script>
 
   <!-- CÓMO FUNCIONA -->
   <section class="relative section">
