@@ -3099,6 +3099,7 @@
           <label class="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Basic" class="accent-emerald-400"/> Basic</label>
           <label class="flex items-center gap-2 rounded-full border border-accent-neon/30 bg-accent-neon/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Pro" class="accent-emerald-400"/> Pro</label>
           <label class="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Exclusive" class="accent-emerald-400"/> Exclusive</label>
+          <label class="flex items-center gap-2 rounded-full border border-red-500/40 bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-red-500/15 px-3 py-1.5 text-sm text-amber-200 cursor-pointer"><input type="checkbox" name="np-plan" value="Mundial2026" class="accent-amber-400"/> <span class="font-fifa">MUNDIAL 26</span></label>
         </div>
       </fieldset>
 
@@ -6602,22 +6603,36 @@ function availablePickCard(p, c, forAdmin) {
   const fe = pickFirstEvent(p);
   const isCombined = pickIsCombined(p);
   const totalOdds = pickTotalOdds(p);
+  const isMundial = Array.isArray(p.plans) && p.plans.includes('Mundial2026');
   const headerLabel = isCombined ? `Combinada (${p.events.length} eventos)` : fe.sport;
+  // Badge especial del Mundial (font FIFA-26 + degradado dorado→rojo)
+  const mundialBadge = isMundial
+    ? `<span class="inline-flex items-center gap-1 rounded-md px-2 py-0.5" style="background:linear-gradient(135deg,#fcd34d,#f97316,#dc2626);color:#1a0a07;font-weight:800;font-size:10px;letter-spacing:0.06em;">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+        <span class="font-fifa">MUNDIAL 26</span>
+      </span>`
+    : '';
   // Cabecera: deporte · fecha · tier · (planes solo para admin)
   const headerLineHTML = `<div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
     <span class="inline-flex items-center gap-1.5">${sportIcon(fe.sport,16)}<span>${headerLabel}</span></span>
     <span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
+    ${mundialBadge}
     ${tierBadge(p)}
     ${forAdmin ? `<span class="ml-auto">${pickBadges(p)}</span>` : ''}
   </div>`;
   // Visual del partido (logos a ancho completo, sin nada al lado que recorte)
   const eventVisual = eventBlock(p, true);
-  // Si es un pick Exclusive, marco con borde amarillo. Igual que en followedBetCardClient,
-  // pasamos a borde simple con rounded-2xl para evitar el cuadrado fantasma del gradient-border.
-  const borderCls = p.tier === 'exclusive'
-    ? 'rounded-2xl border border-amber-400/50'
-    : 'rounded-2xl border border-white/10';
-  return `<article class="${borderCls} relative overflow-hidden bg-white/[0.02] p-4 sm:p-5">
+  // Si es Mundial, estética del torneo (degradados del torneo + borde dorado)
+  // Si es Exclusive, borde amarillo. Si no, borde estándar.
+  let borderCls = 'rounded-2xl border border-white/10';
+  let extraStyle = '';
+  if (isMundial) {
+    borderCls = 'rounded-2xl bg-plan-mundial';
+    extraStyle = 'border:1.5px solid rgba(252,211,77,0.40);';
+  } else if (p.tier === 'exclusive') {
+    borderCls = 'rounded-2xl border border-amber-400/50';
+  }
+  return `<article class="${borderCls} relative overflow-hidden ${isMundial ? '' : 'bg-white/[0.02]'} p-4 sm:p-5" style="${extraStyle}">
     ${headerLineHTML}
     ${eventVisual ? `<div class="mt-3">${eventVisual}</div>` : `<h4 class="mt-2.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
     ${isCombined ? '' : `<p class="mt-2.5 text-sm text-ink-200/85">${fe.pickType}</p>`}
@@ -11834,12 +11849,28 @@ function retosClientHTML(c) {
 }
 
 // Card BLOQUEADA (cliente que aún no tiene desbloqueado el reto)
+// Detecta si un reto pertenece al Mundial 26 (por el título)
+function isMundialChallenge(ch) {
+  if (!ch) return false;
+  const t = (ch.title || '').toLowerCase();
+  return t.includes('mundial') && (t.includes('26') || t.includes('2026'));
+}
+
+// Badge del Mundial reutilizable en las cards de retos
+function _mundialBadgePill() {
+  return `<span class="inline-flex items-center gap-1 rounded-md px-2 py-0.5" style="background:linear-gradient(135deg,#fcd34d,#f97316,#dc2626);color:#1a0a07;font-weight:800;font-size:10px;letter-spacing:0.06em;">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+    <span class="font-fifa">MUNDIAL 26</span>
+  </span>`;
+}
+
 function retosLockedCardHTML(ch, c) {
   const start = Number(ch.starting_amount||0);
   const goal  = Number(ch.goal_amount||0);
   const isExclusive = c.plan === 'Exclusive';
   const canClaimFree = isExclusive && ch.is_free_for_exclusive && !exclusiveFreeClaimUsed();
   const priceTxt = `${Number(ch.price||25).toFixed(2).replace('.',',')}€`;
+  const isMundial = isMundialChallenge(ch);
 
   let cta = '';
   if (canClaimFree) {
@@ -11859,23 +11890,35 @@ function retosLockedCardHTML(ch, c) {
     </button>`;
   }
 
-  const tag = ch.is_free_for_exclusive
-    ? `<span class="rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Gratis Exclusive</span>`
-    : '';
+  const tag = isMundial
+    ? _mundialBadgePill()
+    : (ch.is_free_for_exclusive
+      ? `<span class="rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Gratis Exclusive</span>`
+      : '');
 
-  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5">
-    <div class="flex items-start justify-between gap-2 flex-wrap">
+  // Estética especial del Mundial 26 sobre el fondo del torneo
+  const cardCls = isMundial
+    ? 'relative overflow-hidden rounded-2xl bg-plan-mundial p-5'
+    : 'gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5';
+  const cardStyle = isMundial ? 'border:1.5px solid rgba(252,211,77,0.40);' : '';
+  // Pill del progreso (start → goal) en colores del Mundial cuando aplica
+  const progressPillCls = isMundial
+    ? 'inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-400/10 px-2.5 py-0.5 text-xs font-semibold text-amber-300'
+    : 'inline-flex items-center gap-1.5 rounded-full border border-accent-neon/40 bg-accent-neon/10 px-2.5 py-0.5 text-xs font-semibold text-accent-neon';
+
+  return `<article class="${cardCls}" style="${cardStyle}">
+    <div class="relative flex items-start justify-between gap-2 flex-wrap">
       <div class="min-w-0">
         <div class="flex items-center gap-1.5">
-          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Reto</span>
-          <span class="inline-flex items-center gap-1.5 rounded-full border border-accent-neon/40 bg-accent-neon/10 px-2.5 py-0.5 text-xs font-semibold text-accent-neon">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] ${isMundial ? 'text-amber-200/80' : 'text-ink-500'}">Reto</span>
+          <span class="${progressPillCls}">
             <span>${fmtMoneyShort(start)}</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             <span>${fmtMoneyShort(goal)}</span>
           </span>
         </div>
         <h4 class="mt-2 font-display text-lg font-semibold text-white break-words">${escapeHtml(ch.title)}</h4>
-        ${ch.description ? `<p class="mt-1 text-sm text-ink-500">${escapeHtml(ch.description)}</p>` : ''}
+        ${ch.description ? `<p class="mt-1 text-sm ${isMundial ? 'text-ink-200/75' : 'text-ink-500'}">${escapeHtml(ch.description)}</p>` : ''}
       </div>
       ${tag}
     </div>
@@ -11906,6 +11949,7 @@ function retosUnlockedCardHTML(ch, c) {
   const now   = Number(ch.current_amount||0);
   const denom = Math.max(0.01, goal - start);
   const progress = Math.max(0, Math.min(100, ((now - start) / denom) * 100));
+  const isMundial = isMundialChallenge(ch);
 
   const steps = (clientStepsByChallenge[ch.id] || []).slice().sort((a,b) => a.step_number - b.step_number);
   const pendingStep = steps.find(s => s.status === 'pending');
@@ -11946,8 +11990,14 @@ function retosUnlockedCardHTML(ch, c) {
     ? `<span class="rounded-full border border-red-400/40 bg-red-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-300">Fallido</span>`
     : `<span class="rounded-full border border-accent-neon/40 bg-accent-neon/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">En curso</span>`;
 
-  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5">
-    <div class="flex items-start justify-between gap-2 flex-wrap">
+  // Estética del Mundial cuando aplica
+  const cardCls = isMundial
+    ? 'relative overflow-hidden rounded-2xl bg-plan-mundial p-5'
+    : 'gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5';
+  const cardStyle = isMundial ? 'border:1.5px solid rgba(252,211,77,0.40);' : '';
+  return `<article class="${cardCls}" style="${cardStyle}">
+    ${isMundial ? `<div class="relative mb-3 flex justify-end">${_mundialBadgePill()}</div>` : ''}
+    <div class="relative flex items-start justify-between gap-2 flex-wrap">
       <div class="min-w-0">
         <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
           <span>RETO</span><span class="text-ink-500/60">·</span><span>${fmtMoneyShort(start)} → ${fmtMoneyShort(goal)}</span>
