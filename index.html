@@ -335,13 +335,13 @@
   .bg-plan-basic     { background: linear-gradient(135deg, rgba(110,231,183,0.16), rgba(110,231,183,0.03)); }
   .bg-plan-pro       { background: linear-gradient(135deg, rgba(34,197,94,0.26),  rgba(16,185,129,0.10)); }
 
-  /* === FONT FIFA-26 === fuente oficial subida en la raíz. Intenta woff2 → woff → ttf */
+  /* === FONT FIFA-26 === fuente oficial subida en la raíz como .otf */
   @font-face {
     font-family: 'fifa-26';
-    src: url('fifa-26.woff2') format('woff2'),
+    src: url('fifa-26.otf') format('opentype'),
+         url('fifa-26.woff2') format('woff2'),
          url('fifa-26.woff')  format('woff'),
-         url('fifa-26.ttf')   format('truetype'),
-         url('fifa-26.otf')   format('opentype');
+         url('fifa-26.ttf')   format('truetype');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -1386,7 +1386,7 @@
         <div class="relative">
           <div class="lift relative h-full overflow-hidden rounded-2xl bg-plan-mundial p-6 sm:p-8" style="border:1.5px solid rgba(252,211,77,0.4);">
             <!-- Decoración de fondo: copia muy tenue del logo en la esquina inferior derecha -->
-            <img src="mundial2026.png" alt="" aria-hidden="true" class="pointer-events-none absolute -bottom-10 -right-10 h-44 w-44 sm:h-52 sm:w-52 opacity-[0.12] object-contain rotate-12" onerror="this.style.display='none'"/>
+            <img src="logo-mundial.cc.png" alt="" aria-hidden="true" class="pointer-events-none absolute -bottom-10 -right-10 h-44 w-44 sm:h-52 sm:w-52 opacity-[0.12] object-contain rotate-12" onerror="this.style.display='none'"/>
             <div class="relative">
               <span class="mundial-chip">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
@@ -1394,10 +1394,10 @@
               </span>
               <!-- Logo prominente del Mundial al lado del título -->
               <div class="mt-4 flex items-center gap-3">
-                <img src="mundial2026.png" alt="Logo Mundial 2026" class="h-16 w-16 sm:h-20 sm:w-20 object-contain shrink-0" style="filter: drop-shadow(0 6px 18px rgba(220,38,38,0.35)) drop-shadow(0 0 12px rgba(252,211,77,0.25));" onerror="this.style.display='none'"/>
+                <img src="logo-mundial.cc.png" alt="Logo Mundial 2026" class="h-16 w-16 sm:h-20 sm:w-20 object-contain shrink-0" style="filter: drop-shadow(0 6px 18px rgba(220,38,38,0.35)) drop-shadow(0 0 12px rgba(252,211,77,0.25));" onerror="this.style.display='none'"/>
                 <div class="min-w-0 flex-1">
-                  <h3 class="font-fifa text-2xl sm:text-3xl tracking-tight text-white leading-[0.95]" style="letter-spacing:0.01em;">MUNDIAL</h3>
-                  <h3 class="font-fifa text-4xl sm:text-5xl tracking-tight leading-[0.95] mundial-text-gradient" style="letter-spacing:0.02em;">2026</h3>
+                  <h3 class="font-fifa text-3xl sm:text-4xl tracking-tight text-white leading-[0.95]" style="letter-spacing:0.02em;">MUNDIAL</h3>
+                  <h3 class="font-fifa text-5xl sm:text-6xl tracking-tight leading-[0.95] mundial-text-gradient" style="letter-spacing:0.02em;">26</h3>
                 </div>
               </div>
               <p class="mt-4 text-sm text-ink-200/80">El pase completo del torneo más grande del mundo.</p>
