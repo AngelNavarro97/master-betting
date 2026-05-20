@@ -486,6 +486,27 @@
   @media (min-width: 1024px) {
     .plans-nav-btn { display: inline-flex; }
   }
+  /* Wrapper de la mitad superior de cada card. min-height fija para que el
+     botón "Suscribirme" caiga a la misma altura horizontal en todas las cards
+     del carrusel (incluida la Mundial con su logo + título grande). */
+  .plans-carousel .plan-card-wrap > div { display: flex; flex-direction: column; }
+  .plans-carousel .plan-card-wrap .plan-top {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .plans-carousel .plan-card-wrap .plan-top.mundial-top {
+    min-height: 300px;
+    justify-content: flex-start; /* el contenido del Mundial ya es denso */
+  }
+  @media (max-width: 640px) {
+    .plans-carousel .plan-card-wrap .plan-top { min-height: 280px; }
+  }
+  /* Caja fija para que el precio o el banner "20 plazas gratis" del plan
+     Mundial ocupen siempre el mismo espacio (así el botón no salta de sitio). */
+  .mundial-price-area { position: relative; min-height: 100px; }
+
   /* Indicadores (puntos) del carrusel — visibles solo en móvil */
   .plans-dots {
     display: flex; justify-content: center; gap: 0.5rem;
@@ -1412,7 +1433,7 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <div class="plans-carousel" id="plansCarousel">
-        <!-- BASIC -->
+        <!-- 1 · BASIC -->
         <div class="plan-card-wrap">
           <div class="lift gradient-border bg-plan-basic relative h-full overflow-hidden p-6 sm:p-8 rounded-2xl">
             <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-30 blur-3xl" style="background: linear-gradient(135deg,#6ee7b7,#10b981);"></div>
@@ -1420,13 +1441,15 @@
               <path d="M 12 110 L 50 80 L 88 92 L 126 60 L 164 70 L 192 38" stroke="#00e696" stroke-width="1.1" opacity="0.7"/>
               <g fill="#00e696"><circle cx="12" cy="110" r="2.4"/><circle cx="50" cy="80" r="2.4"/><circle cx="88" cy="92" r="2.4"/><circle cx="126" cy="60" r="2.4"/><circle cx="164" cy="70" r="2.4"/><circle cx="192" cy="38" r="3.2"/></g>
             </svg>
-            <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Basic</h3></div>
-            <p class="mt-2 text-sm text-ink-200/70">Empieza con la disciplina correcta.</p>
-            <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="9,99" data-price-yearly="4,99">9,99</span>
-              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+            <div class="plan-top">
+              <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Basic</h3></div>
+              <p class="mt-2 text-sm text-ink-200/70">Empieza con la disciplina correcta.</p>
+              <div class="mt-8 flex items-baseline gap-1.5">
+                <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="9,99" data-price-yearly="4,99">9,99</span>
+                <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+              </div>
+              <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">59,99 €/año</span> · ahorras 60 €</p>
             </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">59,99 €/año</span> · ahorras 60 €</p>
             <button type="button" data-stripe-plan="Basic" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
@@ -1437,7 +1460,56 @@
             </ul>
           </div>
         </div>
-        <!-- PRO -->
+        <!-- 2 · MUNDIAL 2026 -->
+        <div class="plan-card-wrap">
+          <div class="lift relative h-full overflow-hidden rounded-2xl bg-plan-mundial p-6 sm:p-8" style="border:1.5px solid rgba(252,211,77,0.4);">
+            <!-- Decoración de fondo: copia muy tenue del logo en la esquina inferior derecha -->
+            <img src="logo-mundial.cc.png" alt="" aria-hidden="true" class="pointer-events-none absolute -bottom-10 -right-10 h-44 w-44 sm:h-52 sm:w-52 opacity-[0.12] object-contain rotate-12" onerror="this.style.display='none'"/>
+            <div class="plan-top mundial-top relative">
+              <span class="mundial-chip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+                Edición especial
+              </span>
+              <!-- Logo + título centrados horizontalmente -->
+              <div class="mt-4 flex items-center justify-center gap-4">
+                <img src="logo-mundial.cc.png" alt="Logo Mundial 2026" class="h-14 w-14 sm:h-16 sm:w-16 object-contain shrink-0" style="filter: drop-shadow(0 6px 18px rgba(220,38,38,0.35)) drop-shadow(0 0 12px rgba(252,211,77,0.25));" onerror="this.style.display='none'"/>
+                <div class="text-left">
+                  <h3 class="font-fifa text-2xl sm:text-3xl tracking-tight text-white leading-[0.95]" style="letter-spacing:0.02em;">MUNDIAL</h3>
+                  <h3 class="font-fifa text-4xl sm:text-5xl tracking-tight leading-[0.95] mundial-text-gradient" style="letter-spacing:0.02em;">26</h3>
+                </div>
+              </div>
+              <p class="mt-3 text-center text-sm text-ink-200/80">El pase completo del torneo más grande del mundo.</p>
+              <!-- Caja fija para precio O banner (siempre misma altura para que el botón cuadre) -->
+              <div class="mundial-price-area mt-5">
+                <div class="flex items-baseline gap-1.5" id="mundialPriceWrap">
+                  <span class="font-display text-5xl font-semibold tracking-tight text-white" id="mundialPriceMain">24,99</span>
+                  <span class="text-sm text-ink-300">€ pase único</span>
+                </div>
+                <p class="mt-1 text-[11px] text-amber-200/85"><span class="text-white font-medium">11 jun – 19 jul 2026</span> · todo el torneo</p>
+                <!-- Banner plazas gratis: posicionado encima del precio para no mover el botón -->
+                <div id="mundialFreeBanner" class="hidden absolute inset-0 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-red-500/15 px-4 py-3 text-center">
+                  <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Oferta de lanzamiento</div>
+                  <div class="mt-1 text-sm font-medium text-white">
+                    <span id="mundialFreeRemaining" class="font-display text-2xl font-semibold text-amber-300">—</span>
+                    <span class="text-amber-200/80">de 20 plazas <span class="font-fifa">GRATIS</span></span>
+                  </div>
+                  <div class="mt-1 text-[11px] text-amber-100/70">Los 20 primeros se llevan el pase entero del Mundial sin pagar</div>
+                </div>
+              </div>
+            </div>
+            <button type="button" id="mundialCtaBtn" class="mundial-cta mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm">
+              <span id="mundialCtaText">Conseguir mi pase</span>
+            </button>
+            <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(252,211,77,0.30), transparent);"></div>
+            <ul class="space-y-3.5 text-sm text-white/85 relative">
+              <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">∞</span><span><span class="text-white font-medium">Pronósticos ilimitados</span> durante toda la temporada del Mundial</span></li>
+              <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">★</span><span>Canal de <span class="text-amber-300 font-medium">Telegram exclusivo Mundial 2026</span></span></li>
+              <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">🏆</span><span>Acceso a <span class="text-amber-300 font-medium">todos los retos del Mundial</span></span></li>
+              <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">€</span><span><span class="text-white font-medium">Reembolso del 100%</span> si no obtienes beneficios al final del torneo</span></li>
+            </ul>
+          </div>
+        </div>
+        <!-- 3 · PRO -->
         <div class="plan-card-wrap">
           <div class="lift gradient-border bg-plan-pro relative h-full overflow-hidden p-6 sm:p-8 rounded-2xl">
             <div class="halo-inner" aria-hidden="true"></div>
@@ -1447,16 +1519,18 @@
               <circle cx="160" cy="48" r="14" stroke="#22c55e" stroke-width="1" opacity="0.55"/>
               <circle cx="160" cy="48" r="7" stroke="#00e696" stroke-width="0.9" opacity="0.45"/>
             </svg>
-            <div class="flex items-center gap-3">
-              <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Pro</h3>
-              <span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>
+            <div class="plan-top">
+              <div class="flex items-center gap-3">
+                <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Pro</h3>
+                <span class="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">Más popular</span>
+              </div>
+              <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
+              <div class="mt-8 flex items-baseline gap-1.5">
+                <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="19,99" data-price-yearly="9,99">19,99</span>
+                <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+              </div>
+              <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">119,99 €/año</span> · ahorras 120 €</p>
             </div>
-            <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
-            <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="19,99" data-price-yearly="9,99">19,99</span>
-              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
-            </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">119,99 €/año</span> · ahorras 120 €</p>
             <button type="button" data-stripe-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
@@ -1467,20 +1541,22 @@
             </ul>
           </div>
         </div>
-        <!-- EXCLUSIVE — reactivado -->
+        <!-- 4 · EXCLUSIVE -->
         <div class="plan-card-wrap">
           <div class="lift gradient-border bg-plan-exclusive relative h-full overflow-hidden p-6 sm:p-8 rounded-2xl">
             <div class="pointer-events-none absolute -top-20 right-0 h-60 w-60 rounded-full opacity-40 blur-3xl" style="background: linear-gradient(135deg,#fcd34d,#22c55e);"></div>
-            <div class="flex items-center gap-3">
-              <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Exclusive</h3>
-              <span class="rounded-full border border-amber-300/40 bg-amber-400/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-200 backdrop-blur">Top tier</span>
+            <div class="plan-top">
+              <div class="flex items-center gap-3">
+                <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Exclusive</h3>
+                <span class="rounded-full border border-amber-300/40 bg-amber-400/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-200 backdrop-blur">Top tier</span>
+              </div>
+              <p class="mt-2 text-sm text-ink-200/70">Pronósticos ilimitados + extras premium.</p>
+              <div class="mt-8 flex items-baseline gap-1.5">
+                <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="39,99" data-price-yearly="19,99">39,99</span>
+                <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+              </div>
+              <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">239,99 €/año</span> · ahorras 240 €</p>
             </div>
-            <p class="mt-2 text-sm text-ink-200/70">Pronósticos ilimitados + extras premium.</p>
-            <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="39,99" data-price-yearly="19,99">39,99</span>
-              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
-            </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">239,99 €/año</span> · ahorras 240 €</p>
             <button type="button" data-stripe-plan="Exclusive" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-emerald-400 px-5 py-3 text-sm font-semibold text-black transition hover:opacity-90">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(252,211,77,0.20), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
@@ -1491,20 +1567,23 @@
             </ul>
           </div>
         </div>
-        <!-- SOLO FÚTBOL -->
+        <!-- 5 · GOAL (Solo Fútbol) -->
         <div class="plan-card-wrap">
           <div class="lift gradient-border bg-plan-futbol relative h-full overflow-hidden p-6 sm:p-8 rounded-2xl">
             <div class="pointer-events-none absolute -top-16 right-0 h-56 w-56 rounded-full opacity-35 blur-3xl" style="background: linear-gradient(135deg,#22c55e,#0f766e);"></div>
             <div class="pointer-events-none absolute -bottom-8 -right-6 text-[140px] opacity-[0.10] leading-none select-none">⚽</div>
-            <div class="flex items-center gap-3">
-              <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Solo Fútbol</h3>
+            <div class="plan-top">
+              <div class="flex items-center gap-3">
+                <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Goal</h3>
+                <span class="rounded-full border border-green-300/40 bg-green-400/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-green-100 backdrop-blur">⚽ Solo fútbol</span>
+              </div>
+              <p class="mt-2 text-sm text-ink-200/70">Sólo te interesa el balompié. Vamos a ello.</p>
+              <div class="mt-8 flex items-baseline gap-1.5">
+                <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="14,99" data-price-yearly="7,49">14,99</span>
+                <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+              </div>
+              <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">89,99 €/año</span> · ahorras 90 €</p>
             </div>
-            <p class="mt-2 text-sm text-ink-200/70">Sólo te interesa el balompié. Vamos a ello.</p>
-            <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="14,99" data-price-yearly="7,49">14,99</span>
-              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
-            </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">89,99 €/año</span> · ahorras 90 €</p>
             <button type="button" data-stripe-plan="Futbol" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-green-400/40 bg-green-400/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-green-300/60 hover:bg-green-400/20">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
@@ -1515,44 +1594,23 @@
             </ul>
           </div>
         </div>
-        <!-- SOLO TENIS -->
-        <div class="plan-card-wrap">
-          <div class="lift gradient-border bg-plan-tenis relative h-full overflow-hidden p-6 sm:p-8 rounded-2xl">
-            <div class="pointer-events-none absolute -top-16 right-0 h-56 w-56 rounded-full opacity-35 blur-3xl" style="background: linear-gradient(135deg,#facc15,#84cc16);"></div>
-            <div class="pointer-events-none absolute -bottom-8 -right-6 text-[140px] opacity-[0.10] leading-none select-none">🎾</div>
-            <div class="flex items-center gap-3">
-              <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Solo Tenis</h3>
-            </div>
-            <p class="mt-2 text-sm text-ink-200/70">Match a match, set a set. Especialistas.</p>
-            <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="14,99" data-price-yearly="7,49">14,99</span>
-              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
-            </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">89,99 €/año</span> · ahorras 90 €</p>
-            <button type="button" data-stripe-plan="Tenis" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-yellow-300/40 bg-yellow-300/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-yellow-200/60 hover:bg-yellow-300/20">Suscribirme</button>
-            <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
-            <ul class="space-y-3.5 text-sm text-ink-200/85">
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Todos los pronósticos de <span class="text-white font-medium">tenis</span></span></li>
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>ATP, WTA y Grand Slams</span></li>
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Análisis surface por surface</span></li>
-              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Canal de Telegram tenis</span></li>
-            </ul>
-          </div>
-        </div>
-        <!-- SOLO BALONCESTO -->
+        <!-- 6 · SLAM (Solo Baloncesto) -->
         <div class="plan-card-wrap">
           <div class="lift gradient-border bg-plan-basket relative h-full overflow-hidden p-6 sm:p-8 rounded-2xl">
             <div class="pointer-events-none absolute -top-16 right-0 h-56 w-56 rounded-full opacity-35 blur-3xl" style="background: linear-gradient(135deg,#f97316,#dc2626);"></div>
             <div class="pointer-events-none absolute -bottom-8 -right-6 text-[140px] opacity-[0.10] leading-none select-none">🏀</div>
-            <div class="flex items-center gap-3">
-              <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Solo Baloncesto</h3>
+            <div class="plan-top">
+              <div class="flex items-center gap-3">
+                <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Slam</h3>
+                <span class="rounded-full border border-orange-300/40 bg-orange-400/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-100 backdrop-blur">🏀 Solo baloncesto</span>
+              </div>
+              <p class="mt-2 text-sm text-ink-200/70">NBA, Euroliga, ACB. El parquet es nuestro.</p>
+              <div class="mt-8 flex items-baseline gap-1.5">
+                <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="14,99" data-price-yearly="7,49">14,99</span>
+                <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+              </div>
+              <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">89,99 €/año</span> · ahorras 90 €</p>
             </div>
-            <p class="mt-2 text-sm text-ink-200/70">NBA, Euroliga, ACB. El parquet es nuestro.</p>
-            <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="14,99" data-price-yearly="7,49">14,99</span>
-              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
-            </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">89,99 €/año</span> · ahorras 90 €</p>
             <button type="button" data-stripe-plan="Baloncesto" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-orange-400/40 bg-orange-400/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-orange-300/60 hover:bg-orange-400/20">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
@@ -1563,78 +1621,57 @@
             </ul>
           </div>
         </div>
-        <!-- TODOS los deportes -->
+        <!-- 7 · ACE (Solo Tenis) -->
+        <div class="plan-card-wrap">
+          <div class="lift gradient-border bg-plan-tenis relative h-full overflow-hidden p-6 sm:p-8 rounded-2xl">
+            <div class="pointer-events-none absolute -top-16 right-0 h-56 w-56 rounded-full opacity-35 blur-3xl" style="background: linear-gradient(135deg,#facc15,#84cc16);"></div>
+            <div class="pointer-events-none absolute -bottom-8 -right-6 text-[140px] opacity-[0.10] leading-none select-none">🎾</div>
+            <div class="plan-top">
+              <div class="flex items-center gap-3">
+                <h3 class="font-display text-3xl font-semibold tracking-tight text-white">Ace</h3>
+                <span class="rounded-full border border-yellow-300/40 bg-yellow-300/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-yellow-100 backdrop-blur">🎾 Solo tenis</span>
+              </div>
+              <p class="mt-2 text-sm text-ink-200/70">Match a match, set a set. Especialistas.</p>
+              <div class="mt-8 flex items-baseline gap-1.5">
+                <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="14,99" data-price-yearly="7,49">14,99</span>
+                <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+              </div>
+              <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">89,99 €/año</span> · ahorras 90 €</p>
+            </div>
+            <button type="button" data-stripe-plan="Tenis" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-yellow-300/40 bg-yellow-300/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-yellow-200/60 hover:bg-yellow-300/20">Suscribirme</button>
+            <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
+            <ul class="space-y-3.5 text-sm text-ink-200/85">
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Todos los pronósticos de <span class="text-white font-medium">tenis</span></span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>ATP, WTA y Grand Slams</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Análisis surface por surface</span></li>
+              <li class="flex items-start gap-3"><span class="text-accent-neon mt-0.5">✓</span><span>Canal de Telegram tenis</span></li>
+            </ul>
+          </div>
+        </div>
+        <!-- 8 · ALL STARS (TODOS los deportes) -->
         <div class="plan-card-wrap">
           <div class="lift gradient-border bg-plan-todos relative h-full overflow-hidden p-6 sm:p-8 rounded-2xl">
             <div class="pointer-events-none absolute -top-16 right-0 h-56 w-56 rounded-full opacity-40 blur-3xl" style="background: linear-gradient(135deg,#a855f7,#3b82f6);"></div>
-            <div class="flex items-center gap-3">
-              <h3 class="font-display text-3xl font-semibold tracking-tight text-white">TODOS</h3>
-              <span class="rounded-full border border-purple-300/40 bg-purple-400/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-purple-100 backdrop-blur">Multi-deporte</span>
+            <div class="plan-top">
+              <div class="flex items-center gap-3">
+                <h3 class="font-display text-3xl font-semibold tracking-tight text-white">All Stars</h3>
+                <span class="rounded-full border border-purple-300/40 bg-purple-400/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-purple-100 backdrop-blur">⚽🏀🎾 Los 3 deportes</span>
+              </div>
+              <p class="mt-2 text-sm text-ink-200/70">Acceso a TODOS los pronósticos del equipo.</p>
+              <div class="mt-8 flex items-baseline gap-1.5">
+                <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="29,99" data-price-yearly="14,99">29,99</span>
+                <span class="text-sm text-ink-500" data-period-label>€/mes</span>
+              </div>
+              <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">179,99 €/año</span> · ahorras 180 €</p>
             </div>
-            <p class="mt-2 text-sm text-ink-200/70">Acceso a TODOS los pronósticos del equipo.</p>
-            <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="29,99" data-price-yearly="14,99">29,99</span>
-              <span class="text-sm text-ink-500" data-period-label>€/mes</span>
-            </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">179,99 €/año</span> · ahorras 180 €</p>
             <button type="button" data-stripe-plan="Todos" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
               <li class="flex items-start gap-3"><span class="text-purple-300 mt-0.5">✓</span><span><span class="text-white font-medium">Todos</span> los deportes incluidos</span></li>
-              <li class="flex items-start gap-3"><span class="text-purple-300 mt-0.5">✓</span><span>Fútbol, tenis, baloncesto y más</span></li>
+              <li class="flex items-start gap-3"><span class="text-purple-300 mt-0.5">✓</span><span>Fútbol, baloncesto y tenis sin límite</span></li>
               <li class="flex items-start gap-3"><span class="text-purple-300 mt-0.5">✓</span><span>Sin límite de pronósticos</span></li>
               <li class="flex items-start gap-3"><span class="text-purple-300 mt-0.5">✓</span><span>Todos los canales de Telegram</span></li>
             </ul>
-          </div>
-        </div>
-        <!-- MUNDIAL 2026 -->
-        <div class="plan-card-wrap">
-          <div class="lift relative h-full overflow-hidden rounded-2xl bg-plan-mundial p-6 sm:p-8" style="border:1.5px solid rgba(252,211,77,0.4);">
-            <!-- Decoración de fondo: copia muy tenue del logo en la esquina inferior derecha -->
-            <img src="logo-mundial.cc.png" alt="" aria-hidden="true" class="pointer-events-none absolute -bottom-10 -right-10 h-44 w-44 sm:h-52 sm:w-52 opacity-[0.12] object-contain rotate-12" onerror="this.style.display='none'"/>
-            <div class="relative">
-              <span class="mundial-chip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
-                Edición especial
-              </span>
-              <!-- Logo + título centrados horizontalmente -->
-              <div class="mt-4 flex items-center justify-center gap-4">
-                <img src="logo-mundial.cc.png" alt="Logo Mundial 2026" class="h-16 w-16 sm:h-20 sm:w-20 object-contain shrink-0" style="filter: drop-shadow(0 6px 18px rgba(220,38,38,0.35)) drop-shadow(0 0 12px rgba(252,211,77,0.25));" onerror="this.style.display='none'"/>
-                <div class="text-left">
-                  <h3 class="font-fifa text-3xl sm:text-4xl tracking-tight text-white leading-[0.95]" style="letter-spacing:0.02em;">MUNDIAL</h3>
-                  <h3 class="font-fifa text-5xl sm:text-6xl tracking-tight leading-[0.95] mundial-text-gradient" style="letter-spacing:0.02em;">26</h3>
-                </div>
-              </div>
-              <p class="mt-4 text-center text-sm text-ink-200/80">El pase completo del torneo más grande del mundo.</p>
-              <!-- Precio (24,99 €). Se oculta visualmente cuando aún quedan plazas gratis -->
-              <div class="mt-7 flex items-baseline gap-1.5" id="mundialPriceWrap">
-                <span class="font-display text-5xl font-semibold tracking-tight text-white" id="mundialPriceMain">24,99</span>
-                <span class="text-sm text-ink-300">€ pase único</span>
-              </div>
-              <p class="mt-1 text-[11px] text-amber-200/85"><span class="text-white font-medium">11 jun – 19 jul 2026</span> · todo el torneo</p>
-
-              <!-- Contador de plazas gratis (solo visible si quedan disponibles) -->
-              <div id="mundialFreeBanner" class="hidden mt-5 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-red-500/15 px-4 py-3 text-center">
-                <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Oferta de lanzamiento</div>
-                <div class="mt-1 text-sm font-medium text-white">
-                  <span id="mundialFreeRemaining" class="font-display text-2xl font-semibold text-amber-300">—</span>
-                  <span class="text-amber-200/80">de 20 plazas <span class="font-fifa">GRATIS</span></span>
-                </div>
-                <div class="mt-1 text-[11px] text-amber-100/70">Los 20 primeros se llevan el pase entero del Mundial sin pagar</div>
-              </div>
-
-              <button type="button" id="mundialCtaBtn" class="mundial-cta mt-5 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm">
-                <span id="mundialCtaText">Conseguir mi pase</span>
-              </button>
-              <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(252,211,77,0.30), transparent);"></div>
-              <ul class="space-y-3.5 text-sm text-white/85">
-                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">∞</span><span><span class="text-white font-medium">Pronósticos ilimitados</span> durante toda la temporada del Mundial</span></li>
-                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">★</span><span>Canal de <span class="text-amber-300 font-medium">Telegram exclusivo Mundial 2026</span></span></li>
-                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">🏆</span><span>Acceso a <span class="text-amber-300 font-medium">todos los retos del Mundial</span></span></li>
-                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">€</span><span><span class="text-white font-medium">Reembolso del 100%</span> si no obtienes beneficios al final del torneo</span></li>
-                <li class="flex items-start gap-3"><span class="mundial-feature-icon mt-0.5">✓</span><span>Análisis pre-partido y comunidad activa 24/7</span></li>
-              </ul>
-            </div>
           </div>
         </div>
         </div><!-- /.plans-carousel -->
@@ -3392,10 +3429,10 @@
           <label class="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Basic" class="accent-emerald-400"/> Basic</label>
           <label class="flex items-center gap-2 rounded-full border border-accent-neon/30 bg-accent-neon/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Pro" class="accent-emerald-400"/> Pro</label>
           <label class="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Exclusive" class="accent-emerald-400"/> Exclusive</label>
-          <label class="flex items-center gap-2 rounded-full border border-green-400/30 bg-green-400/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Futbol" class="accent-emerald-400"/> ⚽ Solo Fútbol</label>
-          <label class="flex items-center gap-2 rounded-full border border-yellow-300/30 bg-yellow-300/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Tenis" class="accent-yellow-300"/> 🎾 Solo Tenis</label>
-          <label class="flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-400/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Baloncesto" class="accent-orange-400"/> 🏀 Solo Baloncesto</label>
-          <label class="flex items-center gap-2 rounded-full border border-purple-400/30 bg-purple-400/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Todos" class="accent-purple-400"/> ✦ TODOS</label>
+          <label class="flex items-center gap-2 rounded-full border border-green-400/30 bg-green-400/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Futbol" class="accent-emerald-400"/> ⚽ Goal <span class="opacity-60 text-xs">(Fútbol)</span></label>
+          <label class="flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-400/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Baloncesto" class="accent-orange-400"/> 🏀 Slam <span class="opacity-60 text-xs">(Baloncesto)</span></label>
+          <label class="flex items-center gap-2 rounded-full border border-yellow-300/30 bg-yellow-300/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Tenis" class="accent-yellow-300"/> 🎾 Ace <span class="opacity-60 text-xs">(Tenis)</span></label>
+          <label class="flex items-center gap-2 rounded-full border border-purple-400/30 bg-purple-400/5 px-3 py-1.5 text-sm text-white cursor-pointer"><input type="checkbox" name="np-plan" value="Todos" class="accent-purple-400"/> ✦ All Stars <span class="opacity-60 text-xs">(Todos)</span></label>
           <label class="flex items-center gap-2 rounded-full border border-red-500/40 bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-red-500/15 px-3 py-1.5 text-sm text-amber-200 cursor-pointer"><input type="checkbox" name="np-plan" value="Mundial2026" class="accent-amber-400"/> <span class="font-fifa">MUNDIAL 26</span></label>
         </div>
       </fieldset>
