@@ -1315,14 +1315,14 @@
       <div class="mb-8 text-center sm:mb-10">
         <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink-500 sm:text-xs sm:tracking-[0.32em]">Planes</span>
         <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight sm:mt-4 sm:text-4xl md:text-5xl lg:text-6xl">Elige el plan que <span class="text-gradient">se adapta a ti</span></h2>
-        <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Cancela cuando quieras. Sin permanencia. <span class="text-accent-neon font-medium">Ahorra 25%</span> con el pago anual.</p>
+        <p class="mx-auto mt-4 max-w-xl text-sm text-ink-200/70 sm:mt-5 sm:text-base">Cancela cuando quieras. Sin permanencia. <span class="text-accent-neon font-medium">Ahorra 50%</span> con el pago anual.</p>
       </div>
 
       <!-- Toggle Mensual / Anual -->
       <div class="mb-10 flex justify-center sm:mb-12">
         <div class="billing-toggle" role="tablist" aria-label="Periodo de facturación">
           <button type="button" data-billing="monthly" class="active">Mensual</button>
-          <button type="button" data-billing="yearly">Anual <span class="save-badge">−25%</span></button>
+          <button type="button" data-billing="yearly">Anual <span class="save-badge">−50%</span></button>
         </div>
       </div>
 
@@ -1338,10 +1338,10 @@
             <div class="flex items-center gap-3"><h3 class="font-display text-3xl font-semibold tracking-tight text-white">Basic</h3></div>
             <p class="mt-2 text-sm text-ink-200/70">Empieza con la disciplina correcta.</p>
             <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="9,99" data-price-yearly="7,49">9,99</span>
+              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="9,99" data-price-yearly="4,99">9,99</span>
               <span class="text-sm text-ink-500" data-period-label>€/mes</span>
             </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">89,99 €/año</span> · ahorras 30 €</p>
+            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">59,99 €/año</span> · ahorras 60 €</p>
             <button type="button" data-stripe-plan="Basic" class="mt-6 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
@@ -1368,10 +1368,10 @@
             </div>
             <p class="mt-2 text-sm text-ink-200/70">Lo más popular. Más volumen, más oportunidad.</p>
             <div class="mt-8 flex items-baseline gap-1.5">
-              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="19,99" data-price-yearly="14,99">19,99</span>
+              <span class="font-display text-5xl font-semibold tracking-tight text-white" data-price-monthly="19,99" data-price-yearly="9,99">19,99</span>
               <span class="text-sm text-ink-500" data-period-label>€/mes</span>
             </div>
-            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">179,99 €/año</span> · ahorras 60 €</p>
+            <p class="mt-1 text-[11px] text-ink-500" data-yearly-extra style="display:none;">Equivale a <span class="text-white font-medium">119,99 €/año</span> · ahorras 120 €</p>
             <button type="button" data-stripe-plan="Pro" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-ink-200">Suscribirme</button>
             <div class="my-7 h-px w-full" style="background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);"></div>
             <ul class="space-y-3.5 text-sm text-ink-200/85">
@@ -1385,15 +1385,22 @@
         <!-- MUNDIAL 2026 — sustituye temporalmente al plan Exclusive -->
         <div class="relative">
           <div class="lift relative h-full overflow-hidden rounded-2xl bg-plan-mundial p-6 sm:p-8" style="border:1.5px solid rgba(252,211,77,0.4);">
-            <!-- Patrón decorativo + logo del mundial -->
-            <img src="mundial2026.png" alt="Mundial 2026" class="pointer-events-none absolute -bottom-8 -right-8 h-48 w-48 sm:h-56 sm:w-56 opacity-25 object-contain" onerror="this.style.display='none'"/>
+            <!-- Decoración de fondo: copia muy tenue del logo en la esquina inferior derecha -->
+            <img src="mundial2026.png" alt="" aria-hidden="true" class="pointer-events-none absolute -bottom-10 -right-10 h-44 w-44 sm:h-52 sm:w-52 opacity-[0.12] object-contain rotate-12" onerror="this.style.display='none'"/>
             <div class="relative">
               <span class="mundial-chip">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
                 Edición especial
               </span>
-              <h3 class="mt-3 font-fifa text-4xl font-semibold tracking-tight text-white" style="letter-spacing:-0.02em;">Mundial <span class="mundial-text-gradient">2026</span></h3>
-              <p class="mt-2 text-sm text-ink-200/80">El pase completo del torneo más grande del mundo.</p>
+              <!-- Logo prominente del Mundial al lado del título -->
+              <div class="mt-4 flex items-center gap-3">
+                <img src="mundial2026.png" alt="Logo Mundial 2026" class="h-16 w-16 sm:h-20 sm:w-20 object-contain shrink-0" style="filter: drop-shadow(0 6px 18px rgba(220,38,38,0.35)) drop-shadow(0 0 12px rgba(252,211,77,0.25));" onerror="this.style.display='none'"/>
+                <div class="min-w-0 flex-1">
+                  <h3 class="font-fifa text-2xl sm:text-3xl tracking-tight text-white leading-[0.95]" style="letter-spacing:0.01em;">MUNDIAL</h3>
+                  <h3 class="font-fifa text-4xl sm:text-5xl tracking-tight leading-[0.95] mundial-text-gradient" style="letter-spacing:0.02em;">2026</h3>
+                </div>
+              </div>
+              <p class="mt-4 text-sm text-ink-200/80">El pase completo del torneo más grande del mundo.</p>
               <!-- Precio (24,99 €). Se oculta visualmente cuando aún quedan plazas gratis -->
               <div class="mt-7 flex items-baseline gap-1.5" id="mundialPriceWrap">
                 <span class="font-display text-5xl font-semibold tracking-tight text-white" id="mundialPriceMain">24,99</span>
@@ -8138,11 +8145,33 @@ document.getElementById('profileAvatarRemoveBtn')?.addEventListener('click', asy
 // Estado intermedio: el plan/email pendientes mientras se verifica la edad
 let pendingCheckout = null;
 
+// Stripe Payment Links de los planes ANUALES (creados manualmente en el dashboard).
+// Si el toggle de la home está en "Anual", el botón redirige directamente a estos URLs
+// en lugar de pasar por la edge function stripe-checkout.
+const ANNUAL_STRIPE_URLS = {
+  Basic: 'https://buy.stripe.com/6oU4gtdZX1llfkkc6o6sw02',
+  Pro:   'https://buy.stripe.com/3cIbIVcVT9RR4FG5I06sw03',
+};
+
+// Devuelve 'monthly' o 'yearly' según el toggle activo en la home.
+function _currentBillingPeriod() {
+  const activeBtn = document.querySelector('.billing-toggle button.active');
+  return activeBtn?.dataset?.billing || 'monthly';
+}
+
 // Botones "Suscribirme" en la home (cards de planes)
 document.querySelectorAll('[data-stripe-plan]').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.preventDefault();
-    pendingCheckout = { plan: btn.dataset.stripePlan, email: null };
+    const plan = btn.dataset.stripePlan;
+    const period = _currentBillingPeriod();
+    // Si el cliente seleccionó plan ANUAL y tenemos Payment Link configurado, redirigir
+    if (period === 'yearly' && ANNUAL_STRIPE_URLS[plan]) {
+      window.location.href = ANNUAL_STRIPE_URLS[plan];
+      return;
+    }
+    // Plan mensual estándar: pasamos por la verificación de edad + edge function
+    pendingCheckout = { plan, email: null };
     openAgeModal();
   });
 });
