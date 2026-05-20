@@ -6382,18 +6382,26 @@ function followedBetCardClient(b) {
   }
   const headerLabel = isCombined ? `Combinada (${p.events.length})` : (fe.sport || '');
   const eventVisual = eventBlock(p, true); // logos de equipos + competición
-  // Si es un pick Exclusive, marco con borde amarillo para diferenciarlo.
-  // Antes usábamos gradient-border (mask-composite) pero en iOS PWA y Android WebView
-  // a veces se ve un cuadrado de fondo con los bordes en pico, así que pasamos a un
-  // borde simple con rounded-2xl que renderiza nítido en cualquier navegador.
-  const borderCls = p.tier === 'exclusive'
-    ? 'rounded-2xl border border-amber-400/50'
-    : 'rounded-2xl border border-white/10';
-  return `<article class="${borderCls} bg-white/[0.02] p-4">
-    <div class="flex items-start justify-between gap-3">
+  const isMundial = pickIsMundial(p);
+  // Estética del Mundial / Exclusive / estándar
+  let borderCls, bgCls, extraStyle = '';
+  if (isMundial) {
+    borderCls = 'rounded-2xl bg-plan-mundial';
+    bgCls = '';
+    extraStyle = 'border:1.5px solid rgba(252,211,77,0.40);';
+  } else if (p.tier === 'exclusive') {
+    borderCls = 'rounded-2xl border border-amber-400/50';
+    bgCls = 'bg-white/[0.02]';
+  } else {
+    borderCls = 'rounded-2xl border border-white/10';
+    bgCls = 'bg-white/[0.02]';
+  }
+  return `<article class="${borderCls} ${bgCls} p-4" style="${extraStyle}">
+    <div class="relative flex items-start justify-between gap-3">
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
           <span>${headerLabel}</span><span class="text-ink-500/70">·</span><span>${pickWhen(p)}</span>
+          ${isMundial ? pickMundialBadge() : ''}
           ${tierBadge(p)}
         </div>
         ${eventVisual ? `<div class="mt-2.5">${eventVisual}</div>` : `<h4 class="mt-1.5 font-display text-sm font-semibold text-white break-words">${p.match || ''}</h4>`}
@@ -6902,15 +6910,22 @@ function pickAdminCard(p) {
   const fe = pickFirstEvent(p);
   const isCombined = pickIsCombined(p);
   const totalOdds = pickTotalOdds(p);
+  const isMundial = pickIsMundial(p);
   const headerLabel = isCombined ? `Combinada (${p.events.length} eventos)` : fe.sport;
-  return `<article class="gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5 sm:p-6">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  // Estética del Mundial cuando el pick incluye el plan Mundial2026
+  const cardCls = isMundial
+    ? 'relative overflow-hidden rounded-2xl bg-plan-mundial p-5 sm:p-6'
+    : 'gradient-border relative overflow-hidden rounded-2xl bg-white/[0.02] p-5 sm:p-6';
+  const cardStyle = isMundial ? 'border:1.5px solid rgba(252,211,77,0.40);' : '';
+  return `<article class="${cardCls}" style="${cardStyle}">
+    <div class="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-2">
           <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">${sportIcon(fe.sport,16)}<span>${headerLabel}</span></span>
           <span class="text-ink-500/70 text-[10px]">·</span>
           <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">${pickWhen(p)}</span>
           <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${ri.cls}">${ri.label}</span>
+          ${isMundial ? pickMundialBadge() : ''}
           ${tierBadge(p)}
         </div>
         ${eventBlock(p, true) ? `<div class="mt-3">${eventBlock(p, true)}</div>` : `<h4 class="mt-2 font-display text-base font-semibold text-white break-words">${p.match || ''}</h4>`}
@@ -8831,25 +8846,36 @@ function renderRetosList() {
       : c.is_active
       ? '<span class="rounded-full border border-accent-neon/40 bg-accent-neon/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-neon">Activo</span>'
       : '<span class="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Inactivo</span>';
-    const typeBadge = c.is_free_for_exclusive
-      ? '<span class="rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Gratis Exclusive</span>'
-      : '<span class="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">De pago</span>';
+    const isMundial = isMundialChallenge(c);
+    const typeBadge = isMundial
+      ? pickMundialBadge()
+      : (c.is_free_for_exclusive
+        ? '<span class="rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Gratis Exclusive</span>'
+        : '<span class="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">De pago</span>');
+    const btnCls = isMundial
+      ? 'block w-full text-left rounded-2xl bg-plan-mundial p-5 transition'
+      : 'block w-full text-left rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:border-white/20 hover:bg-white/[0.04]';
+    const btnStyle = isMundial ? 'border:1.5px solid rgba(252,211,77,0.40);' : '';
+    const progressBarBg = isMundial
+      ? 'background:linear-gradient(90deg,#fcd34d,#f97316,#dc2626);'
+      : '';
+    const progressBarCls = isMundial ? '' : 'bg-gradient-to-r from-accent-neon to-emerald-400';
 
-    return `<button type="button" data-action="open-reto" data-id="${c.id}" class="block w-full text-left rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:border-white/20 hover:bg-white/[0.04]">
-      <div class="flex items-start justify-between gap-3 flex-wrap">
+    return `<button type="button" data-action="open-reto" data-id="${c.id}" class="${btnCls}" style="${btnStyle}">
+      <div class="relative flex items-start justify-between gap-3 flex-wrap">
         <div class="min-w-0">
           <h3 class="font-display text-lg font-semibold text-white">${escapeHtml(c.title)}</h3>
-          <p class="mt-1 text-xs text-ink-500">${fmtMoney(start)} → ${fmtMoney(goal)} · Precio ${fmtMoney(c.price)} · ${totalCount} paso${totalCount===1?'':'s'}${totalCount?` (${wonCount} ganados)`:''}</p>
+          <p class="mt-1 text-xs ${isMundial ? 'text-ink-200/70' : 'text-ink-500'}">${fmtMoney(start)} → ${fmtMoney(goal)} · Precio ${fmtMoney(c.price)} · ${totalCount} paso${totalCount===1?'':'s'}${totalCount?` (${wonCount} ganados)`:''}</p>
         </div>
         <div class="flex flex-wrap gap-2">${statusBadge}${typeBadge}</div>
       </div>
-      <div class="mt-4">
-        <div class="flex items-baseline justify-between text-xs text-ink-500">
+      <div class="relative mt-4">
+        <div class="flex items-baseline justify-between text-xs ${isMundial ? 'text-ink-200/70' : 'text-ink-500'}">
           <span>Bote actual: <span class="text-white font-semibold">${fmtMoney(now)}</span></span>
           <span>${fmtPct(progress)}</span>
         </div>
         <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/5">
-          <div class="h-full rounded-full bg-gradient-to-r from-accent-neon to-emerald-400" style="width:${progress}%"></div>
+          <div class="h-full rounded-full ${progressBarCls}" style="width:${progress}%;${progressBarBg}"></div>
         </div>
       </div>
     </button>`;
@@ -11849,11 +11875,23 @@ function retosClientHTML(c) {
 }
 
 // Card BLOQUEADA (cliente que aún no tiene desbloqueado el reto)
-// Detecta si un reto pertenece al Mundial 26 (por el título)
+// Detecta si un reto pertenece al Mundial (por el título)
+// Suficiente con que contenga "mundial" en el título (case-insensitive).
 function isMundialChallenge(ch) {
   if (!ch) return false;
   const t = (ch.title || '').toLowerCase();
-  return t.includes('mundial') && (t.includes('26') || t.includes('2026'));
+  return t.includes('mundial');
+}
+// Detecta si un pick pertenece al plan Mundial 2026 (en plans del pick)
+function pickIsMundial(p) {
+  return !!(p && Array.isArray(p.plans) && p.plans.includes('Mundial2026'));
+}
+// Pill MUNDIAL 26 reutilizable en todas las cards
+function pickMundialBadge() {
+  return `<span class="inline-flex items-center gap-1 rounded-md px-2 py-0.5" style="background:linear-gradient(135deg,#fcd34d,#f97316,#dc2626);color:#1a0a07;font-weight:800;font-size:10px;letter-spacing:0.06em;">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+    <span class="font-fifa">MUNDIAL 26</span>
+  </span>`;
 }
 
 // Badge del Mundial reutilizable en las cards de retos
